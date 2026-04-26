@@ -21,7 +21,7 @@ WELCOME_TEXT = """<b><tg-emoji emoji-id="5197288647275071607">🎟</tg-emoji>TGS
 
 <b><tg-emoji emoji-id="5222079954421818267">🎟</tg-emoji>Это пространство, где время проходит незаметно, а каждая деталь делает игру комфортной и увлекательной</b>
 
-<a href="https://t.me/tgstelar_chat">Наш чат</a> | <a href="https://t.me/tgstelar_news">Новости</a> | <a href="https://t.me/tgstelar_support">Поддержка</a>"""
+<a href="https://t.me/tgstelar_chat"><tg-emoji emoji-id="5357069174512303778">🎟</tg-emoji>Тех. поддержка</a> | <a href="https://t.me/tgstelar_news">Новости</a> | <a href="https://t.me/tgstelar_support">Наш чат</a>"""
 
 
 
