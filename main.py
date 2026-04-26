@@ -17,9 +17,9 @@ EMOJI_LEADERS = "5440539497383087970"
 EMOJI_SETTINGS = "5341715473882955310"
 
 # ---------- ТЕКСТ ДЛЯ ПРИВЕТСТВИЯ ----------
-WELCOME_TEXT = """{название} — современная игровая зона, где ты можешь отвлечься от повседневных забот и полностью погрузиться в атмосферу спокойствия и развлечений.
+WELCOME_TEXT = """TGStellar — <b>современная игровая зона, где ты можешь отвлечься от повседневных забот и полностью погрузиться в атмосферу спокойствия и развлечений.</b>
 
-Это пространство, где время проходит незаметно, а каждая деталь делает игру комфортной и увлекательной"""
+<b>Это пространство, где время проходит незаметно, а каждая деталь делает игру комфортной и увлекательной</b>"""
 
 
 # ---------- ГЛАВНОЕ МЕНЮ ----------
@@ -65,7 +65,7 @@ def send_welcome(message):
     bot.send_message(
         message.chat.id, 
         WELCOME_TEXT, 
-        parse_mode="Markdown",
+        parse_mode="HTML",  # Изменено с Markdown на HTML для поддержки <b>
         reply_markup=main_menu_keyboard()
     )
 
@@ -94,7 +94,7 @@ def handle_callback(call):
                 WELCOME_TEXT,
                 chat_id,
                 message_id,
-                parse_mode="Markdown",
+                parse_mode="HTML",  # Изменено с Markdown на HTML
                 reply_markup=main_menu_keyboard()
             )
         except Exception as e:
