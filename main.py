@@ -68,7 +68,7 @@ def profile_text(d: dict) -> str:
     xp_max = d["xp_max"]
 
     return (
-        f"┌──────────────────────────\n"
+        f"<b>┌──────────────────────────\n"
         f'│  <b><tg-emoji emoji-id="5906581476639513176">🎟</tg-emoji>  <b>{name}</b>\n'
         f'│  <tg-emoji emoji-id="5282843764451195532">🎟</tg-emoji>  <code>{uid}</code>\n'
         f'│  <tg-emoji emoji-id="5323442290708985472">🎟</tg-emoji>  {uname}</b>\n'
@@ -82,7 +82,7 @@ def profile_text(d: dict) -> str:
         f"│       {xp_bar(xp, xp_max)}</b>\n"
         f"├──────────────────────────\n"
         f'│  <tg-emoji emoji-id="5278467510604160626">🎟</tg-emoji>  <b>Баланс: {d['balance']:,} </b>\n'
-        f"└──────────────────────────"
+        f"└──────────────────────────</b>"
     )
 
 # ---------- КЛАВИАТУРА ПРОФИЛЯ ----------
