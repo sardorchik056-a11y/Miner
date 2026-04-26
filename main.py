@@ -16,6 +16,16 @@ EMOJI_EXCHANGE = "5402186569006210455"
 EMOJI_LEADERS = "5440539497383087970"
 EMOJI_SETTINGS = "5341715473882955310"
 
+# ---------- ТЕКСТ ДЛЯ ПРИВЕТСТВИЯ ----------
+WELCOME_TEXT = """✨ *ДОБРО ПОЖАЛОВАТЬ В ИГРОВУЮ ЗОНУ* ✨
+
+{название} — современная игровая зона, где ты можешь отвлечься от повседневных забот и полностью погрузиться в атмосферу спокойствия и развлечений.
+
+Это пространство, где время проходит незаметно, а каждая деталь делает игру комфортной и увлекательной.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+🎮 *Выбери действие в меню ниже:*"""
+
 # ---------- ГЛАВНОЕ МЕНЮ ----------
 def main_menu_keyboard() -> InlineKeyboardMarkup:
     keyboard = InlineKeyboardMarkup(row_width=3)
@@ -46,23 +56,22 @@ def main_menu_keyboard() -> InlineKeyboardMarkup:
     
     return keyboard
 
-# ---------- КНОПКА "НАЗАД" (ОБЩАЯ ДЛЯ ВСЕХ РАЗДЕЛОВ) ----------
+# ---------- КНОПКА "НАЗАД" ----------
 def back_button():
     keyboard = InlineKeyboardMarkup()
-    keyboard.add(InlineKeyboardButton("◀️ Назад", callback_data="back_to_menu"))
+    keyboard.add(InlineKeyboardButton("◀️ Назад в меню", callback_data="back_to_menu"))
     return keyboard
 
 # ---------- ОБРАБОТЧИК КОМАНД ----------
 @bot.message_handler(commands=['start', 'menu'])
 def send_welcome(message):
-    user_name = message.from_user.first_name
-    welcome_text = (
-        f"✨ Добро пожаловать, {user_name}! ✨\n\n"
-        f"🎮 Выбери действие в меню ниже:\n"
-        f"━━━━━━━━━━━━━━━━━━━━━━━━━"
+    # Отправляем приветственный текст вместе с меню
+    bot.send_message(
+        message.chat.id, 
+        WELCOME_TEXT, 
+        parse_mode="Markdown",
+        reply_markup=main_menu_keyboard()
     )
-    
-    bot.send_message(message.chat.id, welcome_text, reply_markup=main_menu_keyboard())
 
 # ---------- ОБРАБОТЧИК ВСЕХ INLINE-КНОПОК ----------
 @bot.callback_query_handler(func=lambda call: True)
@@ -83,16 +92,16 @@ def handle_callback(call):
     }
     
     if call.data == "back_to_menu":
-        # Возврат в главное меню
+        # Возврат в главное меню с полным текстом
         try:
             bot.edit_message_text(
-                "✨ Главное меню:\n━━━━━━━━━━━━━━━━━━━━",
+                WELCOME_TEXT,
                 chat_id,
                 message_id,
+                parse_mode="Markdown",
                 reply_markup=main_menu_keyboard()
             )
         except Exception as e:
-            # Если сообщение уже такое же, игнорируем ошибку
             if "message is not modified" not in str(e):
                 print(f"Ошибка: {e}")
         return
@@ -109,7 +118,6 @@ def handle_callback(call):
             reply_markup=back_button()
         )
     except Exception as e:
-        # Если сообщение уже такое же, игнорируем
         if "message is not modified" not in str(e):
             print(f"Ошибка: {e}")
 
