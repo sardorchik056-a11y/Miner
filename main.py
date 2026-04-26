@@ -69,19 +69,19 @@ def profile_text(d: dict) -> str:
 
     return (
         f"┌──────────────────────────\n"
-        f"│  👤  <b>{name}</b>\n"
-        f"│  🆔  <code>{uid}</code>\n"
-        f"│  📎  {uname}\n"
+        f'│  <tg-emoji emoji-id="5906581476639513176">🎟</tg-emoji>  <b>{name}</b>\n'
+        f'│  <tg-emoji emoji-id="5282843764451195532">🎟</tg-emoji>  <code>{uid}</code>\n'
+        f'│  <tg-emoji emoji-id="5323442290708985472">🎟</tg-emoji>  {uname}\n'
         f"├──────────────────────────\n"
-        f"│  🏅  Ранг:    <b>{level_to_rank(level)}</b>\n"
-        f"│  ✨  Статус:  <b>{status_from_level(level)}</b>\n"
-        f"│  📅  Дней:    <b>{days}</b>\n"
+        f'│  <tg-emoji emoji-id="5415655814079723871">🎟</tg-emoji>  Ранг:    <b>{level_to_rank(level)}</b>\n'
+        f'│  <tg-emoji emoji-id="5438496463044752972">🎟</tg-emoji>  Статус:  <b>{status_from_level(level)}</b>\n'
+        f'│  <tg-emoji emoji-id="5274055917766202507">🎟</tg-emoji>  Дней:    <b>{days}</b>\n'
         f"├──────────────────────────\n"
-        f"│  ⭐  Уровень: <b>{level}</b>\n"
-        f"│  🔮  Опыт:    <b>{xp}/{xp_max}</b>\n"
+        f'│  <tg-emoji emoji-id="5375338737028841420">🎟</tg-emoji>  Уровень: <b>{level}</b>\n'
+        f'│  <tg-emoji emoji-id="5341498088408234504">🎟</tg-emoji>  Опыт:    <b>{xp}/{xp_max}</b>\n'
         f"│       {xp_bar(xp, xp_max)}\n"
         f"├──────────────────────────\n"
-        f"│  💰  Баланс:  <b>{d['balance']:,} монет</b>\n"
+        f'│  <tg-emoji emoji-id="5278467510604160626">🎟</tg-emoji>  Баланс:  <b>{d['balance']:,} </b>\n'
         f"└──────────────────────────"
     )
 
