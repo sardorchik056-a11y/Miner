@@ -46,12 +46,9 @@ def level_to_rank(level: int) -> str:
     return " Элита"
 
 def status_from_level(level: int) -> str:
-    if level < 3:  return "Новичок"
-    if level < 7:  return "Игрок"
-    if level < 15: return "Ветеран"
-    if level < 25: return "Мастер"
-    if level < 40: return "Элита"
-    return "Легенда"
+    if level < 10: return "Standart"
+    if level < 25: return "VIP"
+    return "Premium"
 
 def xp_bar(xp: int, xp_max: int, length: int = 10) -> str:
     filled = int(xp / xp_max * length)
@@ -81,17 +78,13 @@ def profile_text(d: dict) -> str:
         f'│  <tg-emoji emoji-id="5341498088408234504">🎟</tg-emoji>  Опыт:    <b>{xp}/{xp_max}</b>\n'
         f"│       {xp_bar(xp, xp_max)}</b>\n"
         f"├──────────────────────────\n"
-        f'│  <tg-emoji emoji-id="5278467510604160626">🎟</tg-emoji>  <b>Баланс: {d['balance']:,} </b>\n'
+        f'│  <tg-emoji emoji-id="5278467510604160626">🎟</tg-emoji>  <b>Баланс: {d["balance"]:,} </b>\n'
         f"└──────────────────────────</b>"
     )
 
 # ---------- КЛАВИАТУРА ПРОФИЛЯ ----------
 def profile_keyboard() -> InlineKeyboardMarkup:
-    kb = InlineKeyboardMarkup(row_width=2)
-    kb.add(
-        InlineKeyboardButton("📜 История",    callback_data="profile_history"),
-        InlineKeyboardButton("🎖 Достижения", callback_data="profile_achievements"),
-    )
+    kb = InlineKeyboardMarkup()
     kb.add(InlineKeyboardButton("◀️ Назад в меню", callback_data="back_to_menu"))
     return kb
 
