@@ -16,10 +16,13 @@ EMOJI_EXCHANGE = "5402186569006210455"
 EMOJI_LEADERS = "5440539497383087970"
 EMOJI_SETTINGS = "5341715473882955310"
 
-# ---------- ТЕКСТ ДЛЯ ПРИВЕТСТВИЯ ----------
+# ---------- ТЕКСТ ДЛЯ ПРИВЕТСТВИЯ (С КЛИКАБЕЛЬНЫМИ ССЫЛКАМИ) ----------
 WELCOME_TEXT = """<b><tg-emoji emoji-id="5197288647275071607">🎟</tg-emoji>TGStellar</b> — <b>современная игровая зона, где ты можешь отвлечься от повседневных забот и полностью погрузиться в атмосферу спокойствия и развлечений.</b>
 
-<b><tg-emoji emoji-id="5222079954421818267">🎟</tg-emoji>Это пространство, где время проходит незаметно, а каждая деталь делает игру комфортной и увлекательной</b>"""
+<b><tg-emoji emoji-id="5222079954421818267">🎟</tg-emoji>Это пространство, где время проходит незаметно, а каждая деталь делает игру комфортной и увлекательной</b>
+
+<a href="https://t.me/tgstelar_chat">Наш чат</a> | <a href="https://t.me/tgstelar_news">Новости</a> | <a href="https://t.me/tgstelar_support">Поддержка</a>"""
+
 
 
 # ---------- ГЛАВНОЕ МЕНЮ ----------
@@ -65,7 +68,8 @@ def send_welcome(message):
     bot.send_message(
         message.chat.id, 
         WELCOME_TEXT, 
-        parse_mode="HTML",  # Изменено с Markdown на HTML для поддержки <b>
+        parse_mode="HTML",
+        disable_web_page_preview=True,  # Отключает превью ссылок
         reply_markup=main_menu_keyboard()
     )
 
@@ -94,7 +98,8 @@ def handle_callback(call):
                 WELCOME_TEXT,
                 chat_id,
                 message_id,
-                parse_mode="HTML",  # Изменено с Markdown на HTML
+                parse_mode="HTML",
+                disable_web_page_preview=True,
                 reply_markup=main_menu_keyboard()
             )
         except Exception as e:
