@@ -5,45 +5,46 @@ from telebot import types
 # Замените на ваш реальный токен
 bot = telebot.TeleBot('7830034926:AAFNrHEwQowWVAjhu9KvqEqmi3VACdINo1Y')
 
-# ---------- ID ПРЕМИУМ ЭМОДЗИ (нужно заменить на реальные ID из @ShowJsonBot) ----------
-EMOJI_PROFILE = "5906622905894050515"    # ID для профиля
-EMOJI_STATS = "5231200819986047254"      # ID для статистики
-EMOJI_SHOP = "5406683434124859552"       # ID для магазина
-EMOJI_MINE = "5197371802136892976"       # ID для шахты
-EMOJI_HUNT = "5424972470023104089"       # ID для охоты
-EMOJI_STATUS = "5438496463044752972"     # ID для статуса
-EMOJI_EXCHANGE = "5402186569006210455"   # ID для биржи
-EMOJI_LEADERS = "5440539497383087970"    # ID для лидеров
-EMOJI_SETTINGS = "5341715473882955310"   # ID для настроек
+# ---------- ID ПРЕМИУМ ЭМОДЗИ ----------
+EMOJI_PROFILE = "5906622905894050515"
+EMOJI_STATS = "5231200819986047254"
+EMOJI_SHOP = "5406683434124859552"
+EMOJI_MINE = "5197371802136892976"
+EMOJI_HUNT = "5424972470023104089"
+EMOJI_STATUS = "5438496463044752972"
+EMOJI_EXCHANGE = "5402186569006210455"
+EMOJI_LEADERS = "5440539497383087970"
+EMOJI_SETTINGS = "5341715473882955310"
 
-# ---------- ГЛАВНОЕ МЕНЮ (как в твоем примере) ----------
+# ---------- ГЛАВНОЕ МЕНЮ (ИСПРАВЛЕННАЯ ВЕРСИЯ) ----------
 def main_menu_keyboard() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(inline_keyboard=[
-        # Ряд 1: 3 кнопки
-        [
-            InlineKeyboardButton(text="Профиль",    callback_data="profile",  icon_custom_emoji_id=EMOJI_PROFILE),
-            InlineKeyboardButton(text="Статистика", callback_data="stats",    icon_custom_emoji_id=EMOJI_STATS),
-            InlineKeyboardButton(text="Магазин",    callback_data="shop",     icon_custom_emoji_id=EMOJI_SHOP),
-        ],
-        # Ряд 2: 1 большая кнопка Шахта
-        [
-            InlineKeyboardButton(text=" Шахта ", callback_data="mine", icon_custom_emoji_id=EMOJI_MINE),
-        ],
-        # Ряд 3: 2 кнопки
-        [
-            InlineKeyboardButton(text="Охота",  callback_data="hunt",   icon_custom_emoji_id=EMOJI_HUNT),
-            InlineKeyboardButton(text="Статус", callback_data="status", icon_custom_emoji_id=EMOJI_STATUS),
-        ],
-        # Ряд 4: 1 большая кнопка Биржа
-        [
-            InlineKeyboardButton(text=" Биржа ", callback_data="exchange", icon_custom_emoji_id=EMOJI_EXCHANGE),
-        ],
-        # Ряд 5: 2 кнопки
-        [
-            InlineKeyboardButton(text="Лидеры",   callback_data="leaders",  icon_custom_emoji_id=EMOJI_LEADERS),
-            InlineKeyboardButton(text="Настройки", callback_data="settings", icon_custom_emoji_id=EMOJI_SETTINGS),
-        ],
-    ])
+    keyboard = InlineKeyboardMarkup(row_width=3)
+    
+    # Ряд 1: 3 кнопки
+    btn1 = InlineKeyboardButton(text="Профиль", callback_data="profile", icon_custom_emoji_id=EMOJI_PROFILE)
+    btn2 = InlineKeyboardButton(text="Статистика", callback_data="stats", icon_custom_emoji_id=EMOJI_STATS)
+    btn3 = InlineKeyboardButton(text="Магазин", callback_data="shop", icon_custom_emoji_id=EMOJI_SHOP)
+    keyboard.add(btn1, btn2, btn3)
+    
+    # Ряд 2: 1 большая кнопка Шахта
+    btn4 = InlineKeyboardButton(text=" Шахта ", callback_data="mine", icon_custom_emoji_id=EMOJI_MINE)
+    keyboard.add(btn4)
+    
+    # Ряд 3: 2 кнопки
+    btn5 = InlineKeyboardButton(text="Охота", callback_data="hunt", icon_custom_emoji_id=EMOJI_HUNT)
+    btn6 = InlineKeyboardButton(text="Статус", callback_data="status", icon_custom_emoji_id=EMOJI_STATUS)
+    keyboard.add(btn5, btn6)
+    
+    # Ряд 4: 1 большая кнопка Биржа
+    btn7 = InlineKeyboardButton(text=" Биржа ", callback_data="exchange", icon_custom_emoji_id=EMOJI_EXCHANGE)
+    keyboard.add(btn7)
+    
+    # Ряд 5: 2 кнопки
+    btn8 = InlineKeyboardButton(text="Лидеры", callback_data="leaders", icon_custom_emoji_id=EMOJI_LEADERS)
+    btn9 = InlineKeyboardButton(text="Настройки", callback_data="settings", icon_custom_emoji_id=EMOJI_SETTINGS)
+    keyboard.add(btn8, btn9)
+    
+    return keyboard
 
 # ---------- ОБРАБОТЧИК КОМАНД ----------
 @bot.message_handler(commands=['start', 'menu'])
@@ -77,17 +78,19 @@ def handle_callback(call):
     
     text = responses.get(call.data, "❓ Неизвестная команда")
     
-    bot.edit_message_text(text, chat_id, message_id, parse_mode="Markdown")
-    
-    # Кнопка "Назад в меню"
+    # Отправляем новый текст с той же клавиатурой или без нее
     back_btn = InlineKeyboardMarkup()
-    back_btn.add(InlineKeyboardButton("◀️ Назад", callback_data="back_to_menu"))
-    try:
-        bot.edit_message_reply_markup(chat_id, message_id, reply_markup=back_btn)
-    except:
-        pass
+    back_btn.add(InlineKeyboardButton("◀️ Назад в меню", callback_data="back_to_menu"))
+    
+    bot.edit_message_text(
+        text, 
+        chat_id, 
+        message_id, 
+        parse_mode="Markdown",
+        reply_markup=back_btn
+    )
 
-# ---------- КНОПКА НАЗАД ----------
+# ---------- КНОПКА НАЗАД В ГЛАВНОЕ МЕНЮ ----------
 @bot.callback_query_handler(func=lambda call: call.data == "back_to_menu")
 def back_to_menu(call):
     bot.edit_message_text(
@@ -102,10 +105,10 @@ if __name__ == "__main__":
     print("🤖 Бот запущен!")
     print("━━━━━━━━━━━━━━━━━━━━━━━━━")
     print("Расположение кнопок:")
-    print("[Профиль] [Статистика] [Магазин]")
-    print("[===== ШАХТА =====]")
-    print("[Охота] [Статус]")
-    print("[===== БИРЖА =====]")
-    print("[Лидеры] [Настройки]")
+    print("1️⃣ [Профиль] [Статистика] [Магазин]")
+    print("2️⃣ [⛏️ Шахта ⛏️]")
+    print("3️⃣ [Охота] [Статус]")
+    print("4️⃣ [💱 Биржа 💱]")
+    print("5️⃣ [Лидеры] [Настройки]")
     print("━━━━━━━━━━━━━━━━━━━━━━━━━")
     bot.infinity_polling()
