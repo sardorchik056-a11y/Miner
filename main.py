@@ -16,7 +16,7 @@ EMOJI_EXCHANGE = "5402186569006210455"
 EMOJI_LEADERS = "5440539497383087970"
 EMOJI_SETTINGS = "5341715473882955310"
 
-# ---------- ГЛАВНОЕ МЕНЮ (ИСПРАВЛЕННАЯ ВЕРСИЯ) ----------
+# ---------- ГЛАВНОЕ МЕНЮ ----------
 def main_menu_keyboard() -> InlineKeyboardMarkup:
     keyboard = InlineKeyboardMarkup(row_width=3)
     
@@ -46,6 +46,12 @@ def main_menu_keyboard() -> InlineKeyboardMarkup:
     
     return keyboard
 
+# ---------- КНОПКА "НАЗАД" (ОБЩАЯ ДЛЯ ВСЕХ РАЗДЕЛОВ) ----------
+def back_button():
+    keyboard = InlineKeyboardMarkup()
+    keyboard.add(InlineKeyboardButton("◀️ Назад", callback_data="back_to_menu"))
+    return keyboard
+
 # ---------- ОБРАБОТЧИК КОМАНД ----------
 @bot.message_handler(commands=['start', 'menu'])
 def send_welcome(message):
@@ -58,7 +64,7 @@ def send_welcome(message):
     
     bot.send_message(message.chat.id, welcome_text, reply_markup=main_menu_keyboard())
 
-# ---------- ОБРАБОТЧИК ВСЕХ INLINE-КНОПОК (ЗАГЛУШКИ) ----------
+# ---------- ОБРАБОТЧИК ВСЕХ INLINE-КНОПОК ----------
 @bot.callback_query_handler(func=lambda call: True)
 def handle_callback(call):
     chat_id = call.message.chat.id
@@ -76,29 +82,36 @@ def handle_callback(call):
         "settings": "⚙️ *НАСТРОЙКИ*\n━━━━━━━━━━━━━━━━━━━━\n\n📝 Раздел в разработке...",
     }
     
+    if call.data == "back_to_menu":
+        # Возврат в главное меню
+        try:
+            bot.edit_message_text(
+                "✨ Главное меню:\n━━━━━━━━━━━━━━━━━━━━",
+                chat_id,
+                message_id,
+                reply_markup=main_menu_keyboard()
+            )
+        except Exception as e:
+            # Если сообщение уже такое же, игнорируем ошибку
+            if "message is not modified" not in str(e):
+                print(f"Ошибка: {e}")
+        return
+    
+    # Обработка остальных кнопок
     text = responses.get(call.data, "❓ Неизвестная команда")
     
-    # Отправляем новый текст с той же клавиатурой или без нее
-    back_btn = InlineKeyboardMarkup()
-    back_btn.add(InlineKeyboardButton("◀️ Назад в меню", callback_data="back_to_menu"))
-    
-    bot.edit_message_text(
-        text, 
-        chat_id, 
-        message_id, 
-        parse_mode="Markdown",
-        reply_markup=back_btn
-    )
-
-# ---------- КНОПКА НАЗАД В ГЛАВНОЕ МЕНЮ ----------
-@bot.callback_query_handler(func=lambda call: call.data == "back_to_menu")
-def back_to_menu(call):
-    bot.edit_message_text(
-        "✨ Главное меню:\n━━━━━━━━━━━━━━━━━━━━",
-        call.message.chat.id,
-        call.message.message_id,
-        reply_markup=main_menu_keyboard()
-    )
+    try:
+        bot.edit_message_text(
+            text, 
+            chat_id, 
+            message_id, 
+            parse_mode="Markdown",
+            reply_markup=back_button()
+        )
+    except Exception as e:
+        # Если сообщение уже такое же, игнорируем
+        if "message is not modified" not in str(e):
+            print(f"Ошибка: {e}")
 
 # ---------- ЗАПУСК ----------
 if __name__ == "__main__":
