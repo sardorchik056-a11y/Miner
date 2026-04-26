@@ -38,12 +38,12 @@ def days_on_project(joined_str: str) -> int:
     return (date.today() - date.fromisoformat(joined_str)).days
 
 def level_to_rank(level: int) -> str:
-    if level < 5:  return "🪨 Камень"
-    if level < 10: return "🥉 Бронза"
-    if level < 20: return "🥈 Серебро"
-    if level < 35: return "🥇 Золото"
-    if level < 50: return "💎 Алмаз"
-    return "👑 Легенда"
+    if level < 5:  return " Новичок"
+    if level < 10: return " Опытный"
+    if level < 20: return " Профи"
+    if level < 35: return " Мастер"
+    if level < 50: return " Эксперт"
+    return " Элита"
 
 def status_from_level(level: int) -> str:
     if level < 3:  return "Новичок"
