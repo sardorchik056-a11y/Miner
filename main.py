@@ -7,6 +7,8 @@ from miner import (
     ORES, PICKAXES, PICKAXES_ORDER,
     now_ts, fmt_time,
     mine_text, mine_keyboard,
+    workshop_text, workshop_keyboard,
+    sell_screen_text, sell_keyboard,
     shop_pickaxes_text, shop_pickaxes_keyboard,
     init_mine_data,
     collect_mine,
@@ -43,10 +45,9 @@ def get_or_create_user(user):
             "level":      1,
             "xp":         0,
             "xp_max":     100,
-            **mine_defaults,  # все поля шахты
+            **mine_defaults,
         }
     else:
-        # Патч: добавляем owned_pickaxes старым пользователям
         d = users_db[uid]
         if "owned_pickaxes" not in d:
             d["owned_pickaxes"] = ["wood_1"]
@@ -147,7 +148,6 @@ SHOP_TEXT = (
 
 def shop_main_keyboard() -> InlineKeyboardMarkup:
     kb = InlineKeyboardMarkup(row_width=1)
-    kb.add(InlineKeyboardButton("⛏️ Кирки", callback_data="shop_pickaxes"))
     kb.add(InlineKeyboardButton("◀️ Назад в меню", callback_data="back_to_menu"))
     return kb
 
@@ -188,6 +188,7 @@ def handle_callback(call):
         edit(SHOP_TEXT, shop_main_keyboard())
         return
 
+    # (оставлено для совместимости — если где-то остался вызов shop_pickaxes)
     if call.data == "shop_pickaxes":
         edit(shop_pickaxes_text(), shop_pickaxes_keyboard(data))
         return
@@ -195,19 +196,19 @@ def handle_callback(call):
     # ----- Купить кирку -----
     if call.data.startswith("pick_buy_"):
         pick_key = call.data.removeprefix("pick_buy_")
-        ok, msg = buy_pickaxe(data, pick_key)
+        ok, msg  = buy_pickaxe(data, pick_key)
         bot.answer_callback_query(call.id, msg, show_alert=True)
         if ok:
-            edit(shop_pickaxes_text(), shop_pickaxes_keyboard(data))
+            edit(workshop_text(data), workshop_keyboard(data))
         return
 
     # ----- Выбрать кирку -----
     if call.data.startswith("pick_select_"):
         pick_key = call.data.removeprefix("pick_select_")
-        ok, msg = select_pickaxe(data, pick_key)
+        ok, msg  = select_pickaxe(data, pick_key)
         bot.answer_callback_query(call.id, msg, show_alert=True)
         if ok:
-            edit(shop_pickaxes_text(), shop_pickaxes_keyboard(data))
+            edit(workshop_text(data), workshop_keyboard(data))
         return
 
     # ===== ШАХТА: открыть =====
@@ -243,6 +244,11 @@ def handle_callback(call):
         edit(result_text, mine_keyboard(data))
         return
 
+    # ===== ШАХТА: экран продажи =====
+    if call.data == "mine_sell_screen":
+        edit(sell_screen_text(data), sell_keyboard())
+        return
+
     # ===== ШАХТА: продать всё =====
     if call.data == "mine_sell_all":
         total, report = sell_all_ores(data)
@@ -257,6 +263,11 @@ def handle_callback(call):
             f"💳 Баланс: <b>{data['balance']:,} 💰</b>"
         )
         edit(sell_text, mine_keyboard(data))
+        return
+
+    # ===== МАСТЕРСКАЯ =====
+    if call.data == "mine_workshop":
+        edit(workshop_text(data), workshop_keyboard(data))
         return
 
     # ===== НАЗАД В МЕНЮ =====
