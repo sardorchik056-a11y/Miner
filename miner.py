@@ -21,7 +21,6 @@ ORES = [
 ORES_BY_KEY = {o["key"]: o for o in ORES}
 
 # ---------- КИРКИ ----------
-# dig_min / dig_max — диапазон подкопов за одну сессию (5 мин)
 PICKAXES = {
     "wood_1": {
         "name":           "Wood-1lvl",
@@ -66,24 +65,22 @@ PICKAXES = {
 }
 PICKAXES_ORDER = ["wood_1", "wood_2", "wood_3", "wood_4", "wood_5"]
 
-# ---------- ДЛИТЕЛЬНОСТИ СЕССИЙ ----------
-# Каждая длительность — это N кампаний по 5 мин.
-# Стоимость — разовая покупка (открыть уровень длительности навсегда).
+# ---------- ДЛИТЕЛЬНОСТИ ----------
 DURATIONS = {
-    "5min":   {"label": "5 мин",    "campaigns": 1,   "cost": 0},
-    "10min":  {"label": "10 мин",   "campaigns": 2,   "cost": 25_000},
-    "15min":  {"label": "15 мин",   "campaigns": 3,   "cost": 75_000},
-    "30min":  {"label": "30 мин",   "campaigns": 6,   "cost": 500_000},
-    "45min":  {"label": "45 мин",   "campaigns": 9,   "cost": 1_000_000},
-    "1h":     {"label": "1 час",    "campaigns": 12,  "cost": 1_500_000},
-    "2h":     {"label": "2 часа",   "campaigns": 24,  "cost": 5_000_000},
-    "4h":     {"label": "4 часа",   "campaigns": 48,  "cost": 50_000_000},
-    "12h":    {"label": "12 часов", "campaigns": 144, "cost": 350_000_000},
-    "24h":    {"label": "24 часа",  "campaigns": 288, "cost": 950_000_000},
+    "5min":  {"label": "5 мин",    "campaigns": 1,   "cost": 0},
+    "10min": {"label": "10 мин",   "campaigns": 2,   "cost": 25_000},
+    "15min": {"label": "15 мин",   "campaigns": 3,   "cost": 75_000},
+    "30min": {"label": "30 мин",   "campaigns": 6,   "cost": 500_000},
+    "45min": {"label": "45 мин",   "campaigns": 9,   "cost": 1_000_000},
+    "1h":    {"label": "1 час",    "campaigns": 12,  "cost": 1_500_000},
+    "2h":    {"label": "2 часа",   "campaigns": 24,  "cost": 5_000_000},
+    "4h":    {"label": "4 часа",   "campaigns": 48,  "cost": 50_000_000},
+    "12h":   {"label": "12 часов", "campaigns": 144, "cost": 350_000_000},
+    "24h":   {"label": "24 часа",  "campaigns": 288, "cost": 950_000_000},
 }
 DURATIONS_ORDER = ["5min", "10min", "15min", "30min", "45min", "1h", "2h", "4h", "12h", "24h"]
 
-CAMPAIGN_SECONDS = 5 * 60   # 5 минут = одна кампания
+CAMPAIGN_SECONDS = 5 * 60  # 5 минут = одна кампания
 
 
 # ---------- ВСПОМОГАТЕЛЬНЫЕ ----------
@@ -108,54 +105,42 @@ def progress_bar(percent: int, length: int = 12) -> str:
 
 
 def roll_ore(pick_key: str) -> list:
-    """
-    Один подкоп. Количество попыток = случайное число в диапазоне кирки.
-    Каждая попытка — взвешенный рандом по всем рудам.
-    """
-    pick = PICKAXES[pick_key]
-    n_digs = random.randint(pick["dig_min"], pick["dig_max"])
-    found = {}
+    pick    = PICKAXES[pick_key]
+    n_digs  = random.randint(pick["dig_min"], pick["dig_max"])
+    found   = {}
     weights = [o["weight"] for o in ORES]
     for _ in range(n_digs):
         ore = random.choices(ORES, weights=weights, k=1)[0]
         found[ore["key"]] = found.get(ore["key"], 0) + 1
-
-        # Дополнительный бонус: малый шанс второй руды в том же ударе
         for o in ORES:
             if random.random() * 100 < o["chance"] * 0.3:
                 found[o["key"]] = found.get(o["key"], 0) + 1
-
     return [(ORES_BY_KEY[k], v) for k, v in found.items()]
 
 
-def get_session_params(data: dict) -> tuple[int, int]:
-    """Возвращает (total_campaigns, total_seconds) для текущей сессии."""
-    dur = DURATIONS[data.get("mine_duration_key", "5min")]
-    campaigns = dur["campaigns"]
-    return campaigns, campaigns * CAMPAIGN_SECONDS
+def get_session_params(data: dict) -> tuple:
+    dur   = DURATIONS[data.get("mine_duration_key", "5min")]
+    camps = dur["campaigns"]
+    return camps, camps * CAMPAIGN_SECONDS
 
 
 def calc_mine_progress(data: dict) -> dict:
-    """Прогресс текущей сессии."""
     total_campaigns, total_seconds = get_session_params(data)
-    start   = float(data["mine_start"])
-    elapsed = now_ts() - start
-    elapsed = min(elapsed, total_seconds)
-
+    start          = float(data["mine_start"])
+    elapsed        = min(now_ts() - start, total_seconds)
     campaigns_done = min(int(elapsed / CAMPAIGN_SECONDS), total_campaigns)
     new_campaigns  = campaigns_done - data["mine_campaigns_done"]
     time_left      = max(0, total_seconds - elapsed)
     finished       = elapsed >= total_seconds
     percent        = min(100, int(elapsed / total_seconds * 100))
-
     return {
-        "campaigns_done": campaigns_done,
-        "new_campaigns":  new_campaigns,
-        "time_left":      int(time_left),
-        "finished":       finished,
-        "percent":        percent,
+        "campaigns_done":  campaigns_done,
+        "new_campaigns":   new_campaigns,
+        "time_left":       int(time_left),
+        "finished":        finished,
+        "percent":         percent,
         "total_campaigns": total_campaigns,
-        "total_seconds":  total_seconds,
+        "total_seconds":   total_seconds,
     }
 
 
@@ -174,36 +159,35 @@ def ore_inventory_text(data: dict) -> str:
     return "\n".join(lines)
 
 
-# ---------- ТЕКСТЫ ЭКРАНОВ ----------
+# ================================================================
+#  ТЕКСТЫ ЭКРАНОВ
+# ================================================================
 
 def mine_text(data: dict) -> str:
-    pick_key  = data.get("pickaxe", "wood_1")
-    pick      = PICKAXES[pick_key]
-    dur_key   = data.get("mine_duration_key", "5min")
-    dur       = DURATIONS[dur_key]
-    total_camps, total_sec = get_session_params(data)
+    pick_key = data.get("pickaxe", "wood_1")
+    pick     = PICKAXES[pick_key]
+    dur_key  = data.get("mine_duration_key", "5min")
+    dur      = DURATIONS[dur_key]
+    total_camps, _ = get_session_params(data)
 
-    not_started = data["mine_start"] is None or data["mine_collected"]
-
-    if not_started:
+    if data["mine_start"] is None or data["mine_collected"]:
         return (
             "⛏️ <b>ШАХТА</b>\n"
             "━━━━━━━━━━━━━━━━━━━━\n\n"
-            f"🪓 Кирка: <b>{pick['name']}</b>  ({pick['dig_min']}–{pick['dig_max']} удара за кампанию)\n"
+            f"🪓 Кирка: <b>{pick['name']}</b>  ({pick['dig_min']}–{pick['dig_max']} удара)\n"
             f"⏱ Длительность: <b>{dur['label']}</b> ({total_camps} кампаний)\n\n"
             "<b>📦 Инвентарь:</b>\n"
             f"{ore_inventory_text(data)}\n\n"
             "Нажми <b>▶️ Запустить</b> чтобы начать добычу!"
         )
 
-    prog = calc_mine_progress(data)
-    bar  = progress_bar(prog["percent"])
-
-    if prog["finished"]:
-        status = "✅ <b>Добыча завершена!</b> Забери результат."
-    else:
-        status = f"🔄 Идёт добыча... осталось <b>{fmt_time(prog['time_left'])}</b>"
-
+    prog   = calc_mine_progress(data)
+    bar    = progress_bar(prog["percent"])
+    status = (
+        "✅ <b>Добыча завершена!</b> Забери результат."
+        if prog["finished"]
+        else f"🔄 Идёт добыча... осталось <b>{fmt_time(prog['time_left'])}</b>"
+    )
     return (
         "⛏️ <b>ШАХТА</b>\n"
         "━━━━━━━━━━━━━━━━━━━━\n\n"
@@ -216,55 +200,86 @@ def mine_text(data: dict) -> str:
     )
 
 
+# ----- МАСТЕРСКАЯ: список -----
+
 def workshop_text(data: dict) -> str:
-    lines = [
+    current  = data.get("pickaxe", "wood_1")
+    cur_name = PICKAXES[current]["name"]
+    return (
         "🔨 <b>МАСТЕРСКАЯ — КИРКИ</b>\n"
         "━━━━━━━━━━━━━━━━━━━━\n\n"
+        f"💳 Баланс: <b>{data['balance']:,} 💰</b>\n"
+        f"📌 Активна: <b>{cur_name}</b>\n\n"
+        "Выбери кирку для подробностей:"
+    )
+
+
+# ----- МАСТЕРСКАЯ: карточка кирки -----
+
+def pickaxe_detail_text(data: dict, pick_key: str) -> str:
+    p     = PICKAXES[pick_key]
+    owned = data.get("owned_pickaxes", ["wood_1"])
+    cost  = "Бесплатно" if p["cost"] == 0 else f"{p['cost']:,} 💰"
+
+    if pick_key == data.get("pickaxe", "wood_1"):
+        status = "✅ Активна"
+    elif pick_key in owned:
+        status = "🔘 Куплена (не активна)"
+    else:
+        status = "🛒 Не куплена"
+
+    return (
+        f"🔨 <b>КИРКА — {p['name']}</b>\n"
+        "━━━━━━━━━━━━━━━━━━━━\n\n"
         f"💳 Баланс: <b>{data['balance']:,} 💰</b>\n\n"
-    ]
-    for key in PICKAXES_ORDER:
-        p     = PICKAXES[key]
-        owned = data.get("owned_pickaxes", ["wood_1"])
-        cost  = "Бесплатно" if p["cost"] == 0 else f"{p['cost']:,} 💰"
+        f"{p['emoji']} Название: <b>{p['name']}</b>\n"
+        f"⛏ Ударов за кампанию: <b>{p['dig_min']}–{p['dig_max']}</b>\n"
+        f"💰 Цена: <b>{cost}</b>\n"
+        f"📌 Статус: <b>{status}</b>"
+    )
 
-        if key == data.get("pickaxe", "wood_1"):
-            status = "✅ Активна"
-        elif key in owned:
-            status = "🔘 Куплена"
-        else:
-            status = f"🛒 {cost}"
 
-        lines.append(
-            f"<b>{p['emoji']} {p['name']}</b>  [{status}]\n"
-            f"  ⛏ Ударов за кампанию: <b>{p['dig_min']}–{p['dig_max']}</b>\n"
-            f"  💰 Цена: <b>{cost}</b>\n"
-        )
-    return "\n".join(lines)
-
+# ----- ДЛИТЕЛЬНОСТИ: список -----
 
 def duration_shop_text(data: dict) -> str:
-    lines = [
+    cur_key    = data.get("mine_duration_key", "5min")
+    cur_label  = DURATIONS[cur_key]["label"]
+    owned_durs = data.get("owned_durations", ["5min"])
+    owned_cnt  = len([k for k in DURATIONS_ORDER if k in owned_durs])
+    return (
         "⏱ <b>ДЛИТЕЛЬНОСТЬ СЕССИИ</b>\n"
         "━━━━━━━━━━━━━━━━━━━━\n\n"
         f"💳 Баланс: <b>{data['balance']:,} 💰</b>\n"
-        f"📌 Текущая: <b>{DURATIONS[data.get('mine_duration_key','5min')]['label']}</b>\n\n"
-    ]
+        f"📌 Активна: <b>{cur_label}</b>\n"
+        f"🔓 Открыто: <b>{owned_cnt}/{len(DURATIONS_ORDER)}</b>\n\n"
+        "Выбери длительность для подробностей:"
+    )
+
+
+# ----- ДЛИТЕЛЬНОСТИ: карточка -----
+
+def duration_detail_text(data: dict, dur_key: str) -> str:
+    d          = DURATIONS[dur_key]
     owned_durs = data.get("owned_durations", ["5min"])
-    for key in DURATIONS_ORDER:
-        d = DURATIONS[key]
-        if key == data.get("mine_duration_key", "5min"):
-            status = "✅ Активна"
-        elif key in owned_durs:
-            status = "🔘 Куплена"
-        else:
-            cost_str = "Бесплатно" if d["cost"] == 0 else f"{d['cost']:,} 💰"
-            status = f"🛒 {cost_str}"
-        lines.append(
-            f"<b>{d['label']}</b>  [{status}]\n"
-            f"  Кампаний: <b>{d['campaigns']}</b> | "
-            f"Итого: <b>{fmt_time(d['campaigns'] * CAMPAIGN_SECONDS)}</b>\n"
-        )
-    return "\n".join(lines)
+    cost_str   = "Бесплатно" if d["cost"] == 0 else f"{d['cost']:,} 💰"
+
+    if dur_key == data.get("mine_duration_key", "5min"):
+        status = "✅ Активна"
+    elif dur_key in owned_durs:
+        status = "🔘 Куплена (не активна)"
+    else:
+        status = "🛒 Не куплена"
+
+    return (
+        f"⏱ <b>ДЛИТЕЛЬНОСТЬ — {d['label']}</b>\n"
+        "━━━━━━━━━━━━━━━━━━━━\n\n"
+        f"💳 Баланс: <b>{data['balance']:,} 💰</b>\n\n"
+        f"⏱ Время сессии: <b>{d['label']}</b>\n"
+        f"🔄 Кампаний: <b>{d['campaigns']}</b> (по 5 мин каждая)\n"
+        f"⏳ Итого: <b>{fmt_time(d['campaigns'] * CAMPAIGN_SECONDS)}</b>\n"
+        f"💰 Цена: <b>{cost_str}</b>\n"
+        f"📌 Статус: <b>{status}</b>"
+    )
 
 
 def sell_screen_text(data: dict) -> str:
@@ -283,19 +298,20 @@ def sell_screen_text(data: dict) -> str:
         if qty > 0:
             worth = qty * ore["price"]
             total_value += worth
-            lines.append(f"  {ore['name']}: <b>{qty}</b> × {ore['price']:,} = <b>{worth:,} 💰</b>")
+            lines.append(f"  {ore['name']}: <b>{qty}</b> x {ore['price']:,} = <b>{worth:,} 💰</b>")
     lines.append(f"\n💳 Баланс сейчас: <b>{data['balance']:,} 💰</b>")
     lines.append(f"📈 Получишь: <b>+{total_value:,} 💰</b>")
     return "\n".join(lines)
 
 
-# ---------- КЛАВИАТУРЫ ----------
+# ================================================================
+#  КЛАВИАТУРЫ
+# ================================================================
 
 def mine_keyboard(data: dict) -> InlineKeyboardMarkup:
     kb = InlineKeyboardMarkup(row_width=2)
     is_running  = data["mine_start"] is not None and not data["mine_collected"]
     is_finished = False
-
     if is_running:
         prog        = calc_mine_progress(data)
         is_finished = prog["finished"]
@@ -305,15 +321,19 @@ def mine_keyboard(data: dict) -> InlineKeyboardMarkup:
     elif is_finished:
         kb.add(InlineKeyboardButton("🎒 Забрать добычу", callback_data="mine_collect"))
     else:
-        kb.add(InlineKeyboardButton("🔄 Обновить",           callback_data="mine_refresh"))
-        kb.add(InlineKeyboardButton("🎒 Забрать (частично)", callback_data="mine_collect"))
+        kb.add(
+            InlineKeyboardButton("🔄 Обновить",           callback_data="mine_refresh"),
+            InlineKeyboardButton("🎒 Забрать (частично)", callback_data="mine_collect"),
+        )
 
     has_ores = any(data["ores"].get(o["key"], 0) > 0 for o in ORES)
     if has_ores:
         kb.add(InlineKeyboardButton("💰 Продать", callback_data="mine_sell_screen"))
 
-    kb.add(InlineKeyboardButton("🔨 Мастерская",    callback_data="mine_workshop"))
-    kb.add(InlineKeyboardButton("⏱ Длительность",  callback_data="mine_duration_shop"))
+    kb.add(
+        InlineKeyboardButton("🔨 Мастерская",   callback_data="mine_workshop"),
+        InlineKeyboardButton("⏱ Длительность", callback_data="mine_duration_shop"),
+    )
     kb.add(InlineKeyboardButton("◀️ Назад в меню", callback_data="back_to_menu"))
     return kb
 
@@ -325,43 +345,91 @@ def sell_keyboard() -> InlineKeyboardMarkup:
     return kb
 
 
+# ----- Мастерская: сетка 3 в ряд -----
+
 def workshop_keyboard(data: dict) -> InlineKeyboardMarkup:
-    kb = InlineKeyboardMarkup(row_width=1)
+    kb      = InlineKeyboardMarkup(row_width=3)
     current = data.get("pickaxe", "wood_1")
+    owned   = data.get("owned_pickaxes", ["wood_1"])
+    buttons = []
     for key in PICKAXES_ORDER:
-        p     = PICKAXES[key]
-        owned = data.get("owned_pickaxes", ["wood_1"])
-        if key in owned or p["cost"] == 0:
-            if key == current:
-                label = f"✅ {p['name']} (активна)"
-            else:
-                label = f"🔘 {p['name']} (выбрать)"
-            cb = f"pick_select_{key}"
+        p = PICKAXES[key]
+        if key == current:
+            prefix = "✅ "
+        elif key in owned:
+            prefix = "🔘 "
         else:
-            label = f"🛒 {p['name']} — {p['cost']:,} 💰"
-            cb    = f"pick_buy_{key}"
-        kb.add(InlineKeyboardButton(label, callback_data=cb))
+            prefix = "🛒 "
+        buttons.append(
+            InlineKeyboardButton(f"{prefix}{p['name']}", callback_data=f"pick_info_{key}")
+        )
+    kb.add(*buttons)
     kb.add(InlineKeyboardButton("◀️ Назад в шахту", callback_data="mine"))
     return kb
 
 
+# ----- Мастерская: карточка кирки -----
+
+def pickaxe_detail_keyboard(data: dict, pick_key: str) -> InlineKeyboardMarkup:
+    kb    = InlineKeyboardMarkup(row_width=1)
+    p     = PICKAXES[pick_key]
+    owned = data.get("owned_pickaxes", ["wood_1"])
+
+    if pick_key == data.get("pickaxe", "wood_1"):
+        kb.add(InlineKeyboardButton("✅ Уже активна", callback_data="noop"))
+    elif pick_key in owned:
+        kb.add(InlineKeyboardButton("🔘 Выбрать эту кирку", callback_data=f"pick_select_{pick_key}"))
+    else:
+        kb.add(InlineKeyboardButton(
+            f"🛒 Купить — {p['cost']:,} 💰", callback_data=f"pick_buy_{pick_key}"
+        ))
+
+    kb.add(InlineKeyboardButton("◀️ Назад в мастерскую", callback_data="mine_workshop"))
+    return kb
+
+
+# ----- Длительности: сетка 3 в ряд -----
+
 def duration_shop_keyboard(data: dict) -> InlineKeyboardMarkup:
-    kb = InlineKeyboardMarkup(row_width=1)
-    owned_durs = data.get("owned_durations", ["5min"])
+    kb         = InlineKeyboardMarkup(row_width=3)
     current    = data.get("mine_duration_key", "5min")
+    owned_durs = data.get("owned_durations", ["5min"])
+    buttons    = []
     for key in DURATIONS_ORDER:
         d = DURATIONS[key]
-        if key in owned_durs or d["cost"] == 0:
-            if key == current:
-                label = f"✅ {d['label']} (активна)"
-            else:
-                label = f"🔘 {d['label']} (выбрать)"
-            cb = f"dur_select_{key}"
+        if key == current:
+            prefix = "✅ "
+        elif key in owned_durs:
+            prefix = "🔘 "
         else:
-            label = f"🛒 {d['label']} — {d['cost']:,} 💰"
-            cb    = f"dur_buy_{key}"
-        kb.add(InlineKeyboardButton(label, callback_data=cb))
+            prefix = "🛒 "
+        buttons.append(
+            InlineKeyboardButton(f"{prefix}{d['label']}", callback_data=f"dur_info_{key}")
+        )
+    kb.add(*buttons)
     kb.add(InlineKeyboardButton("◀️ Назад в шахту", callback_data="mine"))
+    return kb
+
+
+# ----- Длительности: карточка -----
+
+def duration_detail_keyboard(data: dict, dur_key: str) -> InlineKeyboardMarkup:
+    kb         = InlineKeyboardMarkup(row_width=1)
+    d          = DURATIONS[dur_key]
+    owned_durs = data.get("owned_durations", ["5min"])
+
+    if dur_key == data.get("mine_duration_key", "5min"):
+        kb.add(InlineKeyboardButton("✅ Уже активна", callback_data="noop"))
+    elif dur_key in owned_durs:
+        kb.add(InlineKeyboardButton(
+            "🔘 Выбрать эту длительность", callback_data=f"dur_select_{dur_key}"
+        ))
+    else:
+        kb.add(InlineKeyboardButton(
+            f"🛒 Купить — {d['cost']:,} 💰", callback_data=f"dur_buy_{dur_key}"
+        ))
+
+    kb.add(InlineKeyboardButton("◀️ Назад к длительностям", callback_data="mine_duration_shop"))
     return kb
 
 
@@ -369,9 +437,11 @@ def shop_pickaxes_keyboard(data: dict) -> InlineKeyboardMarkup:
     return workshop_keyboard(data)
 
 
-# ---------- ЛОГИКА ----------
+# ================================================================
+#  ЛОГИКА
+# ================================================================
 
-def sell_all_ores(data: dict) -> tuple[int, str]:
+def sell_all_ores(data: dict) -> tuple:
     total = 0
     lines = []
     for ore in ORES:
@@ -379,14 +449,14 @@ def sell_all_ores(data: dict) -> tuple[int, str]:
         if qty > 0:
             earned = qty * ore["price"]
             total += earned
-            lines.append(f"  {ore['name']} × {qty} → <b>{earned:,} 💰</b>")
+            lines.append(f"  {ore['name']} x {qty} - <b>{earned:,} 💰</b>")
             data["ores"][ore["key"]] = 0
     data["balance"] = data.get("balance", 0) + total
     report = "\n".join(lines) if lines else "  Нечего продавать"
     return total, report
 
 
-def buy_pickaxe(data: dict, pick_key: str) -> tuple[bool, str]:
+def buy_pickaxe(data: dict, pick_key: str) -> tuple:
     if pick_key not in PICKAXES:
         return False, "❌ Неизвестная кирка."
     p     = PICKAXES[pick_key]
@@ -400,7 +470,7 @@ def buy_pickaxe(data: dict, pick_key: str) -> tuple[bool, str]:
     return True, f"✅ Куплена {p['name']}! Потрачено: {p['cost']:,} 💰"
 
 
-def select_pickaxe(data: dict, pick_key: str) -> tuple[bool, str]:
+def select_pickaxe(data: dict, pick_key: str) -> tuple:
     owned = data.get("owned_pickaxes", ["wood_1"])
     if pick_key not in owned and PICKAXES.get(pick_key, {}).get("cost", 1) != 0:
         return False, "❌ Сначала купи эту кирку!"
@@ -410,7 +480,7 @@ def select_pickaxe(data: dict, pick_key: str) -> tuple[bool, str]:
     return True, f"✅ Выбрана {PICKAXES[pick_key]['name']}"
 
 
-def buy_duration(data: dict, dur_key: str) -> tuple[bool, str]:
+def buy_duration(data: dict, dur_key: str) -> tuple:
     if dur_key not in DURATIONS:
         return False, "❌ Неизвестная длительность."
     d     = DURATIONS[dur_key]
@@ -424,7 +494,7 @@ def buy_duration(data: dict, dur_key: str) -> tuple[bool, str]:
     return True, f"✅ Открыто: {d['label']}! Потрачено: {d['cost']:,} 💰"
 
 
-def select_duration(data: dict, dur_key: str) -> tuple[bool, str]:
+def select_duration(data: dict, dur_key: str) -> tuple:
     owned = data.get("owned_durations", ["5min"])
     if dur_key not in owned and DURATIONS.get(dur_key, {}).get("cost", 1) != 0:
         return False, "❌ Сначала купи эту длительность!"
@@ -434,8 +504,8 @@ def select_duration(data: dict, dur_key: str) -> tuple[bool, str]:
     return True, f"✅ Выбрана длительность: {DURATIONS[dur_key]['label']}"
 
 
-def collect_mine(data: dict) -> tuple[dict, str]:
-    prog         = calc_mine_progress(data)
+def collect_mine(data: dict) -> tuple:
+    prog          = calc_mine_progress(data)
     new_campaigns = prog["new_campaigns"]
 
     if new_campaigns == 0:
@@ -449,7 +519,6 @@ def collect_mine(data: dict) -> tuple[dict, str]:
             data["ores"][ore["key"]] = data["ores"].get(ore["key"], 0) + qty
 
     data["mine_campaigns_done"] = prog["campaigns_done"]
-
     if prog["finished"]:
         data["mine_collected"] = True
 
@@ -458,7 +527,6 @@ def collect_mine(data: dict) -> tuple[dict, str]:
         if results else "  Ничего не нашли 😔"
     )
     bar = progress_bar(prog["percent"])
-
     result_text = (
         f"⛏️ <b>РЕЗУЛЬТАТ ДОБЫЧИ</b>\n"
         f"━━━━━━━━━━━━━━━━━━━━\n"
@@ -474,18 +542,20 @@ def collect_mine(data: dict) -> tuple[dict, str]:
     return prog, result_text
 
 
-# ---------- ИНИЦИАЛИЗАЦИЯ ----------
+# ================================================================
+#  ИНИЦИАЛИЗАЦИЯ
+# ================================================================
 
 def init_mine_data() -> dict:
     return {
-        "ores":               {o["key"]: 0 for o in ORES},
-        "pickaxe":            "wood_1",
-        "owned_pickaxes":     ["wood_1"],
-        "mine_duration_key":  "5min",
-        "owned_durations":    ["5min"],
-        "mine_start":         None,
+        "ores":                {o["key"]: 0 for o in ORES},
+        "pickaxe":             "wood_1",
+        "owned_pickaxes":      ["wood_1"],
+        "mine_duration_key":   "5min",
+        "owned_durations":     ["5min"],
+        "mine_start":          None,
         "mine_campaigns_done": 0,
-        "mine_collected":     False,
+        "mine_collected":      False,
     }
 
 
