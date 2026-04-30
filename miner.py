@@ -6,6 +6,11 @@ import random
 from datetime import datetime, timezone
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
+# ---------- ЭМОДЗИ ДЛЯ КНОПОК ----------
+EMOJI_NOT_BOUGHT  = "5406683434124859552"   # не куплено
+EMOJI_SELECTED    = "5206607081334906820"   # выбрано / активно
+EMOJI_BACK        = "6039539366177541657"   # назад
+
 # ---------- РУДЫ ----------
 ORES = [
     {"name": "🪨 Камень",  "key": "stone",    "chance": 75.00, "weight": 500, "price": 100},
@@ -308,6 +313,15 @@ def sell_screen_text(data: dict) -> str:
 #  КЛАВИАТУРЫ
 # ================================================================
 
+def _back_btn(callback: str, label: str = "Назад") -> InlineKeyboardButton:
+    """Кнопка назад с премиум эмодзи."""
+    return InlineKeyboardButton(
+        label,
+        callback_data=callback,
+        icon_custom_emoji_id=EMOJI_BACK
+    )
+
+
 def mine_keyboard(data: dict) -> InlineKeyboardMarkup:
     kb = InlineKeyboardMarkup(row_width=2)
     is_running  = data["mine_start"] is not None and not data["mine_collected"]
@@ -334,14 +348,14 @@ def mine_keyboard(data: dict) -> InlineKeyboardMarkup:
         InlineKeyboardButton("🔨 Мастерская",   callback_data="mine_workshop"),
         InlineKeyboardButton("⏱ Длительность", callback_data="mine_duration_shop"),
     )
-    kb.add(InlineKeyboardButton("◀️ Назад в меню", callback_data="back_to_menu"))
+    kb.add(_back_btn("back_to_menu", "Назад"))
     return kb
 
 
 def sell_keyboard() -> InlineKeyboardMarkup:
     kb = InlineKeyboardMarkup(row_width=1)
-    kb.add(InlineKeyboardButton("✅ Продать всё",   callback_data="mine_sell_all"))
-    kb.add(InlineKeyboardButton("◀️ Назад в шахту", callback_data="mine"))
+    kb.add(InlineKeyboardButton("✅ Продать всё", callback_data="mine_sell_all"))
+    kb.add(_back_btn("mine", "Назад"))
     return kb
 
 
@@ -355,16 +369,27 @@ def workshop_keyboard(data: dict) -> InlineKeyboardMarkup:
     for key in PICKAXES_ORDER:
         p = PICKAXES[key]
         if key == current:
-            prefix = "✅ "
+            # Выбрано — премиум эмодзи "выбрано"
+            buttons.append(InlineKeyboardButton(
+                p["name"],
+                callback_data=f"pick_info_{key}",
+                icon_custom_emoji_id=EMOJI_SELECTED
+            ))
         elif key in owned:
-            prefix = "🔘 "
+            # Куплено но не выбрано — без эмодзи, просто текст
+            buttons.append(InlineKeyboardButton(
+                p["name"],
+                callback_data=f"pick_info_{key}"
+            ))
         else:
-            prefix = "🛒 "
-        buttons.append(
-            InlineKeyboardButton(f"{prefix}{p['name']}", callback_data=f"pick_info_{key}")
-        )
+            # Не куплено — премиум эмодзи "не куплено"
+            buttons.append(InlineKeyboardButton(
+                p["name"],
+                callback_data=f"pick_info_{key}",
+                icon_custom_emoji_id=EMOJI_NOT_BOUGHT
+            ))
     kb.add(*buttons)
-    kb.add(InlineKeyboardButton("◀️ Назад в шахту", callback_data="mine"))
+    kb.add(_back_btn("mine", "Назад"))
     return kb
 
 
@@ -384,7 +409,7 @@ def pickaxe_detail_keyboard(data: dict, pick_key: str) -> InlineKeyboardMarkup:
             f"🛒 Купить — {p['cost']:,} 💰", callback_data=f"pick_buy_{pick_key}"
         ))
 
-    kb.add(InlineKeyboardButton("◀️ Назад в мастерскую", callback_data="mine_workshop"))
+    kb.add(_back_btn("mine_workshop", "Назад"))
     return kb
 
 
@@ -398,16 +423,27 @@ def duration_shop_keyboard(data: dict) -> InlineKeyboardMarkup:
     for key in DURATIONS_ORDER:
         d = DURATIONS[key]
         if key == current:
-            prefix = "✅ "
+            # Выбрано — премиум эмодзи "выбрано"
+            buttons.append(InlineKeyboardButton(
+                d["label"],
+                callback_data=f"dur_info_{key}",
+                icon_custom_emoji_id=EMOJI_SELECTED
+            ))
         elif key in owned_durs:
-            prefix = "🔘 "
+            # Куплено но не выбрано — без эмодзи, просто текст
+            buttons.append(InlineKeyboardButton(
+                d["label"],
+                callback_data=f"dur_info_{key}"
+            ))
         else:
-            prefix = "🛒 "
-        buttons.append(
-            InlineKeyboardButton(f"{prefix}{d['label']}", callback_data=f"dur_info_{key}")
-        )
+            # Не куплено — премиум эмодзи "не куплено"
+            buttons.append(InlineKeyboardButton(
+                d["label"],
+                callback_data=f"dur_info_{key}",
+                icon_custom_emoji_id=EMOJI_NOT_BOUGHT
+            ))
     kb.add(*buttons)
-    kb.add(InlineKeyboardButton("◀️ Назад в шахту", callback_data="mine"))
+    kb.add(_back_btn("mine", "Назад"))
     return kb
 
 
@@ -429,7 +465,7 @@ def duration_detail_keyboard(data: dict, dur_key: str) -> InlineKeyboardMarkup:
             f"🛒 Купить — {d['cost']:,} 💰", callback_data=f"dur_buy_{dur_key}"
         ))
 
-    kb.add(InlineKeyboardButton("◀️ Назад к длительностям", callback_data="mine_duration_shop"))
+    kb.add(_back_btn("mine_duration_shop", "Назад"))
     return kb
 
 
