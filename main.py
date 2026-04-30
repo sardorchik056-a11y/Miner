@@ -18,11 +18,12 @@ from miner import (
     sell_all_ores,
     buy_pickaxe, select_pickaxe,
     buy_duration, select_duration,
+    EMOJI_BACK,
 )
 
 bot = telebot.TeleBot('7830034926:AAFNrHEwQowWVAjhu9KvqEqmi3VACdINo1Y')
 
-# ---------- ЭМОДЗИ ----------
+# ---------- ЭМОДЗИ ГЛАВНОГО МЕНЮ ----------
 EMOJI_PROFILE  = "5906622905894050515"
 EMOJI_STATS    = "5231200819986047254"
 EMOJI_SHOP     = "5406683434124859552"
@@ -38,6 +39,10 @@ WELCOME_TEXT = """<blockquote><b><tg-emoji emoji-id="5197288647275071607">🎟</
 <blockquote><b><tg-emoji emoji-id="5222079954421818267">🎟</tg-emoji>Это пространство, где время проходит незаметно, а каждая деталь делает игру комфортной и увлекательной</b></blockquote>
 
 <tg-emoji emoji-id="5357069174512303778">🎟</tg-emoji><b><a href="https://t.me/tgstelar_chat">Тех. поддержка</a> | <a href="https://t.me/tgstelar_news">Новости</a> | <a href="https://t.me/tgstelar_support">Наш чат</a></b>"""
+
+
+def _back_btn(callback: str, label: str = "Назад") -> InlineKeyboardButton:
+    return InlineKeyboardButton(label, callback_data=callback, icon_custom_emoji_id=EMOJI_BACK)
 
 
 def main_menu_keyboard() -> InlineKeyboardMarkup:
@@ -62,13 +67,13 @@ def main_menu_keyboard() -> InlineKeyboardMarkup:
 
 def profile_keyboard() -> InlineKeyboardMarkup:
     kb = InlineKeyboardMarkup()
-    kb.add(InlineKeyboardButton("◀️ Назад в меню", callback_data="back_to_menu"))
+    kb.add(_back_btn("back_to_menu", "Назад"))
     return kb
 
 
 def back_button() -> InlineKeyboardMarkup:
     kb = InlineKeyboardMarkup()
-    kb.add(InlineKeyboardButton("◀️ Назад в меню", callback_data="back_to_menu"))
+    kb.add(_back_btn("back_to_menu", "Назад"))
     return kb
 
 
@@ -77,7 +82,7 @@ SHOP_TEXT = "🛒 <b>МАГАЗИН</b>\n━━━━━━━━━━━━━
 
 def shop_main_keyboard() -> InlineKeyboardMarkup:
     kb = InlineKeyboardMarkup(row_width=1)
-    kb.add(InlineKeyboardButton("◀️ Назад в меню", callback_data="back_to_menu"))
+    kb.add(_back_btn("back_to_menu", "Назад"))
     return kb
 
 
@@ -116,7 +121,7 @@ def handle_callback(call):
 
     cd = call.data
 
-    # ===== NOOP (заглушка для неактивных кнопок) =====
+    # ===== NOOP =====
     if cd == "noop":
         bot.answer_callback_query(call.id)
         return
@@ -146,7 +151,6 @@ def handle_callback(call):
         pick_key = cd.removeprefix("pick_buy_")
         ok, msg  = buy_pickaxe(data, pick_key)
         bot.answer_callback_query(call.id, msg, show_alert=True)
-        # Обновить карточку (статус изменился)
         edit(pickaxe_detail_text(data, pick_key), pickaxe_detail_keyboard(data, pick_key))
         return
 
