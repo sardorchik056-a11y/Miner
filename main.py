@@ -1,19 +1,22 @@
 import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
-from datetime import date, datetime, timezone
 
-# ====== ИМПОРТ МОДУЛЯ ШАХТЫ ======
+# ====== ИМПОРТ МОДУЛЕЙ ======
+from database import get_or_create_user, profile_text
 from miner import (
     ORES, PICKAXES, PICKAXES_ORDER,
+    DURATIONS, DURATIONS_ORDER,
     now_ts, fmt_time,
     mine_text, mine_keyboard,
     workshop_text, workshop_keyboard,
+    duration_shop_text, duration_shop_keyboard,
     sell_screen_text, sell_keyboard,
     shop_pickaxes_text, shop_pickaxes_keyboard,
     init_mine_data,
     collect_mine,
     sell_all_ores,
     buy_pickaxe, select_pickaxe,
+    buy_duration, select_duration,
 )
 
 bot = telebot.TeleBot('7830034926:AAFNrHEwQowWVAjhu9KvqEqmi3VACdINo1Y')
@@ -29,84 +32,6 @@ EMOJI_EXCHANGE = "5402186569006210455"
 EMOJI_LEADERS  = "5440539497383087970"
 EMOJI_SETTINGS = "5341715473882955310"
 
-# ---------- БАЗА ПОЛЬЗОВАТЕЛЕЙ ----------
-users_db = {}
-
-def get_or_create_user(user):
-    uid = user.id
-    if uid not in users_db:
-        mine_defaults = init_mine_data()
-        users_db[uid] = {
-            "id":         uid,
-            "username":   user.username or "Аноним",
-            "first_name": user.first_name or "",
-            "joined":     date.today().isoformat(),
-            "balance":    0,
-            "level":      1,
-            "xp":         0,
-            "xp_max":     100,
-            **mine_defaults,
-        }
-    else:
-        d = users_db[uid]
-        if "owned_pickaxes" not in d:
-            d["owned_pickaxes"] = ["wood_1"]
-    return users_db[uid]
-
-# ---------- ВСПОМОГАТЕЛЬНЫЕ ----------
-def days_on_project(joined_str: str) -> int:
-    return (date.today() - date.fromisoformat(joined_str)).days
-
-def level_to_rank(level: int) -> str:
-    if level < 5:  return "Новичок"
-    if level < 10: return "Опытный"
-    if level < 20: return "Профи"
-    if level < 35: return "Мастер"
-    if level < 50: return "Эксперт"
-    return "Элита"
-
-def status_from_level(level: int) -> str:
-    if level < 10: return "Standart"
-    if level < 25: return "VIP"
-    return "Premium"
-
-def xp_bar(xp: int, xp_max: int, length: int = 10) -> str:
-    filled = int(xp / xp_max * length)
-    return "[" + "█" * filled + "░" * (length - filled) + "]"
-
-# ---------- ТЕКСТ ПРОФИЛЯ ----------
-def profile_text(d: dict) -> str:
-    uid    = d["id"]
-    name   = d["first_name"] or d["username"]
-    uname  = f"@{d['username']}" if d["username"] != "Аноним" else "—"
-    days   = days_on_project(d["joined"])
-    level  = d["level"]
-    xp     = d["xp"]
-    xp_max = d["xp_max"]
-
-    return (
-        f"<b>┌──────────────────────────\n"
-        f'│  <tg-emoji emoji-id="5906581476639513176">🎟</tg-emoji>  <b>{name}</b>\n'
-        f'│  <tg-emoji emoji-id="5282843764451195532">🎟</tg-emoji>  <code>{uid}</code>\n'
-        f'│  <tg-emoji emoji-id="5323442290708985472">🎟</tg-emoji>  {uname}</b>\n'
-        f"├──────────────────────────\n"
-        f'│  <tg-emoji emoji-id="5415655814079723871">🎟</tg-emoji>  Ранг:    <b>{level_to_rank(level)}</b>\n'
-        f'│  <tg-emoji emoji-id="5438496463044752972">🎟</tg-emoji>  Статус:  <b>{status_from_level(level)}</b>\n'
-        f'│  <tg-emoji emoji-id="5274055917766202507">🎟</tg-emoji>  Дней:    <b>{days}</b>\n'
-        f"├──────────────────────────\n"
-        f'│  <tg-emoji emoji-id="5375338737028841420">🎟</tg-emoji>  Уровень: <b>{level}</b>\n'
-        f'│  <tg-emoji emoji-id="5341498088408234504">🎟</tg-emoji>  Опыт:    <b>{xp}/{xp_max}</b>\n'
-        f"│       {xp_bar(xp, xp_max)}\n"
-        f"├──────────────────────────\n"
-        f'│  <tg-emoji emoji-id="5278467510604160626">🎟</tg-emoji>  Баланс: <b>{d["balance"]:,} 💰</b>\n'
-        f"└──────────────────────────</b>"
-    )
-
-def profile_keyboard() -> InlineKeyboardMarkup:
-    kb = InlineKeyboardMarkup()
-    kb.add(InlineKeyboardButton("◀️ Назад в меню", callback_data="back_to_menu"))
-    return kb
-
 # ---------- ПРИВЕТСТВЕННЫЙ ТЕКСТ ----------
 WELCOME_TEXT = """<blockquote><b><tg-emoji emoji-id="5197288647275071607">🎟</tg-emoji>TGStellar</b> — <b>современная игровая зона, где ты можешь отвлечься от повседневных забот и полностью погрузиться в атмосферу спокойствия и развлечений.</b></blockquote>
 
@@ -114,7 +39,8 @@ WELCOME_TEXT = """<blockquote><b><tg-emoji emoji-id="5197288647275071607">🎟</
 
 <tg-emoji emoji-id="5357069174512303778">🎟</tg-emoji><b><a href="https://t.me/tgstelar_chat">Тех. поддержка</a> | <a href="https://t.me/tgstelar_news">Новости</a> | <a href="https://t.me/tgstelar_support">Наш чат</a></b>"""
 
-# ---------- ГЛАВНОЕ МЕНЮ ----------
+# ---------- КЛАВИАТУРЫ ----------
+
 def main_menu_keyboard() -> InlineKeyboardMarkup:
     keyboard = InlineKeyboardMarkup(row_width=3)
     keyboard.add(
@@ -134,24 +60,29 @@ def main_menu_keyboard() -> InlineKeyboardMarkup:
     )
     return keyboard
 
+
+def profile_keyboard() -> InlineKeyboardMarkup:
+    kb = InlineKeyboardMarkup()
+    kb.add(InlineKeyboardButton("◀️ Назад в меню", callback_data="back_to_menu"))
+    return kb
+
+
 def back_button() -> InlineKeyboardMarkup:
     kb = InlineKeyboardMarkup()
     kb.add(InlineKeyboardButton("◀️ Назад в меню", callback_data="back_to_menu"))
     return kb
 
-# ---------- МАГАЗИН: главная страница ----------
-SHOP_TEXT = (
-    "🛒 <b>МАГАЗИН</b>\n"
-    "━━━━━━━━━━━━━━━━━━━━\n\n"
-    "Выбери категорию:"
-)
+
+SHOP_TEXT = "🛒 <b>МАГАЗИН</b>\n━━━━━━━━━━━━━━━━━━━━\n\nВыбери категорию:"
 
 def shop_main_keyboard() -> InlineKeyboardMarkup:
     kb = InlineKeyboardMarkup(row_width=1)
     kb.add(InlineKeyboardButton("◀️ Назад в меню", callback_data="back_to_menu"))
     return kb
 
-# ---------- ОБРАБОТЧИК КОМАНД ----------
+
+# ---------- КОМАНДЫ ----------
+
 @bot.message_handler(commands=['start', 'menu'])
 def send_welcome(message):
     get_or_create_user(message.from_user)
@@ -163,7 +94,9 @@ def send_welcome(message):
         reply_markup=main_menu_keyboard()
     )
 
-# ---------- INLINE-КНОПКИ ----------
+
+# ---------- CALLBACK HANDLER ----------
+
 @bot.callback_query_handler(func=lambda call: True)
 def handle_callback(call):
     chat_id    = call.message.chat.id
@@ -173,7 +106,12 @@ def handle_callback(call):
 
     def edit(text, kb, md="HTML"):
         try:
-            bot.edit_message_text(text, chat_id, message_id, parse_mode=md, reply_markup=kb)
+            bot.edit_message_text(
+                text, chat_id, message_id,
+                parse_mode=md,
+                reply_markup=kb,
+                disable_web_page_preview=True
+            )
         except Exception as e:
             if "message is not modified" not in str(e):
                 print(e)
@@ -188,12 +126,11 @@ def handle_callback(call):
         edit(SHOP_TEXT, shop_main_keyboard())
         return
 
-    # (оставлено для совместимости — если где-то остался вызов shop_pickaxes)
     if call.data == "shop_pickaxes":
         edit(shop_pickaxes_text(), shop_pickaxes_keyboard(data))
         return
 
-    # ----- Купить кирку -----
+    # ===== КИРКИ: купить =====
     if call.data.startswith("pick_buy_"):
         pick_key = call.data.removeprefix("pick_buy_")
         ok, msg  = buy_pickaxe(data, pick_key)
@@ -202,13 +139,31 @@ def handle_callback(call):
             edit(workshop_text(data), workshop_keyboard(data))
         return
 
-    # ----- Выбрать кирку -----
+    # ===== КИРКИ: выбрать =====
     if call.data.startswith("pick_select_"):
         pick_key = call.data.removeprefix("pick_select_")
         ok, msg  = select_pickaxe(data, pick_key)
         bot.answer_callback_query(call.id, msg, show_alert=True)
         if ok:
             edit(workshop_text(data), workshop_keyboard(data))
+        return
+
+    # ===== ДЛИТЕЛЬНОСТЬ: купить =====
+    if call.data.startswith("dur_buy_"):
+        dur_key = call.data.removeprefix("dur_buy_")
+        ok, msg = buy_duration(data, dur_key)
+        bot.answer_callback_query(call.id, msg, show_alert=True)
+        if ok:
+            edit(duration_shop_text(data), duration_shop_keyboard(data))
+        return
+
+    # ===== ДЛИТЕЛЬНОСТЬ: выбрать =====
+    if call.data.startswith("dur_select_"):
+        dur_key = call.data.removeprefix("dur_select_")
+        ok, msg = select_duration(data, dur_key)
+        bot.answer_callback_query(call.id, msg, show_alert=True)
+        if ok:
+            edit(duration_shop_text(data), duration_shop_keyboard(data))
         return
 
     # ===== ШАХТА: открыть =====
@@ -221,9 +176,9 @@ def handle_callback(call):
         if data["mine_start"] is not None and not data["mine_collected"]:
             bot.answer_callback_query(call.id, "⛏️ Шахта уже работает!", show_alert=True)
             return
-        data["mine_start"]     = now_ts()
-        data["mine_digs"]      = 0
-        data["mine_collected"] = False
+        data["mine_start"]          = now_ts()
+        data["mine_campaigns_done"] = 0
+        data["mine_collected"]      = False
         edit(mine_text(data), mine_keyboard(data))
         return
 
@@ -239,7 +194,7 @@ def handle_callback(call):
             return
         prog, result_text = collect_mine(data)
         if not result_text:
-            bot.answer_callback_query(call.id, "⏳ Ещё ни одного подкопа не прошло!", show_alert=True)
+            bot.answer_callback_query(call.id, "⏳ Ещё ни одной кампании не завершено!", show_alert=True)
             return
         edit(result_text, mine_keyboard(data))
         return
@@ -268,6 +223,11 @@ def handle_callback(call):
     # ===== МАСТЕРСКАЯ =====
     if call.data == "mine_workshop":
         edit(workshop_text(data), workshop_keyboard(data))
+        return
+
+    # ===== МАГАЗИН ДЛИТЕЛЬНОСТЕЙ =====
+    if call.data == "mine_duration_shop":
+        edit(duration_shop_text(data), duration_shop_keyboard(data))
         return
 
     # ===== НАЗАД В МЕНЮ =====
@@ -302,6 +262,7 @@ def handle_callback(call):
     except Exception as e:
         if "message is not modified" not in str(e):
             print(e)
+
 
 # ---------- ЗАПУСК ----------
 if __name__ == "__main__":
