@@ -11,6 +11,8 @@ EMOJI_NOT_BOUGHT  = "5406683434124859552"   # не куплено
 EMOJI_SELECTED    = "5206607081334906820"   # выбрано / активно
 EMOJI_BACK        = "6039539366177541657"   # назад
 
+MAX_LEVEL = 75
+
 # ---------- РУДЫ ----------
 ORES = [
     {"name": "🪨 Камень",  "key": "stone",    "chance": 75.00, "weight": 500, "price": 100},
@@ -86,6 +88,7 @@ DURATIONS = {
 DURATIONS_ORDER = ["5min", "10min", "15min", "30min", "45min", "1h", "2h", "4h", "12h", "24h"]
 
 CAMPAIGN_SECONDS = 5 * 60  # 5 минут = одна кампания
+XP_PER_ORE      = 20       # XP за каждую единицу руды
 
 
 # ---------- ВСПОМОГАТЕЛЬНЫЕ ----------
@@ -107,6 +110,40 @@ def fmt_time(seconds: int) -> str:
 def progress_bar(percent: int, length: int = 12) -> str:
     filled = int(percent / 100 * length)
     return "[" + "█" * filled + "░" * (length - filled) + f"] {percent}%"
+
+
+def xp_for_level(level: int) -> int:
+    """XP необходимый для достижения level+1. Уровень 1→2: 100 XP, далее +35% каждый уровень."""
+    return int(100 * (1.35 ** (level - 1)))
+
+
+def add_xp(data: dict, amount: int):
+    """Начислить XP игроку. Тихо обновляет level/xp/xp_max. Максимальный уровень — MAX_LEVEL."""
+    if data.get("level", 1) >= MAX_LEVEL:
+        # На максимальном уровне XP заморожен
+        data["xp"]     = data.get("xp_max", xp_for_level(MAX_LEVEL))
+        data["xp_max"] = data.get("xp_max", xp_for_level(MAX_LEVEL))
+        return
+
+    data["xp"] = data.get("xp", 0) + amount
+
+    while True:
+        current_level = data.get("level", 1)
+        if current_level >= MAX_LEVEL:
+            # Достигнут максимальный уровень — фиксируем
+            data["level"]  = MAX_LEVEL
+            data["xp_max"] = xp_for_level(MAX_LEVEL)
+            data["xp"]     = data["xp_max"]
+            break
+
+        needed = xp_for_level(current_level)
+        data["xp_max"] = needed
+
+        if data["xp"] >= needed:
+            data["xp"]    -= needed
+            data["level"]  = current_level + 1
+        else:
+            break
 
 
 def roll_ore(pick_key: str) -> list:
@@ -314,7 +351,6 @@ def sell_screen_text(data: dict) -> str:
 # ================================================================
 
 def _back_btn(callback: str, label: str = "Назад") -> InlineKeyboardButton:
-    """Кнопка назад с премиум эмодзи."""
     return InlineKeyboardButton(
         label,
         callback_data=callback,
@@ -359,8 +395,6 @@ def sell_keyboard() -> InlineKeyboardMarkup:
     return kb
 
 
-# ----- Мастерская: сетка 3 в ряд -----
-
 def workshop_keyboard(data: dict) -> InlineKeyboardMarkup:
     kb      = InlineKeyboardMarkup(row_width=3)
     current = data.get("pickaxe", "wood_1")
@@ -369,20 +403,17 @@ def workshop_keyboard(data: dict) -> InlineKeyboardMarkup:
     for key in PICKAXES_ORDER:
         p = PICKAXES[key]
         if key == current:
-            # Выбрано — премиум эмодзи "выбрано"
             buttons.append(InlineKeyboardButton(
                 p["name"],
                 callback_data=f"pick_info_{key}",
                 icon_custom_emoji_id=EMOJI_SELECTED
             ))
         elif key in owned:
-            # Куплено но не выбрано — без эмодзи, просто текст
             buttons.append(InlineKeyboardButton(
                 p["name"],
                 callback_data=f"pick_info_{key}"
             ))
         else:
-            # Не куплено — премиум эмодзи "не куплено"
             buttons.append(InlineKeyboardButton(
                 p["name"],
                 callback_data=f"pick_info_{key}",
@@ -392,8 +423,6 @@ def workshop_keyboard(data: dict) -> InlineKeyboardMarkup:
     kb.add(_back_btn("mine", "Назад"))
     return kb
 
-
-# ----- Мастерская: карточка кирки -----
 
 def pickaxe_detail_keyboard(data: dict, pick_key: str) -> InlineKeyboardMarkup:
     kb    = InlineKeyboardMarkup(row_width=1)
@@ -413,8 +442,6 @@ def pickaxe_detail_keyboard(data: dict, pick_key: str) -> InlineKeyboardMarkup:
     return kb
 
 
-# ----- Длительности: сетка 3 в ряд -----
-
 def duration_shop_keyboard(data: dict) -> InlineKeyboardMarkup:
     kb         = InlineKeyboardMarkup(row_width=3)
     current    = data.get("mine_duration_key", "5min")
@@ -423,20 +450,17 @@ def duration_shop_keyboard(data: dict) -> InlineKeyboardMarkup:
     for key in DURATIONS_ORDER:
         d = DURATIONS[key]
         if key == current:
-            # Выбрано — премиум эмодзи "выбрано"
             buttons.append(InlineKeyboardButton(
                 d["label"],
                 callback_data=f"dur_info_{key}",
                 icon_custom_emoji_id=EMOJI_SELECTED
             ))
         elif key in owned_durs:
-            # Куплено но не выбрано — без эмодзи, просто текст
             buttons.append(InlineKeyboardButton(
                 d["label"],
                 callback_data=f"dur_info_{key}"
             ))
         else:
-            # Не куплено — премиум эмодзи "не куплено"
             buttons.append(InlineKeyboardButton(
                 d["label"],
                 callback_data=f"dur_info_{key}",
@@ -446,8 +470,6 @@ def duration_shop_keyboard(data: dict) -> InlineKeyboardMarkup:
     kb.add(_back_btn("mine", "Назад"))
     return kb
 
-
-# ----- Длительности: карточка -----
 
 def duration_detail_keyboard(data: dict, dur_key: str) -> InlineKeyboardMarkup:
     kb         = InlineKeyboardMarkup(row_width=1)
@@ -557,6 +579,10 @@ def collect_mine(data: dict) -> tuple:
     data["mine_campaigns_done"] = prog["campaigns_done"]
     if prog["finished"]:
         data["mine_collected"] = True
+
+    # Начисляем XP — 20 за каждую единицу руды, тихо в фоне
+    total_ore_count = sum(results.values())
+    add_xp(data, total_ore_count * XP_PER_ORE)
 
     loot = (
         "\n".join(f"  {n}: <b>+{q}</b>" for n, q in results.items())
