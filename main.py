@@ -21,7 +21,7 @@ from miner import (
     EMOJI_BACK,
 )
 
-bot = telebot.TeleBot('7830034926:AAFNrHEwQowWVAjhu9KvqEqmi3VACdINo1Y')
+bot = telebot.TeleBot('7830034926:AAEMq-fRCG1OtoTwUh248QySdo8-S0sV4p8')
 
 # ---------- ЭМОДЗИ ГЛАВНОГО МЕНЮ ----------
 EMOJI_PROFILE  = "5906622905894050515"
