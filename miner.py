@@ -10,6 +10,9 @@ from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 EMOJI_NOT_BOUGHT  = "5406683434124859552"   # не куплено
 EMOJI_SELECTED    = "5206607081334906820"   # выбрано / активно
 EMOJI_BACK        = "6039539366177541657"   # назад
+EMOJI_COIN        = "5199552030615558774"   # монета
+
+COIN = f'<tg-emoji emoji-id="{EMOJI_COIN}">💰</tg-emoji>'
 
 MAX_LEVEL = 75
 
@@ -28,7 +31,10 @@ ORES = [
 ORES_BY_KEY = {o["key"]: o for o in ORES}
 
 # ---------- КИРКИ ----------
+# Wood tier:  базовый, 1–12 ударов, до 100k монет
+# Rock tier:  следующий уровень, 7–60 ударов, до 20M монет
 PICKAXES = {
+    # ── WOOD ──────────────────────────────────────────────────
     "wood_1": {
         "name":           "Wood-1lvl",
         "emoji":          "🪓",
@@ -69,8 +75,57 @@ PICKAXES = {
         "cost":           100_000,
         "required_level": 1,
     },
+    # ── ROCK ──────────────────────────────────────────────────
+    # Rock-1: чуть лучше Wood-5, старт нового тира
+    "rock_1": {
+        "name":           "Rock-1lvl",
+        "emoji":          "⛏️",
+        "dig_min":        7,
+        "dig_max":        16,
+        "cost":           350_000,
+        "required_level": 1,
+    },
+    # Rock-2: заметный прыжок
+    "rock_2": {
+        "name":           "Rock-2lvl",
+        "emoji":          "⛏️",
+        "dig_min":        10,
+        "dig_max":        22,
+        "cost":           900_000,
+        "required_level": 1,
+    },
+    # Rock-3: средний rock
+    "rock_3": {
+        "name":           "Rock-3lvl",
+        "emoji":          "⛏️",
+        "dig_min":        14,
+        "dig_max":        30,
+        "cost":           2_500_000,
+        "required_level": 1,
+    },
+    # Rock-4: сильный
+    "rock_4": {
+        "name":           "Rock-4lvl",
+        "emoji":          "⛏️",
+        "dig_min":        20,
+        "dig_max":        42,
+        "cost":           7_000_000,
+        "required_level": 1,
+    },
+    # Rock-5: топ тира, мощная кирка
+    "rock_5": {
+        "name":           "Rock-5lvl",
+        "emoji":          "⛏️",
+        "dig_min":        28,
+        "dig_max":        60,
+        "cost":           20_000_000,
+        "required_level": 1,
+    },
 }
-PICKAXES_ORDER = ["wood_1", "wood_2", "wood_3", "wood_4", "wood_5"]
+PICKAXES_ORDER = [
+    "wood_1", "wood_2", "wood_3", "wood_4", "wood_5",
+    "rock_1", "rock_2", "rock_3", "rock_4", "rock_5",
+]
 
 # ---------- ДЛИТЕЛЬНОСТИ ----------
 DURATIONS = {
@@ -113,14 +168,13 @@ def progress_bar(percent: int, length: int = 12) -> str:
 
 
 def xp_for_level(level: int) -> int:
-    """XP необходимый для достижения level+1. Уровень 1→2: 100 XP, далее +35% каждый уровень."""
+    """XP для перехода level → level+1. Уровень 1→2: 100 XP, далее +35%."""
     return int(100 * (1.35 ** (level - 1)))
 
 
 def add_xp(data: dict, amount: int):
-    """Начислить XP игроку. Тихо обновляет level/xp/xp_max. Максимальный уровень — MAX_LEVEL."""
+    """Начислить XP. Тихо обновляет level/xp/xp_max. Макс уровень — MAX_LEVEL."""
     if data.get("level", 1) >= MAX_LEVEL:
-        # На максимальном уровне XP заморожен
         data["xp"]     = data.get("xp_max", xp_for_level(MAX_LEVEL))
         data["xp_max"] = data.get("xp_max", xp_for_level(MAX_LEVEL))
         return
@@ -130,7 +184,6 @@ def add_xp(data: dict, amount: int):
     while True:
         current_level = data.get("level", 1)
         if current_level >= MAX_LEVEL:
-            # Достигнут максимальный уровень — фиксируем
             data["level"]  = MAX_LEVEL
             data["xp_max"] = xp_for_level(MAX_LEVEL)
             data["xp"]     = data["xp_max"]
@@ -144,6 +197,12 @@ def add_xp(data: dict, amount: int):
             data["level"]  = current_level + 1
         else:
             break
+
+
+def _fmt_cost(cost: int) -> str:
+    if cost == 0:
+        return "Бесплатно"
+    return f"{cost:,} {COIN}"
 
 
 def roll_ore(pick_key: str) -> list:
@@ -194,10 +253,10 @@ def ore_inventory_text(data: dict) -> str:
         if qty > 0:
             worth = qty * ore["price"]
             total_value += worth
-            lines.append(f"  {ore['name']}: <b>{qty}</b>  <i>({worth:,} 💰)</i>")
+            lines.append(f"  {ore['name']}: <b>{qty}</b>  <i>({worth:,} {COIN})</i>")
     if not lines:
         return "  Инвентарь пуст"
-    lines.append(f"\n  💰 Итого: <b>{total_value:,} монет</b>")
+    lines.append(f"\n  {COIN} Итого: <b>{total_value:,} монет</b>")
     return "\n".join(lines)
 
 
@@ -216,7 +275,7 @@ def mine_text(data: dict) -> str:
         return (
             "⛏️ <b>ШАХТА</b>\n"
             "━━━━━━━━━━━━━━━━━━━━\n\n"
-            f"🪓 Кирка: <b>{pick['name']}</b>  ({pick['dig_min']}–{pick['dig_max']} удара)\n"
+            f"{pick['emoji']} Кирка: <b>{pick['name']}</b>  ({pick['dig_min']}–{pick['dig_max']} удара)\n"
             f"⏱ Длительность: <b>{dur['label']}</b> ({total_camps} кампаний)\n\n"
             "<b>📦 Инвентарь:</b>\n"
             f"{ore_inventory_text(data)}\n\n"
@@ -233,7 +292,7 @@ def mine_text(data: dict) -> str:
     return (
         "⛏️ <b>ШАХТА</b>\n"
         "━━━━━━━━━━━━━━━━━━━━\n\n"
-        f"🪓 Кирка: <b>{pick['name']}</b>\n"
+        f"{pick['emoji']} Кирка: <b>{pick['name']}</b>\n"
         f"⛏ Кампаний: <b>{prog['campaigns_done']}/{prog['total_campaigns']}</b>\n\n"
         f"📊 Прогресс:\n  {bar}\n\n"
         f"{status}\n\n"
@@ -242,26 +301,21 @@ def mine_text(data: dict) -> str:
     )
 
 
-# ----- МАСТЕРСКАЯ: список -----
-
 def workshop_text(data: dict) -> str:
     current  = data.get("pickaxe", "wood_1")
     cur_name = PICKAXES[current]["name"]
     return (
         "🔨 <b>МАСТЕРСКАЯ — КИРКИ</b>\n"
         "━━━━━━━━━━━━━━━━━━━━\n\n"
-        f"💳 Баланс: <b>{data['balance']:,} 💰</b>\n"
+        f"{COIN} Баланс: <b>{data['balance']:,}</b>\n"
         f"📌 Активна: <b>{cur_name}</b>\n\n"
         "Выбери кирку для подробностей:"
     )
 
 
-# ----- МАСТЕРСКАЯ: карточка кирки -----
-
 def pickaxe_detail_text(data: dict, pick_key: str) -> str:
     p     = PICKAXES[pick_key]
     owned = data.get("owned_pickaxes", ["wood_1"])
-    cost  = "Бесплатно" if p["cost"] == 0 else f"{p['cost']:,} 💰"
 
     if pick_key == data.get("pickaxe", "wood_1"):
         status = "✅ Активна"
@@ -271,17 +325,15 @@ def pickaxe_detail_text(data: dict, pick_key: str) -> str:
         status = "🛒 Не куплена"
 
     return (
-        f"🔨 <b>КИРКА — {p['name']}</b>\n"
+        f"{p['emoji']} <b>КИРКА — {p['name']}</b>\n"
         "━━━━━━━━━━━━━━━━━━━━\n\n"
-        f"💳 Баланс: <b>{data['balance']:,} 💰</b>\n\n"
+        f"{COIN} Баланс: <b>{data['balance']:,}</b>\n\n"
         f"{p['emoji']} Название: <b>{p['name']}</b>\n"
         f"⛏ Ударов за кампанию: <b>{p['dig_min']}–{p['dig_max']}</b>\n"
-        f"💰 Цена: <b>{cost}</b>\n"
+        f"{COIN} Цена: <b>{_fmt_cost(p['cost'])}</b>\n"
         f"📌 Статус: <b>{status}</b>"
     )
 
-
-# ----- ДЛИТЕЛЬНОСТИ: список -----
 
 def duration_shop_text(data: dict) -> str:
     cur_key    = data.get("mine_duration_key", "5min")
@@ -291,19 +343,16 @@ def duration_shop_text(data: dict) -> str:
     return (
         "⏱ <b>ДЛИТЕЛЬНОСТЬ СЕССИИ</b>\n"
         "━━━━━━━━━━━━━━━━━━━━\n\n"
-        f"💳 Баланс: <b>{data['balance']:,} 💰</b>\n"
+        f"{COIN} Баланс: <b>{data['balance']:,}</b>\n"
         f"📌 Активна: <b>{cur_label}</b>\n"
         f"🔓 Открыто: <b>{owned_cnt}/{len(DURATIONS_ORDER)}</b>\n\n"
         "Выбери длительность для подробностей:"
     )
 
 
-# ----- ДЛИТЕЛЬНОСТИ: карточка -----
-
 def duration_detail_text(data: dict, dur_key: str) -> str:
     d          = DURATIONS[dur_key]
     owned_durs = data.get("owned_durations", ["5min"])
-    cost_str   = "Бесплатно" if d["cost"] == 0 else f"{d['cost']:,} 💰"
 
     if dur_key == data.get("mine_duration_key", "5min"):
         status = "✅ Активна"
@@ -315,11 +364,11 @@ def duration_detail_text(data: dict, dur_key: str) -> str:
     return (
         f"⏱ <b>ДЛИТЕЛЬНОСТЬ — {d['label']}</b>\n"
         "━━━━━━━━━━━━━━━━━━━━\n\n"
-        f"💳 Баланс: <b>{data['balance']:,} 💰</b>\n\n"
+        f"{COIN} Баланс: <b>{data['balance']:,}</b>\n\n"
         f"⏱ Время сессии: <b>{d['label']}</b>\n"
         f"🔄 Кампаний: <b>{d['campaigns']}</b> (по 5 мин каждая)\n"
         f"⏳ Итого: <b>{fmt_time(d['campaigns'] * CAMPAIGN_SECONDS)}</b>\n"
-        f"💰 Цена: <b>{cost_str}</b>\n"
+        f"{COIN} Цена: <b>{_fmt_cost(d['cost'])}</b>\n"
         f"📌 Статус: <b>{status}</b>"
     )
 
@@ -328,21 +377,21 @@ def sell_screen_text(data: dict) -> str:
     has_ores = any(data["ores"].get(o["key"], 0) > 0 for o in ORES)
     if not has_ores:
         return (
-            "💰 <b>ПРОДАЖА РУД</b>\n"
+            f"{COIN} <b>ПРОДАЖА РУД</b>\n"
             "━━━━━━━━━━━━━━━━━━━━\n\n"
             "📦 Инвентарь пуст — нечего продавать!\n\n"
             "Запусти шахту и накопи руды."
         )
-    lines = ["💰 <b>ПРОДАЖА РУД</b>\n━━━━━━━━━━━━━━━━━━━━\n\n<b>Цены скупщика:</b>\n"]
+    lines = [f"{COIN} <b>ПРОДАЖА РУД</b>\n━━━━━━━━━━━━━━━━━━━━\n\n<b>Цены скупщика:</b>\n"]
     total_value = 0
     for ore in ORES:
         qty = data["ores"].get(ore["key"], 0)
         if qty > 0:
             worth = qty * ore["price"]
             total_value += worth
-            lines.append(f"  {ore['name']}: <b>{qty}</b> x {ore['price']:,} = <b>{worth:,} 💰</b>")
-    lines.append(f"\n💳 Баланс сейчас: <b>{data['balance']:,} 💰</b>")
-    lines.append(f"📈 Получишь: <b>+{total_value:,} 💰</b>")
+            lines.append(f"  {ore['name']}: <b>{qty}</b> x {ore['price']:,} = <b>{worth:,} {COIN}</b>")
+    lines.append(f"\n{COIN} Баланс сейчас: <b>{data['balance']:,}</b>")
+    lines.append(f"📈 Получишь: <b>+{total_value:,} {COIN}</b>")
     return "\n".join(lines)
 
 
@@ -507,7 +556,7 @@ def sell_all_ores(data: dict) -> tuple:
         if qty > 0:
             earned = qty * ore["price"]
             total += earned
-            lines.append(f"  {ore['name']} x {qty} - <b>{earned:,} 💰</b>")
+            lines.append(f"  {ore['name']} x {qty} - <b>{earned:,} {COIN}</b>")
             data["ores"][ore["key"]] = 0
     data["balance"] = data.get("balance", 0) + total
     report = "\n".join(lines) if lines else "  Нечего продавать"
@@ -624,13 +673,13 @@ def init_mine_data() -> dict:
 # ---------- СОВМЕСТИМОСТЬ ----------
 
 def shop_pickaxes_text() -> str:
-    lines = ["🛒 <b>МАГАЗИН — КИРКИ</b>\n━━━━━━━━━━━━━━━━━━━━\n"]
+    lines = [f"🛒 <b>МАГАЗИН — КИРКИ</b>\n━━━━━━━━━━━━━━━━━━━━\n"]
     for key in PICKAXES_ORDER:
         p    = PICKAXES[key]
-        cost = "Бесплатно" if p["cost"] == 0 else f"{p['cost']:,} 💰"
+        cost = _fmt_cost(p["cost"])
         lines.append(
-            f"<b>{p['name']}</b>\n"
+            f"<b>{p['emoji']} {p['name']}</b>\n"
             f"  ⛏ Ударов: <b>{p['dig_min']}–{p['dig_max']}</b> за кампанию\n"
-            f"  💰 Цена: <b>{cost}</b>\n"
+            f"  {COIN} Цена: <b>{cost}</b>\n"
         )
     return "\n".join(lines)
