@@ -3,7 +3,7 @@
 # ============================================================
 
 from datetime import date
-from miner import init_mine_data, MAX_LEVEL, xp_for_level
+from miner import init_mine_data, MAX_LEVEL, xp_for_level, COIN
 
 # ---------- ХРАНИЛИЩЕ ----------
 users_db: dict = {}
@@ -90,15 +90,15 @@ def profile_text(d: dict) -> str:
     xp     = d["xp"]
     xp_max = d["xp_max"]
 
-    # Подпись XP-строки: на максимальном уровне показываем MAX
+    # На максимальном уровне — особое отображение
     if level >= MAX_LEVEL:
-        xp_line = f"<b>{MAX_LEVEL} (MAX)</b> ✨"
-        bar_str = xp_bar(xp_max, xp_max)          # полный бар
-        xp_str  = f"<b>MAX</b>"
+        lvl_line = f"<b>{MAX_LEVEL} (MAX)</b> ✨"
+        bar_str  = xp_bar(xp_max, xp_max)
+        xp_str   = "<b>MAX</b>"
     else:
-        xp_line = f"<b>{level}</b>"
-        bar_str = xp_bar(xp, xp_max)
-        xp_str  = f"<b>{xp:,}/{xp_max:,}</b>"
+        lvl_line = f"<b>{level}</b>"
+        bar_str  = xp_bar(xp, xp_max)
+        xp_str   = f"<b>{xp:,}/{xp_max:,}</b>"
 
     return (
         f"┌──────────────────────────\n"
@@ -110,10 +110,10 @@ def profile_text(d: dict) -> str:
         f'│  <tg-emoji emoji-id="5438496463044752972">🎟</tg-emoji>  Статус:  <b>{status_from_level(level)}</b>\n'
         f'│  <tg-emoji emoji-id="5274055917766202507">🎟</tg-emoji>  Дней:    <b>{days}</b>\n'
         f"├──────────────────────────\n"
-        f'│  <tg-emoji emoji-id="5375338737028841420">🎟</tg-emoji>  Уровень: {xp_line}\n'
+        f'│  <tg-emoji emoji-id="5375338737028841420">🎟</tg-emoji>  Уровень: {lvl_line}\n'
         f'│  <tg-emoji emoji-id="5341498088408234504">🎟</tg-emoji>  Опыт:    {xp_str}\n'
         f"│       {bar_str}\n"
         f"├──────────────────────────\n"
-        f'│  <tg-emoji emoji-id="5278467510604160626">🎟</tg-emoji>  Баланс: <b>{d["balance"]:,} 💰</b>\n'
+        f'│  {COIN}  Баланс: <b>{d["balance"]:,}</b>\n'
         f"└──────────────────────────"
     )
