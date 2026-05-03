@@ -1,7 +1,7 @@
 # ============================================================
 #  miner.py  —  Модуль шахты для TGStellar бота
 #  45 кирок: Wood×5, Rock×5, Iron×5, Gold×5, Diamond×5,
-#             Uranium×5, Amethyst×5, VIP×5, VIP+×5, Premium×5
+#             Uranium×5, Amethyst×5, VIP×5, Premium×5
 #  Мастерская: 5 страниц по 9 кирок
 #  Premium кирки — за звёзды Telegram (донат), не за монеты
 # ============================================================
@@ -37,8 +37,8 @@ ORES = [
 ORES_BY_KEY = {o["key"]: o for o in ORES}
 
 # ============================================================
-#  КИРКИ  — 10 тиров × 5 уровней = 50 позиций
-#  (отображаются постранично: 9 на страницу = 5 страниц по 9)
+#  КИРКИ  — 9 тиров × 5 уровней = 45 позиций
+#  (отображаются постранично: 9 на страницу = 5 страниц)
 #
 #  Тиры и логика цен:
 #   Wood      — 🪓  бесплатный старт, до 100k монет
@@ -49,7 +49,6 @@ ORES_BY_KEY = {o["key"]: o for o in ORES}
 #   Uranium   — ☢️  200B–3T монет
 #   Amethyst  — 💜  3T–50T монет
 #   VIP       — 👑  50T–800T монет
-#   VIP+      — 🔱  800T–10Q монет
 #   Premium   — 💫  за ⭐ Telegram Stars (донат)
 #
 #  currency: "coins" или "stars"
@@ -151,7 +150,7 @@ PICKAXES = {
         "cost": 1_500_000_000, "currency": "coins", "required_level": 1,
         "tier": "iron",
     },
-    # ── GOLD ─────────────────────────────────────────────── стр. 2/3
+    # ── GOLD ─────────────────────────────────────────────── стр. 2
     "gold_1": {
         "name": "Gold-1lvl", "emoji": "🌕",
         "dig_min": 140, "dig_max": 280,
@@ -246,7 +245,7 @@ PICKAXES = {
         "cost": 4_000_000_000_000_000, "currency": "coins", "required_level": 1,
         "tier": "uranium",
     },
-    # ── AMETHYST ─────────────────────────────────────────── стр. 4/5
+    # ── AMETHYST ─────────────────────────────────────────── стр. 4
     "amethyst_1": {
         "name": "Amethyst-1lvl", "emoji": "💜",
         "dig_min": 9_000, "dig_max": 18_000,
@@ -309,40 +308,7 @@ PICKAXES = {
         "cost": 180_000_000_000_000_000_000, "currency": "coins", "required_level": 1,
         "tier": "vip",
     },
-    # ── VIP+ ─────────────────────────────────────────────── стр. 5
-    "vipp_1": {
-        "name": "VIP+-1lvl", "emoji": "🔱",
-        "dig_min": 190_000, "dig_max": 380_000,
-        "cost": 600_000_000_000_000_000_000, "currency": "coins", "required_level": 1,
-        "tier": "vipp",
-    },
-    "vipp_2": {
-        "name": "VIP+-2lvl", "emoji": "🔱",
-        "dig_min": 260_000, "dig_max": 520_000,
-        "cost": 2_000_000_000_000_000_000_000, "currency": "coins", "required_level": 1,
-        "tier": "vipp",
-    },
-    "vipp_3": {
-        "name": "VIP+-3lvl", "emoji": "🔱",
-        "dig_min": 360_000, "dig_max": 720_000,
-        "cost": 6_500_000_000_000_000_000_000, "currency": "coins", "required_level": 1,
-        "tier": "vipp",
-    },
-    "vipp_4": {
-        "name": "VIP+-4lvl", "emoji": "🔱",
-        "dig_min": 500_000, "dig_max": 1_000_000,
-        "cost": 20_000_000_000_000_000_000_000, "currency": "coins", "required_level": 1,
-        "tier": "vipp",
-    },
-    "vipp_5": {
-        "name": "VIP+-5lvl", "emoji": "🔱",
-        "dig_min": 700_000, "dig_max": 1_400_000,
-        "cost": 60_000_000_000_000_000_000_000, "currency": "coins", "required_level": 1,
-        "tier": "vipp",
-    },
-    # ── PREMIUM ──────────────── ⭐ TELEGRAM STARS (донат) ──
-    # Самый мощный тир. Покупается исключительно за звёзды Telegram.
-    # cost_stars — количество звёзд; "cost" здесь не используется.
+    # ── PREMIUM ──────────────── ⭐ TELEGRAM STARS (донат) ── стр. 5
     "premium_1": {
         "name": "Premium-1lvl", "emoji": "💫",
         "dig_min": 1_000_000, "dig_max": 2_000_000,
@@ -375,23 +341,29 @@ PICKAXES = {
     },
 }
 
-# Полный порядок (50 кирок)
+# Полный порядок (45 кирок: 9 тиров × 5 уровней)
 PICKAXES_ORDER = [
     "wood_1",     "wood_2",     "wood_3",     "wood_4",     "wood_5",
-    "rock_1",     "rock_2",     "rock_3",     "rock_4",     "rock_5",    # ← конец стр. 1 / стр. 2
+    "rock_1",     "rock_2",     "rock_3",     "rock_4",
+    # ── стр. 2 ──
+    "rock_5",
     "iron_1",     "iron_2",     "iron_3",     "iron_4",     "iron_5",
-    "gold_1",     "gold_2",     "gold_3",     "gold_4",     "gold_5",    # ← конец стр. 2 / стр. 3
+    "gold_1",     "gold_2",
+    # ── стр. 3 ──
+    "gold_3",     "gold_4",     "gold_5",
     "diamond_1",  "diamond_2",  "diamond_3",  "diamond_4",  "diamond_5",
-    "uranium_1",  "uranium_2",  "uranium_3",  "uranium_4",  "uranium_5", # ← конец стр. 3 / стр. 4
+    "uranium_1",
+    # ── стр. 4 ──
+    "uranium_2",  "uranium_3",  "uranium_4",  "uranium_5",
     "amethyst_1", "amethyst_2", "amethyst_3", "amethyst_4", "amethyst_5",
-    "vip_1",      "vip_2",      "vip_3",      "vip_4",      "vip_5",     # ← конец стр. 4 / стр. 5
-    "vipp_1",     "vipp_2",     "vipp_3",     "vipp_4",     "vipp_5",
-    "premium_1",  "premium_2",  "premium_3",  "premium_4",  "premium_5", # ← конец стр. 5
+    # ── стр. 5 ──
+    "vip_1",      "vip_2",      "vip_3",      "vip_4",      "vip_5",
+    "premium_1",  "premium_2",  "premium_3",  "premium_4",  "premium_5",
 ]
 
-# Страницы мастерской: 5 страниц × 10 кирок
-WORKSHOP_PAGE_SIZE = 10
-WORKSHOP_PAGES = [
+# Страницы мастерской: 5 страниц × 9 кирок
+WORKSHOP_PAGE_SIZE   = 9
+WORKSHOP_PAGES       = [
     PICKAXES_ORDER[i : i + WORKSHOP_PAGE_SIZE]
     for i in range(0, len(PICKAXES_ORDER), WORKSHOP_PAGE_SIZE)
 ]
@@ -401,9 +373,9 @@ WORKSHOP_TOTAL_PAGES = len(WORKSHOP_PAGES)  # 5
 WORKSHOP_PAGE_LABELS = [
     "🪓 Wood / ⛏️ Rock",
     "⛏️ Rock / 🔩 Iron / 🌕 Gold",
-    "🌕 Gold / 💎 Diamond",
-    "💎 Diamond / ☢️ Uranium / 💜 Amethyst",
-    "💜 Amethyst / 👑 VIP / 🔱 VIP+ / 💫 Premium",
+    "🌕 Gold / 💎 Diamond / ☢️ Uranium",
+    "☢️ Uranium / 💜 Amethyst",
+    "👑 VIP / 💫 Premium",
 ]
 
 # Названия тиров для красивого отображения
@@ -416,7 +388,6 @@ TIER_LABELS = {
     "uranium":  "☢️ Uranium",
     "amethyst": "💜 Amethyst",
     "vip":      "👑 VIP",
-    "vipp":     "🔱 VIP+",
     "premium":  "💫 Premium",
 }
 
@@ -507,13 +478,13 @@ def _fmt_num(n: int) -> str:
     if n == 0:
         return "0"
     for div, suffix in [
-        (1_000_000_000_000_000_000_000, "Sk"),  # секстиллион
-        (1_000_000_000_000_000_000, "Qi"),       # квинтиллион
-        (1_000_000_000_000_000, "Qd"),           # квадриллион
-        (1_000_000_000_000, "T"),                # триллион
-        (1_000_000_000, "B"),                    # биллион
-        (1_000_000, "M"),                        # миллион
-        (1_000, "K"),                            # тысяча
+        (1_000_000_000_000_000_000_000, "Sk"),
+        (1_000_000_000_000_000_000, "Qi"),
+        (1_000_000_000_000_000, "Qd"),
+        (1_000_000_000_000, "T"),
+        (1_000_000_000, "B"),
+        (1_000_000, "M"),
+        (1_000, "K"),
     ]:
         if n >= div:
             val = n / div
@@ -618,8 +589,7 @@ def mine_text(data: dict) -> str:
 
 
 def workshop_text(data: dict, page: int = 0) -> str:
-    current  = data.get("pickaxe", "wood_1")
-    cur_name = PICKAXES[current]["name"]
+    current    = data.get("pickaxe", "wood_1")
     page_label = WORKSHOP_PAGE_LABELS[page]
     return (
         "🔨 <b>МАСТЕРСКАЯ — КИРКИ</b>\n"
@@ -775,20 +745,19 @@ def sell_keyboard() -> InlineKeyboardMarkup:
 def workshop_keyboard(data: dict, page: int = 0) -> InlineKeyboardMarkup:
     """
     Клавиатура мастерской с постраничной навигацией.
-    page: 0–4 (5 страниц по 10 кирок)
+    page: 0–4 (5 страниц по 9 кирок)
     callback_data для страниц: mine_workshop_{page}
     """
-    kb      = InlineKeyboardMarkup(row_width=2)
+    kb      = InlineKeyboardMarkup(row_width=3)
     current = data.get("pickaxe", "wood_1")
     owned   = data.get("owned_pickaxes", ["wood_1"])
 
-    page = max(0, min(page, WORKSHOP_TOTAL_PAGES - 1))
+    page      = max(0, min(page, WORKSHOP_TOTAL_PAGES - 1))
     page_keys = WORKSHOP_PAGES[page]
 
     buttons = []
     for key in page_keys:
         p = PICKAXES[key]
-        # Метка кнопки
         label = p["name"]
 
         if key == current:
@@ -803,7 +772,6 @@ def workshop_keyboard(data: dict, page: int = 0) -> InlineKeyboardMarkup:
                 callback_data=f"pick_info_{key}"
             )
         else:
-            # Для Premium добавляем звёздочку в лейбл
             display = f"⭐ {label}" if p["currency"] == "stars" else label
             btn = InlineKeyboardButton(
                 display,
@@ -812,9 +780,9 @@ def workshop_keyboard(data: dict, page: int = 0) -> InlineKeyboardMarkup:
             )
         buttons.append(btn)
 
-    # Добавляем кнопки по 2 в ряд
-    for i in range(0, len(buttons), 2):
-        row = buttons[i : i + 2]
+    # Добавляем кнопки по 3 в ряд
+    for i in range(0, len(buttons), 3):
+        row = buttons[i : i + 3]
         kb.add(*row)
 
     # Навигация между страницами
@@ -834,21 +802,23 @@ def workshop_keyboard(data: dict, page: int = 0) -> InlineKeyboardMarkup:
     return kb
 
 
-def pickaxe_detail_keyboard(data: dict, pick_key: str, page: int = 0) -> InlineKeyboardMarkup:
+def pickaxe_detail_keyboard(data: dict, pick_key: str, page: int = -1) -> InlineKeyboardMarkup:
     """
     Клавиатура детальной информации о кирке.
-    page нужен для корректной кнопки «Назад».
+    Если page=-1 — вычисляем автоматически.
     """
     kb    = InlineKeyboardMarkup(row_width=1)
     p     = PICKAXES[pick_key]
     owned = data.get("owned_pickaxes", ["wood_1"])
+
+    if page < 0:
+        page = get_pickaxe_page(pick_key)
 
     if pick_key == data.get("pickaxe", "wood_1"):
         kb.add(InlineKeyboardButton("✅ Уже активна", callback_data="noop"))
     elif pick_key in owned:
         kb.add(InlineKeyboardButton("🔘 Выбрать эту кирку", callback_data=f"pick_select_{pick_key}"))
     elif p["currency"] == "stars":
-        # Донат-кирка: кнопка запускает инвойс Telegram Stars
         kb.add(InlineKeyboardButton(
             f"⭐ Купить — {p['cost_stars']} звёзд",
             callback_data=f"pick_buy_stars_{pick_key}"
@@ -933,10 +903,9 @@ def sell_all_ores(data: dict) -> tuple:
 
 
 def buy_pickaxe(data: dict, pick_key: str) -> tuple:
-    """Купить кирку за монеты (не для premium)."""
     if pick_key not in PICKAXES:
         return False, "❌ Неизвестная кирка."
-    p     = PICKAXES[pick_key]
+    p = PICKAXES[pick_key]
     if p["currency"] == "stars":
         return False, "❌ Эта кирка покупается за звёзды Telegram, не за монеты!"
     owned = data.setdefault("owned_pickaxes", ["wood_1"])
@@ -950,10 +919,7 @@ def buy_pickaxe(data: dict, pick_key: str) -> tuple:
 
 
 def grant_premium_pickaxe(data: dict, pick_key: str) -> tuple:
-    """
-    Вызывается ПОСЛЕ успешного получения оплаты через Telegram Stars
-    (из хендлера successful_payment / pre_checkout_query).
-    """
+    """Вызывается ПОСЛЕ успешного получения оплаты через Telegram Stars."""
     if pick_key not in PICKAXES:
         return False, "❌ Неизвестная кирка."
     p = PICKAXES[pick_key]
