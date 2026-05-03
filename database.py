@@ -1,19 +1,66 @@
 # ============================================================
 #  database.py  —  База данных пользователей TGStellar
+#  Хранение: SQLite (файл tgstellar.db)
+#  При каждом изменении данных вызывай save_user(uid)
 # ============================================================
 
+import sqlite3
+import json
 from datetime import date
 from miner import init_mine_data, MAX_LEVEL, xp_for_level, COIN
 
-# ---------- ХРАНИЛИЩЕ ----------
-users_db: dict = {}
+DB_PATH = "tgstellar.db"
+
+# ---------- Инициализация таблицы ----------
+
+def _get_conn():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
 
 
-# ---------- ПОЛУЧИТЬ / СОЗДАТЬ ПОЛЬЗОВАТЕЛЯ ----------
+def init_db():
+    """Создаёт таблицу если не существует. Вызвать при старте бота."""
+    with _get_conn() as conn:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                uid       INTEGER PRIMARY KEY,
+                data_json TEXT    NOT NULL
+            )
+        """)
+        conn.commit()
+
+
+# ---------- Сохранение / загрузка ----------
+
+def _load_raw(uid: int) -> dict | None:
+    with _get_conn() as conn:
+        row = conn.execute("SELECT data_json FROM users WHERE uid=?", (uid,)).fetchone()
+    if row:
+        return json.loads(row["data_json"])
+    return None
+
+
+def save_user(uid: int, data: dict):
+    """Сохранить данные пользователя в БД."""
+    with _get_conn() as conn:
+        conn.execute(
+            "INSERT INTO users (uid, data_json) VALUES (?,?) "
+            "ON CONFLICT(uid) DO UPDATE SET data_json=excluded.data_json",
+            (uid, json.dumps(data, ensure_ascii=False))
+        )
+        conn.commit()
+
+
+# ---------- Получить / создать пользователя ----------
+
 def get_or_create_user(user) -> dict:
-    uid = user.id
-    if uid not in users_db:
-        users_db[uid] = {
+    uid  = user.id
+    data = _load_raw(uid)
+
+    if data is None:
+        # Новый пользователь
+        data = {
             "id":         uid,
             "username":   user.username or "Аноним",
             "first_name": user.first_name or "",
@@ -21,37 +68,60 @@ def get_or_create_user(user) -> dict:
             "balance":    0,
             "level":      1,
             "xp":         0,
-            "xp_max":     xp_for_level(1),   # 100 для 1-го уровня
+            "xp_max":     xp_for_level(1),
             **init_mine_data(),
         }
+        save_user(uid, data)
     else:
-        d = users_db[uid]
         # Миграция: добавляем поля если отсутствуют
-        if "owned_pickaxes" not in d:
-            d["owned_pickaxes"] = ["wood_1"]
-        if "mine_duration_key" not in d:
-            d["mine_duration_key"] = "5min"
-        if "owned_durations" not in d:
-            d["owned_durations"] = ["5min"]
-        if "xp_max" not in d:
-            d["xp_max"] = xp_for_level(d.get("level", 1))
-    return users_db[uid]
+        changed = False
+        defaults = {
+            "owned_pickaxes":      ["wood_1"],
+            "mine_duration_key":   "5min",
+            "owned_durations":     ["5min"],
+            "mine_start":          None,
+            "mine_campaigns_done": 0,
+            "mine_collected":      False,
+            "xp_max":              xp_for_level(data.get("level", 1)),
+        }
+        for key, val in defaults.items():
+            if key not in data:
+                data[key] = val
+                changed = True
+        # Убедиться что ores содержит все руды
+        from miner import ORES
+        if "ores" not in data:
+            data["ores"] = {o["key"]: 0 for o in ORES}
+            changed = True
+        else:
+            for o in ORES:
+                if o["key"] not in data["ores"]:
+                    data["ores"][o["key"]] = 0
+                    changed = True
+        if changed:
+            save_user(uid, data)
+
+    return data
 
 
 def get_user(uid: int) -> dict | None:
-    return users_db.get(uid)
+    return _load_raw(uid)
 
 
 def update_user(uid: int, fields: dict):
-    if uid in users_db:
-        users_db[uid].update(fields)
+    data = _load_raw(uid)
+    if data:
+        data.update(fields)
+        save_user(uid, data)
 
 
 def get_all_users() -> list[dict]:
-    return list(users_db.values())
+    with _get_conn() as conn:
+        rows = conn.execute("SELECT data_json FROM users").fetchall()
+    return [json.loads(r["data_json"]) for r in rows]
 
 
-# ---------- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ПРОФИЛЯ ----------
+# ---------- Вспомогательные функции профиля ----------
 
 def days_on_project(joined_str: str) -> int:
     return (date.today() - date.fromisoformat(joined_str)).days
@@ -64,7 +134,7 @@ def level_to_rank(level: int) -> str:
     if level < 35:  return "Мастер"
     if level < 50:  return "Эксперт"
     if level < 75:  return "Элита"
-    return "Легенда"          # 75 — максимальный уровень
+    return "Легенда"
 
 
 def status_from_level(level: int) -> str:
@@ -79,7 +149,7 @@ def xp_bar(xp: int, xp_max: int, length: int = 10) -> str:
     return "[" + "█" * filled + "░" * (length - filled) + "]"
 
 
-# ---------- ТЕКСТ ПРОФИЛЯ ----------
+# ---------- Текст профиля ----------
 
 def profile_text(d: dict) -> str:
     uid    = d["id"]
@@ -90,7 +160,6 @@ def profile_text(d: dict) -> str:
     xp     = d["xp"]
     xp_max = d["xp_max"]
 
-    # На максимальном уровне — особое отображение
     if level >= MAX_LEVEL:
         lvl_line = f"<b>{MAX_LEVEL} (MAX)</b> ✨"
         bar_str  = xp_bar(xp_max, xp_max)
