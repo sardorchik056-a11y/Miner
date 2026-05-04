@@ -175,7 +175,7 @@ def handle_callback(call):
                 chat_id=chat_id,
                 title=f"Кирка {p['name']}",
                 description=f"Донатная кирка {p['name']} ({p['dig_min']:,}–{p['dig_max']:,} ударов за кампанию)",
-                payload=f"premium_pickaxe:{pick_key}",
+                invoice_payload=f"premium_pickaxe:{pick_key}",  # ← ИСПРАВЛЕНО
                 provider_token="",          # пустой для Stars
                 currency="XTR",             # Telegram Stars
                 prices=[telebot.types.LabeledPrice(label=p["name"], amount=p["cost_stars"])],
