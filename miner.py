@@ -48,12 +48,17 @@ ORES_BY_KEY = {o["key"]: o for o in ORES}
 #   Diamond   — 💎  10B–200B монет
 #   Uranium   — ☢️  200B–3T монет
 #   Amethyst  — 💜  3T–50T монет
-#   VIP       — 👑  50T–800T монет
-#   Premium   — 💫  за ⭐ Telegram Stars (донат)
+#   VIP       — 👑  50T–1.3Qd монет  (×1.45 за уровень)
+#   Premium   — 💫  за ⭐ Telegram Stars (донат, макс 100k звёзд)
 #
 #  currency: "coins" или "stars"
 #  cost_stars: целое число звёзд (доступно для всех кирок)
 #  Для premium кирок — только звёзды (cost=0, currency="stars")
+#
+#  Прогрессия VIP/Premium от vip_1:
+#    монеты  ×1.45 каждый шаг
+#    подкоп  ×1.15 каждый шаг
+#    звёзды  ×1.07 каждый шаг (потолок 100 000)
 # ============================================================
 
 PICKAXES = {
@@ -227,158 +232,161 @@ PICKAXES = {
     },
     "diamond_4": {
         "name": "Diamond-4lvl", "emoji": "💎",
-        "dig_min": 1_200, "dig_max": 2_400,
-        "cost": 8_000_000_000_000, "currency": "coins", "required_level": 1,
+        "dig_min": 1_800, "dig_max": 2_900,
+        "cost": 300_000_000_000, "currency": "coins", "required_level": 1,
         "tier": "diamond",
-        "cost_stars": 26_000,
+        "cost_stars": 22_999,
     },
     # ── стр. 4 ───────────────────────────────────────────────────
     "diamond_5": {
         "name": "Diamond-5lvl", "emoji": "💎",
-        "dig_min": 1_600, "dig_max": 3_200,
-        "cost": 20_000_000_000_000, "currency": "coins", "required_level": 1,
+        "dig_min": 2_200, "dig_max": 3_700,
+        "cost": 500_000_000_000, "currency": "coins", "required_level": 1,
         "tier": "diamond",
-        "cost_stars": 20_000,
+        "cost_stars": 25_999,
     },
     # ── URANIUM ──────────────────────────────────────────── стр. 4
     "uranium_1": {
         "name": "Uranium-1lvl", "emoji": "☢️",
-        "dig_min": 2_100, "dig_max": 4_200,
-        "cost": 60_000_000_000_000, "currency": "coins", "required_level": 1,
+        "dig_min": 3_100, "dig_max": 5_200,
+        "cost": 800_000_000_000, "currency": "coins", "required_level": 1,
         "tier": "uranium",
-        "cost_stars": 26_000,
+        "cost_stars": 28_789,
     },
     "uranium_2": {
         "name": "Uranium-2lvl", "emoji": "☢️",
-        "dig_min": 2_800, "dig_max": 5_600,
-        "cost": 180_000_000_000_000, "currency": "coins", "required_level": 1,
+        "dig_min": 4_800, "dig_max": 7_600,
+        "cost": 1_250_000_000_000, "currency": "coins", "required_level": 1,
         "tier": "uranium",
-        "cost_stars": 34_000,
+        "cost_stars": 31_349,
     },
     "uranium_3": {
         "name": "Uranium-3lvl", "emoji": "☢️",
-        "dig_min": 3_700, "dig_max": 7_400,
-        "cost": 500_000_000_000_000, "currency": "coins", "required_level": 1,
+        "dig_min": 6_700, "dig_max": 12_400,
+        "cost": 2_000_000_000_000, "currency": "coins", "required_level": 1,
         "tier": "uranium",
-        "cost_stars": 45_000,
+        "cost_stars": 35_549,
     },
     "uranium_4": {
         "name": "Uranium-4lvl", "emoji": "☢️",
-        "dig_min": 5_000, "dig_max": 10_000,
-        "cost": 1_500_000_000_000_000, "currency": "coins", "required_level": 1,
+        "dig_min": 8_000, "dig_max": 16_000,
+        "cost": 3_750_000_000_000, "currency": "coins", "required_level": 1,
         "tier": "uranium",
-        "cost_stars": 60_000,
+        "cost_stars": 39_789,
     },
     "uranium_5": {
         "name": "Uranium-5lvl", "emoji": "☢️",
-        "dig_min": 6_800, "dig_max": 13_600,
-        "cost": 4_000_000_000_000_000, "currency": "coins", "required_level": 1,
+        "dig_min": 9_800, "dig_max": 18_600,
+        "cost": 5_850_000_000_000, "currency": "coins", "required_level": 1,
         "tier": "uranium",
-        "cost_stars": 80_000,
+        "cost_stars": 43_239,
     },
     # ── AMETHYST ─────────────────────────────────────────── стр. 4
     "amethyst_1": {
         "name": "Amethyst-1lvl", "emoji": "💜",
-        "dig_min": 9_000, "dig_max": 18_000,
-        "cost": 12_000_000_000_000_000, "currency": "coins", "required_level": 1,
+        "dig_min": 12_000, "dig_max": 23_000,
+        "cost": 12_000_000_000_000, "currency": "coins", "required_level": 1,
         "tier": "amethyst",
-        "cost_stars": 100_000,
+        "cost_stars": 47_339,
     },
     "amethyst_2": {
         "name": "Amethyst-2lvl", "emoji": "💜",
-        "dig_min": 12_000, "dig_max": 24_000,
-        "cost": 35_000_000_000_000_000, "currency": "coins", "required_level": 1,
+        "dig_min": 15_000, "dig_max": 27_000,
+        "cost": 25_000_000_000_000, "currency": "coins", "required_level": 1,
         "tier": "amethyst",
-        "cost_stars": 140_000,
+        "cost_stars": 51_199,
     },
     # ── стр. 5 ───────────────────────────────────────────────────
     "amethyst_3": {
         "name": "Amethyst-3lvl", "emoji": "💜",
-        "dig_min": 16_000, "dig_max": 32_000,
-        "cost": 100_000_000_000_000_000, "currency": "coins", "required_level": 1,
+        "dig_min": 18_000, "dig_max": 32_000,
+        "cost": 65_000_000_000_000, "currency": "coins", "required_level": 1,
         "tier": "amethyst",
-        "cost_stars": 190_000,
+        "cost_stars": 55_569,
     },
     "amethyst_4": {
         "name": "Amethyst-4lvl", "emoji": "💜",
-        "dig_min": 22_000, "dig_max": 44_000,
-        "cost": 280_000_000_000_000_000, "currency": "coins", "required_level": 1,
+        "dig_min": 22_000, "dig_max": 42_000,
+        "cost": 120_000_000_000_000, "currency": "coins", "required_level": 1,
         "tier": "amethyst",
-        "cost_stars": 260_000,
+        "cost_stars": 61_139,
     },
     "amethyst_5": {
         "name": "Amethyst-5lvl", "emoji": "💜",
-        "dig_min": 30_000, "dig_max": 60_000,
-        "cost": 750_000_000_000_000_000, "currency": "coins", "required_level": 1,
+        "dig_min": 28_000, "dig_max": 54_000,
+        "cost": 190_000_000_000_000, "currency": "coins", "required_level": 1,
         "tier": "amethyst",
-        "cost_stars": 350_000,
+        "cost_stars": 64_589,
     },
     # ── VIP ──────────────────────────────────────────────── стр. 5
+    # База vip_1: coins=300T, stars=69_569, dig=39_000–73_000
+    # Прогрессия: монеты ×1.45 | подкоп ×1.15 | звёзды ×1.07 (макс 100 000)
     "vip_1": {
         "name": "VIP-1lvl", "emoji": "👑",
-        "dig_min": 40_000, "dig_max": 80_000,
-        "cost": 2_000_000_000_000_000_000, "currency": "coins", "required_level": 1,
+        "dig_min": 39_000, "dig_max": 73_000,
+        "cost": 300_000_000_000_000, "currency": "coins", "required_level": 1,
         "tier": "vip",
-        "cost_stars": 470_000,
+        "cost_stars": 69_569,
     },
     "vip_2": {
         "name": "VIP-2lvl", "emoji": "👑",
-        "dig_min": 55_000, "dig_max": 110_000,
-        "cost": 6_000_000_000_000_000_000, "currency": "coins", "required_level": 1,
+        "dig_min": 44_850, "dig_max": 83_950,       # ×1.15
+        "cost": 435_000_000_000_000, "currency": "coins", "required_level": 1,  # ×1.45
         "tier": "vip",
-        "cost_stars": 650_000,
+        "cost_stars": 73_439,                        # ×1.07
     },
     "vip_3": {
         "name": "VIP-3lvl", "emoji": "👑",
-        "dig_min": 75_000, "dig_max": 150_000,
-        "cost": 18_000_000_000_000_000_000, "currency": "coins", "required_level": 1,
+        "dig_min": 51_577, "dig_max": 96_542,        # ×1.15²
+        "cost": 630_750_000_000_000, "currency": "coins", "required_level": 1,  # ×1.45²
         "tier": "vip",
-        "cost_stars": 900_000,
+        "cost_stars": 77_649,                        # ×1.07²
     },
     "vip_4": {
         "name": "VIP-4lvl", "emoji": "👑",
-        "dig_min": 100_000, "dig_max": 200_000,
-        "cost": 55_000_000_000_000_000_000, "currency": "coins", "required_level": 1,
+        "dig_min": 59_314, "dig_max": 111_023,       # ×1.15³
+        "cost": 914_587_500_000_000, "currency": "coins", "required_level": 1,  # ×1.45³
         "tier": "vip",
-        "cost_stars": 1_200_000,
+        "cost_stars": 81_225,                        # ×1.07³
     },
     "vip_5": {
         "name": "VIP-5lvl", "emoji": "👑",
-        "dig_min": 140_000, "dig_max": 280_000,
-        "cost": 180_000_000_000_000_000_000, "currency": "coins", "required_level": 1,
+        "dig_min": 68_211, "dig_max": 127_677,       # ×1.15⁴
+        "cost": 1_326_151_875_000_000, "currency": "coins", "required_level": 1,  # ×1.45⁴
         "tier": "vip",
-        "cost_stars": 1_600_000,
+        "cost_stars": 84_190,                        # ×1.07⁴
     },
     # ── PREMIUM ──────────────── ⭐ TELEGRAM STARS (донат) ── стр. 5
     # Premium кирки — только за звёзды, монеты не принимаются
+    # Прогрессия продолжается от vip_1 (шаги 5–9): подкоп ×1.15 | звёзды ×1.07 (макс 100 000)
     "premium_1": {
         "name": "Premium-1lvl", "emoji": "💫",
-        "dig_min": 1_000_000, "dig_max": 2_000_000,
-        "cost": 0, "currency": "stars", "cost_stars": 75,
+        "dig_min": 78_442, "dig_max": 146_829,       # ×1.15⁵
+        "cost": 0, "currency": "stars", "cost_stars": 87_574,   # ×1.07⁵
         "required_level": 1, "tier": "premium",
     },
     "premium_2": {
         "name": "Premium-2lvl", "emoji": "💫",
-        "dig_min": 1_400_000, "dig_max": 2_800_000,
-        "cost": 0, "currency": "stars", "cost_stars": 150,
+        "dig_min": 90_209, "dig_max": 168_853,       # ×1.15⁶
+        "cost": 0, "currency": "stars", "cost_stars": 91_000,  # потолок
         "required_level": 1, "tier": "premium",
     },
     "premium_3": {
         "name": "Premium-3lvl", "emoji": "💫",
-        "dig_min": 2_000_000, "dig_max": 4_000_000,
-        "cost": 0, "currency": "stars", "cost_stars": 300,
+        "dig_min": 103_740, "dig_max": 194_181,      # ×1.15⁷
+        "cost": 0, "currency": "stars", "cost_stars": 94_000,  # потолок
         "required_level": 1, "tier": "premium",
     },
     "premium_4": {
         "name": "Premium-4lvl", "emoji": "💫",
-        "dig_min": 2_800_000, "dig_max": 5_600_000,
-        "cost": 0, "currency": "stars", "cost_stars": 600,
+        "dig_min": 119_301, "dig_max": 223_308,      # ×1.15⁸
+        "cost": 0, "currency": "stars", "cost_stars": 97_000,  # потолок
         "required_level": 1, "tier": "premium",
     },
     "premium_5": {
         "name": "Premium-5lvl", "emoji": "💫",
-        "dig_min": 4_000_000, "dig_max": 8_000_000,
-        "cost": 0, "currency": "stars", "cost_stars": 1_000,
+        "dig_min": 137_197, "dig_max": 256_804,      # ×1.15⁹
+        "cost": 0, "currency": "stars", "cost_stars": 100_000,  # потолок
         "required_level": 1, "tier": "premium",
     },
 }
