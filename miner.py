@@ -1,9 +1,16 @@
 # ============================================================
 #  miner.py  —  Модуль шахты для TGStellar бота
-#  45 кирок: Wood×5, Rock×5, Iron×5, Gold×5, Diamond×5,
-#             Uranium×5, Amethyst×5, VIP×5, Premium×5
-#  Мастерская: 5 страниц по 9 кирок
+#  50 кирок: Wood×5, Rock×5, Iron×5, Gold×5, Diamond×5,
+#             Uranium×5, Amethyst×5, VIP×5, VIP+×5, Premium×5
+#  Мастерская: 5 страниц по 10 кирок, 2 кнопки в ряд
 #  Premium кирки — за звёзды Telegram (донат), не за монеты
+#
+#  Прогрессия от wood_2 (шаг 0):
+#    монеты  ×1.60 каждый шаг, округление до 100
+#    звёзды  ×1.16 каждый шаг, округление до целого
+#    подкопы ×1.15 каждый шаг, округление до целого
+#    базовые значения: coins=1500, stars=5, digs=2–4
+#    wood_1 — бесплатный старт (1–2 удара)
 # ============================================================
 
 import random
@@ -37,382 +44,358 @@ ORES = [
 ORES_BY_KEY = {o["key"]: o for o in ORES}
 
 # ============================================================
-#  КИРКИ  — 9 тиров × 5 уровней = 45 позиций
-#  (отображаются постранично: 9 на страницу = 5 страниц)
+#  КИРКИ — 10 тиров × 5 уровней = 50 позиций
+#  (5 страниц × 10 кирок, 2 кнопки в ряд)
 #
-#  Тиры и логика цен:
-#   Wood      — 🪓  бесплатный старт, до 100k монет
-#   Rock      — ⛏️  100k–20M монет
-#   Iron      — 🔩  20M–500M монет
-#   Gold      — 🌕  500M–10B монет
-#   Diamond   — 💎  10B–200B монет
-#   Uranium   — ☢️  200B–3T монет
-#   Amethyst  — 💜  3T–50T монет
-#   VIP       — 👑  50T–1.3Qd монет  (×1.45 за уровень)
-#   Premium   — 💫  за ⭐ Telegram Stars (донат, макс 100k звёзд)
+#  Прогрессия от wood_2 (шаг 0):
+#    монеты  start=1500, ×1.60/шаг, округление до 100
+#    звёзды  start=5,    ×1.16/шаг, округление до целого
+#    подкопы start=2–4,  ×1.15/шаг, округление до целого
 #
 #  currency: "coins" или "stars"
-#  cost_stars: целое число звёзд (доступно для всех кирок)
 #  Для premium кирок — только звёзды (cost=0, currency="stars")
-#
-#  Прогрессия VIP/Premium от vip_1:
-#    монеты  ×1.45 каждый шаг
-#    подкоп  ×1.15 каждый шаг
-#    звёзды  ×1.07 каждый шаг (потолок 100 000)
 # ============================================================
 
 PICKAXES = {
-    # ── WOOD ─────────────────────────────────────────────── стр. 1
+    # ══════════════════════════════ СТРАНИЦА 1 ══════════════════════════════
+    # ── WOOD ─────────────────────────────────────────────────────────────────
     "wood_1": {
         "name": "Wood-1lvl", "emoji": "🪓",
-        "dig_min": 1, "dig_max": 2,
-        "cost": 0, "currency": "coins", "required_level": 1,
-        "tier": "wood",
-        "cost_stars": 0,          # бесплатно
+        "dig_min": 1,   "dig_max": 2,
+        "cost": 0,       "currency": "coins", "required_level": 1,
+        "tier": "wood",  "cost_stars": 0,          # бесплатно
     },
     "wood_2": {
         "name": "Wood-2lvl", "emoji": "🪓",
-        "dig_min": 1, "dig_max": 3,
-        "cost": 250, "currency": "coins", "required_level": 1,
-        "tier": "wood",
-        "cost_stars": 5,
+        "dig_min": 2,   "dig_max": 4,             # шаг 0: base
+        "cost": 1_500,   "currency": "coins", "required_level": 1,
+        "tier": "wood",  "cost_stars": 5,
     },
     "wood_3": {
         "name": "Wood-3lvl", "emoji": "🪓",
-        "dig_min": 2, "dig_max": 5,
-        "cost": 1500, "currency": "coins", "required_level": 1,
-        "tier": "wood",
-        "cost_stars": 15,
+        "dig_min": 2,   "dig_max": 5,             # шаг 1
+        "cost": 2_500,   "currency": "coins", "required_level": 1,
+        "tier": "wood",  "cost_stars": 6,
     },
     "wood_4": {
         "name": "Wood-4lvl", "emoji": "🪓",
-        "dig_min": 3, "dig_max": 7,
-        "cost": 4500, "currency": "coins", "required_level": 1,
-        "tier": "wood",
-        "cost_stars": 30,
+        "dig_min": 3,   "dig_max": 5,             # шаг 2
+        "cost": 4_000,   "currency": "coins", "required_level": 1,
+        "tier": "wood",  "cost_stars": 7,
     },
     "wood_5": {
         "name": "Wood-5lvl", "emoji": "🪓",
-        "dig_min": 5, "dig_max": 12,
-        "cost": 10000, "currency": "coins", "required_level": 1,
-        "tier": "wood",
-        "cost_stars": 49,
+        "dig_min": 3,   "dig_max": 6,             # шаг 3
+        "cost": 6_000,   "currency": "coins", "required_level": 1,
+        "tier": "wood",  "cost_stars": 8,
     },
-    # ── ROCK ─────────────────────────────────────────────── стр. 1
+    # ── ROCK ─────────────────────────────────────────────────────────────────
     "rock_1": {
         "name": "Rock-1lvl", "emoji": "⛏️",
-        "dig_min": 7, "dig_max": 16,
-        "cost": 35000, "currency": "coins", "required_level": 1,
-        "tier": "rock",
-        "cost_stars": 79,
+        "dig_min": 3,   "dig_max": 7,             # шаг 4
+        "cost": 10_000,  "currency": "coins", "required_level": 1,
+        "tier": "rock",  "cost_stars": 9,
     },
     "rock_2": {
         "name": "Rock-2lvl", "emoji": "⛏️",
-        "dig_min": 10, "dig_max": 22,
-        "cost": 90000, "currency": "coins", "required_level": 1,
-        "tier": "rock",
-        "cost_stars": 129,
+        "dig_min": 4,   "dig_max": 8,             # шаг 5
+        "cost": 16_000,  "currency": "coins", "required_level": 1,
+        "tier": "rock",  "cost_stars": 11,
     },
     "rock_3": {
         "name": "Rock-3lvl", "emoji": "⛏️",
-        "dig_min": 14, "dig_max": 30,
-        "cost": 250_000, "currency": "coins", "required_level": 1,
-        "tier": "rock",
-        "cost_stars": 189,
+        "dig_min": 5,   "dig_max": 9,             # шаг 6
+        "cost": 25_000,  "currency": "coins", "required_level": 1,
+        "tier": "rock",  "cost_stars": 12,
     },
     "rock_4": {
         "name": "Rock-4lvl", "emoji": "⛏️",
-        "dig_min": 20, "dig_max": 42,
-        "cost": 700_000, "currency": "coins", "required_level": 1,
-        "tier": "rock",
-        "cost_stars": 279,
+        "dig_min": 5,   "dig_max": 11,            # шаг 7
+        "cost": 40_000,  "currency": "coins", "required_level": 1,
+        "tier": "rock",  "cost_stars": 14,
     },
-    # ── ROCK-5 → начало стр. 2 ───────────────────────────── стр. 2
     "rock_5": {
         "name": "Rock-5lvl", "emoji": "⛏️",
-        "dig_min": 28, "dig_max": 60,
-        "cost": 2_000_000, "currency": "coins", "required_level": 1,
-        "tier": "rock",
-        "cost_stars": 389,
+        "dig_min": 6,   "dig_max": 12,            # шаг 8
+        "cost": 64_000,  "currency": "coins", "required_level": 1,
+        "tier": "rock",  "cost_stars": 16,
     },
-    # ── IRON ─────────────────────────────────────────────── стр. 2
+    # ══════════════════════════════ СТРАНИЦА 2 ══════════════════════════════
+    # ── IRON ─────────────────────────────────────────────────────────────────
     "iron_1": {
         "name": "Iron-1lvl", "emoji": "🔩",
-        "dig_min": 35, "dig_max": 75,
-        "cost": 5_000_000, "currency": "coins", "required_level": 1,
-        "tier": "iron",
-        "cost_stars": 549,
+        "dig_min": 7,   "dig_max": 14,            # шаг 9
+        "cost": 100_000, "currency": "coins", "required_level": 1,
+        "tier": "iron",  "cost_stars": 19,
     },
     "iron_2": {
         "name": "Iron-2lvl", "emoji": "🔩",
-        "dig_min": 45, "dig_max": 95,
-        "cost": 13_000_000, "currency": "coins", "required_level": 1,
-        "tier": "iron",
-        "cost_stars": 759,
+        "dig_min": 8,   "dig_max": 16,            # шаг 10
+        "cost": 160_000, "currency": "coins", "required_level": 1,
+        "tier": "iron",  "cost_stars": 22,
     },
     "iron_3": {
         "name": "Iron-3lvl", "emoji": "🔩",
-        "dig_min": 60, "dig_max": 125,
-        "cost": 30_000_000, "currency": "coins", "required_level": 1,
-        "tier": "iron",
-        "cost_stars": 979,
+        "dig_min": 9,   "dig_max": 19,            # шаг 11
+        "cost": 260_000, "currency": "coins", "required_level": 1,
+        "tier": "iron",  "cost_stars": 26,
     },
     "iron_4": {
         "name": "Iron-4lvl", "emoji": "🔩",
-        "dig_min": 80, "dig_max": 165,
-        "cost": 70_000_000, "currency": "coins", "required_level": 1,
-        "tier": "iron",
-        "cost_stars": 1_269,
+        "dig_min": 11,  "dig_max": 21,            # шаг 12
+        "cost": 420_000, "currency": "coins", "required_level": 1,
+        "tier": "iron",  "cost_stars": 30,
     },
     "iron_5": {
         "name": "Iron-5lvl", "emoji": "🔩",
-        "dig_min": 110, "dig_max": 220,
-        "cost": 150_000_000, "currency": "coins", "required_level": 1,
-        "tier": "iron",
-        "cost_stars": 1_589,
+        "dig_min": 12,  "dig_max": 25,            # шаг 13
+        "cost": 680_000, "currency": "coins", "required_level": 1,
+        "tier": "iron",  "cost_stars": 34,
     },
-    # ── GOLD ─────────────────────────────────────────────── стр. 2
+    # ── GOLD ─────────────────────────────────────────────────────────────────
     "gold_1": {
         "name": "Gold-1lvl", "emoji": "🌕",
-        "dig_min": 140, "dig_max": 280,
-        "cost": 350_000_000, "currency": "coins", "required_level": 1,
-        "tier": "gold",
-        "cost_stars": 1_989,
+        "dig_min": 14,  "dig_max": 28,            # шаг 14
+        "cost": 1_100_000, "currency": "coins", "required_level": 1,
+        "tier": "gold",  "cost_stars": 40,
     },
     "gold_2": {
         "name": "Gold-2lvl", "emoji": "🌕",
-        "dig_min": 180, "dig_max": 360,
-        "cost": 800_000_000, "currency": "coins", "required_level": 1,
-        "tier": "gold",
-        "cost_stars": 2_899,
+        "dig_min": 16,  "dig_max": 33,            # шаг 15
+        "cost": 1_700_000, "currency": "coins", "required_level": 1,
+        "tier": "gold",  "cost_stars": 46,
     },
-    # ── стр. 3 ───────────────────────────────────────────────────
     "gold_3": {
         "name": "Gold-3lvl", "emoji": "🌕",
-        "dig_min": 230, "dig_max": 460,
-        "cost": 2_000_000_000, "currency": "coins", "required_level": 1,
-        "tier": "gold",
-        "cost_stars": 3_899,
+        "dig_min": 19,  "dig_max": 37,            # шаг 16
+        "cost": 2_800_000, "currency": "coins", "required_level": 1,
+        "tier": "gold",  "cost_stars": 54,
     },
     "gold_4": {
         "name": "Gold-4lvl", "emoji": "🌕",
-        "dig_min": 300, "dig_max": 600,
-        "cost": 5_000_000_000, "currency": "coins", "required_level": 1,
-        "tier": "gold",
-        "cost_stars": 5_899,
+        "dig_min": 22,  "dig_max": 43,            # шаг 17
+        "cost": 4_400_000, "currency": "coins", "required_level": 1,
+        "tier": "gold",  "cost_stars": 62,
     },
     "gold_5": {
         "name": "Gold-5lvl", "emoji": "🌕",
-        "dig_min": 400, "dig_max": 800,
-        "cost": 12_000_000_000, "currency": "coins", "required_level": 1,
-        "tier": "gold",
-        "cost_stars": 6_789,
+        "dig_min": 25,  "dig_max": 50,            # шаг 18
+        "cost": 7_100_000, "currency": "coins", "required_level": 1,
+        "tier": "gold",  "cost_stars": 72,
     },
-    # ── DIAMOND ──────────────────────────────────────────── стр. 3
+    # ══════════════════════════════ СТРАНИЦА 3 ══════════════════════════════
+    # ── DIAMOND ──────────────────────────────────────────────────────────────
     "diamond_1": {
         "name": "Diamond-1lvl", "emoji": "💎",
-        "dig_min": 620, "dig_max": 1_240,
-        "cost": 40_000_000_000, "currency": "coins", "required_level": 1,
-        "tier": "diamond",
-        "cost_stars": 9_000,
+        "dig_min": 28,  "dig_max": 57,            # шаг 19
+        "cost": 11_000_000, "currency": "coins", "required_level": 1,
+        "tier": "diamond", "cost_stars": 84,
     },
     "diamond_2": {
         "name": "Diamond-2lvl", "emoji": "💎",
-        "dig_min": 980, "dig_max": 1_760,
-        "cost": 80_000_000_000, "currency": "coins", "required_level": 1,
-        "tier": "diamond",
-        "cost_stars": 12_499,
+        "dig_min": 33,  "dig_max": 65,            # шаг 20
+        "cost": 18_000_000, "currency": "coins", "required_level": 1,
+        "tier": "diamond", "cost_stars": 97,
     },
     "diamond_3": {
         "name": "Diamond-3lvl", "emoji": "💎",
-        "dig_min": 1500, "dig_max": 2_800,
-        "cost": 180_000_000_000, "currency": "coins", "required_level": 1,
-        "tier": "diamond",
-        "cost_stars": 19_599,
+        "dig_min": 38,  "dig_max": 75,            # шаг 21
+        "cost": 29_000_000, "currency": "coins", "required_level": 1,
+        "tier": "diamond", "cost_stars": 113,
     },
     "diamond_4": {
         "name": "Diamond-4lvl", "emoji": "💎",
-        "dig_min": 1_800, "dig_max": 2_900,
-        "cost": 300_000_000_000, "currency": "coins", "required_level": 1,
-        "tier": "diamond",
-        "cost_stars": 22_999,
+        "dig_min": 43,  "dig_max": 87,            # шаг 22
+        "cost": 46_000_000, "currency": "coins", "required_level": 1,
+        "tier": "diamond", "cost_stars": 131,
     },
-    # ── стр. 4 ───────────────────────────────────────────────────
     "diamond_5": {
         "name": "Diamond-5lvl", "emoji": "💎",
-        "dig_min": 2_200, "dig_max": 3_700,
-        "cost": 500_000_000_000, "currency": "coins", "required_level": 1,
-        "tier": "diamond",
-        "cost_stars": 25_999,
+        "dig_min": 50,  "dig_max": 100,           # шаг 23
+        "cost": 74_000_000, "currency": "coins", "required_level": 1,
+        "tier": "diamond", "cost_stars": 152,
     },
-    # ── URANIUM ──────────────────────────────────────────── стр. 4
+    # ── URANIUM ───────────────────────────────────────────────────────────────
     "uranium_1": {
         "name": "Uranium-1lvl", "emoji": "☢️",
-        "dig_min": 3_100, "dig_max": 5_200,
-        "cost": 800_000_000_000, "currency": "coins", "required_level": 1,
-        "tier": "uranium",
-        "cost_stars": 28_789,
+        "dig_min": 57,  "dig_max": 115,           # шаг 24
+        "cost": 120_000_000, "currency": "coins", "required_level": 1,
+        "tier": "uranium", "cost_stars": 176,
     },
     "uranium_2": {
         "name": "Uranium-2lvl", "emoji": "☢️",
-        "dig_min": 4_800, "dig_max": 7_600,
-        "cost": 1_250_000_000_000, "currency": "coins", "required_level": 1,
-        "tier": "uranium",
-        "cost_stars": 31_349,
+        "dig_min": 66,  "dig_max": 132,           # шаг 25
+        "cost": 190_000_000, "currency": "coins", "required_level": 1,
+        "tier": "uranium", "cost_stars": 204,
     },
     "uranium_3": {
         "name": "Uranium-3lvl", "emoji": "☢️",
-        "dig_min": 6_700, "dig_max": 12_400,
-        "cost": 2_000_000_000_000, "currency": "coins", "required_level": 1,
-        "tier": "uranium",
-        "cost_stars": 35_549,
+        "dig_min": 76,  "dig_max": 151,           # шаг 26
+        "cost": 300_000_000, "currency": "coins", "required_level": 1,
+        "tier": "uranium", "cost_stars": 237,
     },
     "uranium_4": {
         "name": "Uranium-4lvl", "emoji": "☢️",
-        "dig_min": 8_000, "dig_max": 16_000,
-        "cost": 3_750_000_000_000, "currency": "coins", "required_level": 1,
-        "tier": "uranium",
-        "cost_stars": 39_789,
+        "dig_min": 87,  "dig_max": 174,           # шаг 27
+        "cost": 490_000_000, "currency": "coins", "required_level": 1,
+        "tier": "uranium", "cost_stars": 275,
     },
     "uranium_5": {
         "name": "Uranium-5lvl", "emoji": "☢️",
-        "dig_min": 9_800, "dig_max": 18_600,
-        "cost": 5_850_000_000_000, "currency": "coins", "required_level": 1,
-        "tier": "uranium",
-        "cost_stars": 43_239,
+        "dig_min": 100, "dig_max": 200,           # шаг 28
+        "cost": 780_000_000, "currency": "coins", "required_level": 1,
+        "tier": "uranium", "cost_stars": 319,
     },
-    # ── AMETHYST ─────────────────────────────────────────── стр. 4
+    # ══════════════════════════════ СТРАНИЦА 4 ══════════════════════════════
+    # ── AMETHYST ──────────────────────────────────────────────────────────────
     "amethyst_1": {
         "name": "Amethyst-1lvl", "emoji": "💜",
-        "dig_min": 12_000, "dig_max": 23_000,
-        "cost": 12_000_000_000_000, "currency": "coins", "required_level": 1,
-        "tier": "amethyst",
-        "cost_stars": 47_339,
+        "dig_min": 115, "dig_max": 230,           # шаг 29
+        "cost": 1_200_000_000, "currency": "coins", "required_level": 1,
+        "tier": "amethyst", "cost_stars": 370,
     },
     "amethyst_2": {
         "name": "Amethyst-2lvl", "emoji": "💜",
-        "dig_min": 15_000, "dig_max": 27_000,
-        "cost": 25_000_000_000_000, "currency": "coins", "required_level": 1,
-        "tier": "amethyst",
-        "cost_stars": 51_199,
+        "dig_min": 132, "dig_max": 265,           # шаг 30
+        "cost": 2_000_000_000, "currency": "coins", "required_level": 1,
+        "tier": "amethyst", "cost_stars": 429,
     },
-    # ── стр. 5 ───────────────────────────────────────────────────
     "amethyst_3": {
         "name": "Amethyst-3lvl", "emoji": "💜",
-        "dig_min": 18_000, "dig_max": 32_000,
-        "cost": 65_000_000_000_000, "currency": "coins", "required_level": 1,
-        "tier": "amethyst",
-        "cost_stars": 55_569,
+        "dig_min": 152, "dig_max": 305,           # шаг 31
+        "cost": 3_200_000_000, "currency": "coins", "required_level": 1,
+        "tier": "amethyst", "cost_stars": 498,
     },
     "amethyst_4": {
         "name": "Amethyst-4lvl", "emoji": "💜",
-        "dig_min": 22_000, "dig_max": 42_000,
-        "cost": 120_000_000_000_000, "currency": "coins", "required_level": 1,
-        "tier": "amethyst",
-        "cost_stars": 61_139,
+        "dig_min": 175, "dig_max": 350,           # шаг 32
+        "cost": 5_100_000_000, "currency": "coins", "required_level": 1,
+        "tier": "amethyst", "cost_stars": 578,
     },
     "amethyst_5": {
         "name": "Amethyst-5lvl", "emoji": "💜",
-        "dig_min": 28_000, "dig_max": 54_000,
-        "cost": 190_000_000_000_000, "currency": "coins", "required_level": 1,
-        "tier": "amethyst",
-        "cost_stars": 64_589,
+        "dig_min": 201, "dig_max": 403,           # шаг 33
+        "cost": 8_200_000_000, "currency": "coins", "required_level": 1,
+        "tier": "amethyst", "cost_stars": 670,
     },
-    # ── VIP ──────────────────────────────────────────────── стр. 5
-    # База vip_1: coins=300T, stars=69_569, dig=39_000–73_000
-    # Прогрессия: монеты ×1.45 | подкоп ×1.15 | звёзды ×1.07 (макс 100 000)
+    # ── VIP ────────────────────────────────────────────────────────────────────
     "vip_1": {
         "name": "VIP-1lvl", "emoji": "👑",
-        "dig_min": 39_000, "dig_max": 73_000,
-        "cost": 300_000_000_000_000, "currency": "coins", "required_level": 1,
-        "tier": "vip",
-        "cost_stars": 69_569,
+        "dig_min": 232, "dig_max": 463,           # шаг 34
+        "cost": 13_000_000_000, "currency": "coins", "required_level": 1,
+        "tier": "vip", "cost_stars": 777,
     },
     "vip_2": {
         "name": "VIP-2lvl", "emoji": "👑",
-        "dig_min": 44_850, "dig_max": 83_950,       # ×1.15
-        "cost": 435_000_000_000_000, "currency": "coins", "required_level": 1,  # ×1.45
-        "tier": "vip",
-        "cost_stars": 73_439,                        # ×1.07
+        "dig_min": 266, "dig_max": 533,           # шаг 35
+        "cost": 21_000_000_000, "currency": "coins", "required_level": 1,
+        "tier": "vip", "cost_stars": 902,
     },
     "vip_3": {
         "name": "VIP-3lvl", "emoji": "👑",
-        "dig_min": 51_577, "dig_max": 96_542,        # ×1.15²
-        "cost": 630_750_000_000_000, "currency": "coins", "required_level": 1,  # ×1.45²
-        "tier": "vip",
-        "cost_stars": 77_649,                        # ×1.07²
+        "dig_min": 306, "dig_max": 613,           # шаг 36
+        "cost": 33_000_000_000, "currency": "coins", "required_level": 1,
+        "tier": "vip", "cost_stars": 1_046,
     },
     "vip_4": {
         "name": "VIP-4lvl", "emoji": "👑",
-        "dig_min": 59_314, "dig_max": 111_023,       # ×1.15³
-        "cost": 914_587_500_000_000, "currency": "coins", "required_level": 1,  # ×1.45³
-        "tier": "vip",
-        "cost_stars": 81_225,                        # ×1.07³
+        "dig_min": 352, "dig_max": 704,           # шаг 37
+        "cost": 54_000_000_000, "currency": "coins", "required_level": 1,
+        "tier": "vip", "cost_stars": 1_213,
     },
     "vip_5": {
         "name": "VIP-5lvl", "emoji": "👑",
-        "dig_min": 68_211, "dig_max": 127_677,       # ×1.15⁴
-        "cost": 1_326_151_875_000_000, "currency": "coins", "required_level": 1,  # ×1.45⁴
-        "tier": "vip",
-        "cost_stars": 84_190,                        # ×1.07⁴
+        "dig_min": 405, "dig_max": 810,           # шаг 38
+        "cost": 86_000_000_000, "currency": "coins", "required_level": 1,
+        "tier": "vip", "cost_stars": 1_407,
     },
-    # ── PREMIUM ──────────────── ⭐ TELEGRAM STARS (донат) ── стр. 5
+    # ══════════════════════════════ СТРАНИЦА 5 ══════════════════════════════
+    # ── VIP+ ───────────────────────────────────────────────────────────────────
+    "vip_plus_1": {
+        "name": "VIP+-1lvl", "emoji": "💠",
+        "dig_min": 466,   "dig_max": 932,         # шаг 39
+        "cost": 140_000_000_000, "currency": "coins", "required_level": 1,
+        "tier": "vip_plus", "cost_stars": 1_632,
+    },
+    "vip_plus_2": {
+        "name": "VIP+-2lvl", "emoji": "💠",
+        "dig_min": 536,   "dig_max": 1_071,       # шаг 40
+        "cost": 220_000_000_000, "currency": "coins", "required_level": 1,
+        "tier": "vip_plus", "cost_stars": 1_894,
+    },
+    "vip_plus_3": {
+        "name": "VIP+-3lvl", "emoji": "💠",
+        "dig_min": 616,   "dig_max": 1_232,       # шаг 41
+        "cost": 350_000_000_000, "currency": "coins", "required_level": 1,
+        "tier": "vip_plus", "cost_stars": 2_197,
+    },
+    "vip_plus_4": {
+        "name": "VIP+-4lvl", "emoji": "💠",
+        "dig_min": 708,   "dig_max": 1_417,       # шаг 42
+        "cost": 560_000_000_000, "currency": "coins", "required_level": 1,
+        "tier": "vip_plus", "cost_stars": 2_548,
+    },
+    "vip_plus_5": {
+        "name": "VIP+-5lvl", "emoji": "💠",
+        "dig_min": 815,   "dig_max": 1_630,       # шаг 43
+        "cost": 900_000_000_000, "currency": "coins", "required_level": 1,
+        "tier": "vip_plus", "cost_stars": 2_956,
+    },
+    # ── PREMIUM ──────────────── ⭐ TELEGRAM STARS (донат) ──────────────────
     # Premium кирки — только за звёзды, монеты не принимаются
-    # Прогрессия продолжается от vip_1 (шаги 5–9): подкоп ×1.15 | звёзды ×1.07 (макс 100 000)
     "premium_1": {
         "name": "Premium-1lvl", "emoji": "💫",
-        "dig_min": 78_442, "dig_max": 146_829,       # ×1.15⁵
-        "cost": 0, "currency": "stars", "cost_stars": 87_574,   # ×1.07⁵
+        "dig_min": 937,   "dig_max": 1_874,       # шаг 44
+        "cost": 0, "currency": "stars", "cost_stars": 3_429,
         "required_level": 1, "tier": "premium",
     },
     "premium_2": {
         "name": "Premium-2lvl", "emoji": "💫",
-        "dig_min": 90_209, "dig_max": 168_853,       # ×1.15⁶
-        "cost": 0, "currency": "stars", "cost_stars": 91_000,  # потолок
+        "dig_min": 1_078, "dig_max": 2_155,       # шаг 45
+        "cost": 0, "currency": "stars", "cost_stars": 3_977,
         "required_level": 1, "tier": "premium",
     },
     "premium_3": {
         "name": "Premium-3lvl", "emoji": "💫",
-        "dig_min": 103_740, "dig_max": 194_181,      # ×1.15⁷
-        "cost": 0, "currency": "stars", "cost_stars": 94_000,  # потолок
+        "dig_min": 1_239, "dig_max": 2_478,       # шаг 46
+        "cost": 0, "currency": "stars", "cost_stars": 4_614,
         "required_level": 1, "tier": "premium",
     },
     "premium_4": {
         "name": "Premium-4lvl", "emoji": "💫",
-        "dig_min": 119_301, "dig_max": 223_308,      # ×1.15⁸
-        "cost": 0, "currency": "stars", "cost_stars": 97_000,  # потолок
+        "dig_min": 1_425, "dig_max": 2_850,       # шаг 47
+        "cost": 0, "currency": "stars", "cost_stars": 5_352,
         "required_level": 1, "tier": "premium",
     },
     "premium_5": {
         "name": "Premium-5lvl", "emoji": "💫",
-        "dig_min": 137_197, "dig_max": 256_804,      # ×1.15⁹
-        "cost": 0, "currency": "stars", "cost_stars": 100_000,  # потолок
+        "dig_min": 1_639, "dig_max": 3_278,       # шаг 48
+        "cost": 0, "currency": "stars", "cost_stars": 6_208,
         "required_level": 1, "tier": "premium",
     },
 }
 
-# Полный порядок (45 кирок: 9 тиров × 5 уровней)
+# ── Полный порядок (50 кирок: 10 тиров × 5 уровней) ────────────────────────
 PICKAXES_ORDER = [
+    # Страница 1
     "wood_1",     "wood_2",     "wood_3",     "wood_4",     "wood_5",
-    "rock_1",     "rock_2",     "rock_3",     "rock_4",
-    # ── стр. 2 ──
-    "rock_5",
+    "rock_1",     "rock_2",     "rock_3",     "rock_4",     "rock_5",
+    # Страница 2
     "iron_1",     "iron_2",     "iron_3",     "iron_4",     "iron_5",
-    "gold_1",     "gold_2",
-    # ── стр. 3 ──
-    "gold_3",     "gold_4",     "gold_5",
+    "gold_1",     "gold_2",     "gold_3",     "gold_4",     "gold_5",
+    # Страница 3
     "diamond_1",  "diamond_2",  "diamond_3",  "diamond_4",  "diamond_5",
-    "uranium_1",
-    # ── стр. 4 ──
-    "uranium_2",  "uranium_3",  "uranium_4",  "uranium_5",
+    "uranium_1",  "uranium_2",  "uranium_3",  "uranium_4",  "uranium_5",
+    # Страница 4
     "amethyst_1", "amethyst_2", "amethyst_3", "amethyst_4", "amethyst_5",
-    # ── стр. 5 ──
     "vip_1",      "vip_2",      "vip_3",      "vip_4",      "vip_5",
+    # Страница 5
+    "vip_plus_1", "vip_plus_2", "vip_plus_3", "vip_plus_4", "vip_plus_5",
     "premium_1",  "premium_2",  "premium_3",  "premium_4",  "premium_5",
 ]
 
-# Страницы мастерской: 5 страниц × 9 кирок
-WORKSHOP_PAGE_SIZE   = 9
+# Страницы мастерской: 5 страниц × 10 кирок, 2 кнопки в ряд
+WORKSHOP_PAGE_SIZE   = 10
 WORKSHOP_PAGES       = [
     PICKAXES_ORDER[i : i + WORKSHOP_PAGE_SIZE]
     for i in range(0, len(PICKAXES_ORDER), WORKSHOP_PAGE_SIZE)
@@ -422,10 +405,10 @@ WORKSHOP_TOTAL_PAGES = len(WORKSHOP_PAGES)  # 5
 # Заголовки страниц для навигации
 WORKSHOP_PAGE_LABELS = [
     "🪓 Wood / ⛏️ Rock",
-    "⛏️ Rock / 🔩 Iron / 🌕 Gold",
-    "🌕 Gold / 💎 Diamond / ☢️ Uranium",
-    "☢️ Uranium / 💜 Amethyst",
-    "👑 VIP / 💫 Premium",
+    "🔩 Iron / 🌕 Gold",
+    "💎 Diamond / ☢️ Uranium",
+    "💜 Amethyst / 👑 VIP",
+    "💠 VIP+ / 💫 Premium",
 ]
 
 # Названия тиров для красивого отображения
@@ -438,6 +421,7 @@ TIER_LABELS = {
     "uranium":  "☢️ Uranium",
     "amethyst": "💜 Amethyst",
     "vip":      "👑 VIP",
+    "vip_plus": "💠 VIP+",
     "premium":  "💫 Premium",
 }
 
@@ -667,11 +651,9 @@ def pickaxe_detail_text(data: dict, pick_key: str) -> str:
 
     # Блок цен
     if p["currency"] == "stars":
-        # Premium: только звёзды
         coins_line = f"  {COIN} За монеты: <b>недоступно</b>\n"
         stars_line = f"  {STAR} За звёзды: <b>{p['cost_stars']:,} звёзд</b>\n"
     elif p["cost"] == 0:
-        # wood_1: бесплатно
         coins_line = f"  {COIN} За монеты: <b>Бесплатно</b>\n"
         stars_line = f"  {STAR} За звёзды: <b>Бесплатно</b>\n"
     else:
@@ -805,10 +787,9 @@ def sell_keyboard() -> InlineKeyboardMarkup:
 def workshop_keyboard(data: dict, page: int = 0) -> InlineKeyboardMarkup:
     """
     Клавиатура мастерской с постраничной навигацией.
-    page: 0–4 (5 страниц по 9 кирок)
-    callback_data для страниц: mine_workshop_{page}
+    page: 0–4 (5 страниц по 10 кирок, 2 кнопки в ряд)
     """
-    kb      = InlineKeyboardMarkup(row_width=3)
+    kb      = InlineKeyboardMarkup(row_width=2)
     current = data.get("pickaxe", "wood_1")
     owned   = data.get("owned_pickaxes", ["wood_1"])
 
@@ -840,9 +821,9 @@ def workshop_keyboard(data: dict, page: int = 0) -> InlineKeyboardMarkup:
             )
         buttons.append(btn)
 
-    # Добавляем кнопки по 3 в ряд
-    for i in range(0, len(buttons), 3):
-        row = buttons[i : i + 3]
+    # Добавляем кнопки по 2 в ряд
+    for i in range(0, len(buttons), 2):
+        row = buttons[i : i + 2]
         kb.add(*row)
 
     # Навигация между страницами
@@ -869,9 +850,9 @@ def pickaxe_detail_keyboard(data: dict, pick_key: str, page: int = -1) -> Inline
     Логика кнопок:
       • Кирка уже активна       → [✅ Уже активна] + [◀️ Назад]
       • Кирка куплена, не актив → [🔘 Выбрать кирку] + [◀️ Назад]
-      • Кирка не куплена        → [💰 Купить за монеты] + [⭐ Купить за звёзды] + [◀️ Назад]
-        - Для premium (только звёзды): монетная кнопка скрыта / недоступна
-        - Для wood_1 (бесплатно): показываем [🆓 Получить бесплатно] вместо монет
+      • Не куплена (premium)    → [🚫 Монеты недоступны] + [⭐ Купить за звёзды] + [◀️ Назад]
+      • Не куплена (wood_1)     → [🆓 Получить бесплатно] + [◀️ Назад]
+      • Не куплена (обычная)    → [💰 Купить за монеты] + [⭐ Купить за звёзды] + [◀️ Назад]
     """
     kb    = InlineKeyboardMarkup(row_width=1)
     p     = PICKAXES[pick_key]
@@ -893,9 +874,8 @@ def pickaxe_detail_keyboard(data: dict, pick_key: str, page: int = -1) -> Inline
 
     # --- Не куплена: Premium (только звёзды) ---
     elif p["currency"] == "stars":
-        # Монетная кнопка — задизейблена (покупка только за звёзды)
         kb.add(InlineKeyboardButton(
-            f"🚫 Монеты недоступны",
+            "🚫 Монеты недоступны",
             callback_data="noop"
         ))
         kb.add(InlineKeyboardButton(
