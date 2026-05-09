@@ -584,13 +584,13 @@ def mine_text(data: dict) -> str:
 
     if data["mine_start"] is None or data["mine_collected"]:
         return (
-            "⛏️ <b>ШАХТА</b>\n"
+            "<b>⛏️ <b>ШАХТА</b>\n"
             "━━━━━━━━━━━━━━━━━━━━\n\n"
-            f"Кирка: <b>{pick['name']}</b>  ({pick['dig_min']:,}–{pick['dig_max']:,} удара)\n"
-            f"⏱ Длительность: <b>{dur['label']}</b> ({total_camps} кампаний)\n\n"
+            f"Выбрано: <b>{pick['name']}</b>\n"
+            f"⏱ Длительность: <b>{dur['label']}</b>\n\n"
             "<b>📦 Инвентарь:</b>\n"
             f"{ore_inventory_text(data)}\n\n"
-            "Нажми <b>▶️ Запустить</b> чтобы начать добычу!"
+            "Нажми <b>▶️ Запустить</b> чтобы начать добычу!</b>"
         )
 
     prog   = calc_mine_progress(data)
