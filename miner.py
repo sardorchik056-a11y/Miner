@@ -588,8 +588,8 @@ def mine_text(data: dict) -> str:
             "━━━━━━━━━━━━━━━━━━━━\n\n"
             f'<tg-emoji emoji-id="5397782960512444700">🎟</tg-emoji>Выбрано: <b>{pick['name']}</b>\n'
             f'<tg-emoji emoji-id="5440621591387980068">🎟</tg-emoji> Длительность: <b>{dur['label']}</b>\n\n'
-            '<b><tg-emoji emoji-id="5906841463894841921">🎟</tg-emoji> Инвентарь:</b>\n'
-            f'{ore_inventory_text(data)}\n\n'
+            '<blockquote><b><tg-emoji emoji-id="5906841463894841921">🎟</tg-emoji> Инвентарь:</b>\n'
+            f'{ore_inventory_text(data)}\n\n</blockquote>'
             'Нажми <b><tg-emoji emoji-id="5906727823355156804">🎟</tg-emoji> Запустить</b> чтобы начать добычу!</b>'
         )
 
