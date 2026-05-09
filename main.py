@@ -1,3 +1,4 @@
+import threading
 import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
@@ -26,6 +27,18 @@ from miner import (
 )
 
 bot = telebot.TeleBot('8796618330:AAEx3qgVKofsK8ObQEM169AiRj7YWohZl_4')
+
+# ---------- БЛОКИРОВКИ ПО ПОЛЬЗОВАТЕЛЯМ (защита от race condition / дюпов) ----------
+_user_locks: dict[int, threading.Lock] = {}
+_user_locks_mutex = threading.Lock()
+
+def _get_user_lock(uid: int) -> threading.Lock:
+    """Возвращает персональный Lock для пользователя uid."""
+    with _user_locks_mutex:
+        if uid not in _user_locks:
+            _user_locks[uid] = threading.Lock()
+        return _user_locks[uid]
+
 
 # ---------- ЭМОДЗИ ГЛАВНОГО МЕНЮ ----------
 EMOJI_PROFILE  = "5906622905894050515"
@@ -110,219 +123,221 @@ def handle_callback(call):
     chat_id    = call.message.chat.id
     message_id = call.message.message_id
     user       = call.from_user
-    data       = get_or_create_user(user)
 
-    def edit(text, kb, md="HTML"):
+    # ── Берём персональный Lock и держим его на всё время обработки ──
+    with _get_user_lock(user.id):
+        data = get_or_create_user(user)
+
+        def edit(text, kb, md="HTML"):
+            try:
+                bot.edit_message_text(
+                    text, chat_id, message_id,
+                    parse_mode=md, reply_markup=kb,
+                    disable_web_page_preview=True
+                )
+            except Exception as e:
+                if "message is not modified" not in str(e):
+                    print(e)
+
+        cd = call.data
+
+        # ===== NOOP =====
+        if cd == "noop":
+            bot.answer_callback_query(call.id)
+            return
+
+        # ===== ПРОФИЛЬ =====
+        if cd == "profile":
+            edit(profile_text(data), profile_keyboard())
+            return
+
+        # ===== МАГАЗИН =====
+        if cd == "shop":
+            edit(SHOP_TEXT, shop_main_keyboard())
+            return
+
+        if cd == "shop_pickaxes":
+            edit(shop_pickaxes_text(), shop_pickaxes_keyboard(data))
+            return
+
+        # ===== КИРКИ: просмотр карточки =====
+        if cd.startswith("pick_info_"):
+            pick_key = cd.removeprefix("pick_info_")
+            page     = get_pickaxe_page(pick_key)
+            edit(pickaxe_detail_text(data, pick_key), pickaxe_detail_keyboard(data, pick_key, page))
+            return
+
+        # ===== КИРКИ: купить за монеты =====
+        if cd.startswith("pick_buy_") and not cd.startswith("pick_buy_stars_"):
+            pick_key = cd.removeprefix("pick_buy_")
+            ok, msg  = buy_pickaxe(data, pick_key)
+            bot.answer_callback_query(call.id, msg, show_alert=True)
+            if ok:
+                save_user(data["id"], data)
+            page = get_pickaxe_page(pick_key)
+            edit(pickaxe_detail_text(data, pick_key), pickaxe_detail_keyboard(data, pick_key, page))
+            return
+
+        # ===== КИРКИ: купить за звёзды (инициирует инвойс) =====
+        if cd.startswith("pick_buy_stars_"):
+            pick_key = cd.removeprefix("pick_buy_stars_")
+            p        = PICKAXES.get(pick_key)
+            if not p:
+                bot.answer_callback_query(call.id, "❌ Неизвестная кирка.", show_alert=True)
+                return
+            try:
+                bot.send_invoice(
+                    chat_id=chat_id,
+                    title=f"Кирка {p['name']}",
+                    description=f"Донатная кирка {p['name']} ({p['dig_min']:,}–{p['dig_max']:,} ударов за кампанию)",
+                    invoice_payload=f"premium_pickaxe:{pick_key}",
+                    provider_token="",
+                    currency="XTR",
+                    prices=[telebot.types.LabeledPrice(label=p["name"], amount=p["cost_stars"])],
+                )
+            except Exception as e:
+                print(f"Invoice error: {e}")
+                bot.answer_callback_query(call.id, "❌ Ошибка при создании инвойса.", show_alert=True)
+            return
+
+        # ===== КИРКИ: выбрать =====
+        if cd.startswith("pick_select_"):
+            pick_key = cd.removeprefix("pick_select_")
+            ok, msg  = select_pickaxe(data, pick_key)
+            bot.answer_callback_query(call.id, msg, show_alert=True)
+            if ok:
+                save_user(data["id"], data)
+            page = get_pickaxe_page(pick_key)
+            edit(pickaxe_detail_text(data, pick_key), pickaxe_detail_keyboard(data, pick_key, page))
+            return
+
+        # ===== ДЛИТЕЛЬНОСТИ: просмотр карточки =====
+        if cd.startswith("dur_info_"):
+            dur_key = cd.removeprefix("dur_info_")
+            edit(duration_detail_text(data, dur_key), duration_detail_keyboard(data, dur_key))
+            return
+
+        # ===== ДЛИТЕЛЬНОСТИ: купить =====
+        if cd.startswith("dur_buy_"):
+            dur_key = cd.removeprefix("dur_buy_")
+            ok, msg = buy_duration(data, dur_key)
+            bot.answer_callback_query(call.id, msg, show_alert=True)
+            if ok:
+                save_user(data["id"], data)
+            edit(duration_detail_text(data, dur_key), duration_detail_keyboard(data, dur_key))
+            return
+
+        # ===== ДЛИТЕЛЬНОСТИ: выбрать =====
+        if cd.startswith("dur_select_"):
+            dur_key = cd.removeprefix("dur_select_")
+            ok, msg = select_duration(data, dur_key)
+            bot.answer_callback_query(call.id, msg, show_alert=True)
+            if ok:
+                save_user(data["id"], data)
+            edit(duration_detail_text(data, dur_key), duration_detail_keyboard(data, dur_key))
+            return
+
+        # ===== ШАХТА =====
+        if cd == "mine":
+            edit(mine_text(data), mine_keyboard(data))
+            return
+
+        if cd == "mine_start":
+            if data["mine_start"] is not None and not data["mine_collected"]:
+                bot.answer_callback_query(call.id, "⛏️ Шахта уже работает!", show_alert=True)
+                return
+            data["mine_start"]          = now_ts()
+            data["mine_campaigns_done"] = 0
+            data["mine_collected"]      = False
+            save_user(data["id"], data)
+            edit(mine_text(data), mine_keyboard(data))
+            return
+
+        if cd == "mine_refresh":
+            edit(mine_text(data), mine_keyboard(data))
+            return
+
+        if cd == "mine_collect":
+            if data["mine_start"] is None:
+                bot.answer_callback_query(call.id, "Сначала запусти шахту!", show_alert=True)
+                return
+            prog, result_text = collect_mine(data)
+            if not result_text:
+                bot.answer_callback_query(call.id, "⏳ Ещё ни одной кампании не завершено!", show_alert=True)
+                return
+            save_user(data["id"], data)
+            edit(result_text, mine_keyboard(data))
+            return
+
+        if cd == "mine_sell_screen":
+            edit(sell_screen_text(data), sell_keyboard())
+            return
+
+        if cd == "mine_sell_all":
+            total, report = sell_all_ores(data)
+            if total == 0:
+                bot.answer_callback_query(call.id, "Нечего продавать!", show_alert=True)
+                return
+            save_user(data["id"], data)
+            sell_text = (
+                f"💰 <b>ПРОДАЖА РУД</b>\n"
+                f"━━━━━━━━━━━━━━━━━━━━\n\n"
+                f"{report}\n\n"
+                f"✅ Итого получено: <b>{total:,} 💰</b>\n"
+                f"💳 Баланс: <b>{data['balance']:,} 💰</b>"
+            )
+            edit(sell_text, mine_keyboard(data))
+            return
+
+        # ===== МАСТЕРСКАЯ (с поддержкой страниц) =====
+        if cd == "mine_workshop" or cd == "mine_workshop_0":
+            edit(workshop_text(data, 0), workshop_keyboard(data, 0))
+            return
+
+        if cd.startswith("mine_workshop_"):
+            try:
+                page = int(cd.removeprefix("mine_workshop_"))
+            except ValueError:
+                page = 0
+            edit(workshop_text(data, page), workshop_keyboard(data, page))
+            return
+
+        if cd == "mine_duration_shop":
+            edit(duration_shop_text(data), duration_shop_keyboard(data))
+            return
+
+        # ===== НАЗАД В МЕНЮ =====
+        if cd == "back_to_menu":
+            try:
+                bot.edit_message_text(
+                    WELCOME_TEXT, chat_id, message_id,
+                    parse_mode="HTML",
+                    disable_web_page_preview=True,
+                    reply_markup=main_menu_keyboard()
+                )
+            except Exception as e:
+                if "message is not modified" not in str(e):
+                    print(e)
+            return
+
+        # ===== ОСТАЛЬНЫЕ РАЗДЕЛЫ =====
+        responses = {
+            "stats":    "📊 *СТАТИСТИКА*\n━━━━━━━━━━━━━━━━━━━━\n\n📝 Раздел в разработке...",
+            "hunt":     "🏹 *ОХОТА*\n━━━━━━━━━━━━━━━━━━━━\n\n📝 Раздел в разработке...",
+            "status":   "📌 *СТАТУС*\n━━━━━━━━━━━━━━━━━━━━\n\n📝 Раздел в разработке...",
+            "exchange": "💱 *БИРЖА*\n━━━━━━━━━━━━━━━━━━━━\n\n📝 Раздел в разработке...",
+            "leaders":  "🏆 *ЛИДЕРЫ*\n━━━━━━━━━━━━━━━━━━━━\n\n📝 Раздел в разработке...",
+            "settings": "⚙️ *НАСТРОЙКИ*\n━━━━━━━━━━━━━━━━━━━━\n\n📝 Раздел в разработке...",
+        }
+        text = responses.get(cd, "❓ Неизвестная команда")
         try:
             bot.edit_message_text(
                 text, chat_id, message_id,
-                parse_mode=md, reply_markup=kb,
-                disable_web_page_preview=True
+                parse_mode="Markdown", reply_markup=back_button()
             )
         except Exception as e:
             if "message is not modified" not in str(e):
                 print(e)
-
-    cd = call.data
-
-    # ===== NOOP =====
-    if cd == "noop":
-        bot.answer_callback_query(call.id)
-        return
-
-    # ===== ПРОФИЛЬ =====
-    if cd == "profile":
-        edit(profile_text(data), profile_keyboard())
-        return
-
-    # ===== МАГАЗИН =====
-    if cd == "shop":
-        edit(SHOP_TEXT, shop_main_keyboard())
-        return
-
-    if cd == "shop_pickaxes":
-        edit(shop_pickaxes_text(), shop_pickaxes_keyboard(data))
-        return
-
-    # ===== КИРКИ: просмотр карточки =====
-    if cd.startswith("pick_info_"):
-        pick_key = cd.removeprefix("pick_info_")
-        page     = get_pickaxe_page(pick_key)
-        edit(pickaxe_detail_text(data, pick_key), pickaxe_detail_keyboard(data, pick_key, page))
-        return
-
-    # ===== КИРКИ: купить за монеты =====
-    if cd.startswith("pick_buy_") and not cd.startswith("pick_buy_stars_"):
-        pick_key = cd.removeprefix("pick_buy_")
-        ok, msg  = buy_pickaxe(data, pick_key)
-        bot.answer_callback_query(call.id, msg, show_alert=True)
-        if ok:
-            save_user(data["id"], data)
-        page = get_pickaxe_page(pick_key)
-        edit(pickaxe_detail_text(data, pick_key), pickaxe_detail_keyboard(data, pick_key, page))
-        return
-
-    # ===== КИРКИ: купить за звёзды (инициирует инвойс) =====
-    if cd.startswith("pick_buy_stars_"):
-        pick_key = cd.removeprefix("pick_buy_stars_")
-        p        = PICKAXES.get(pick_key)
-        if not p:
-            bot.answer_callback_query(call.id, "❌ Неизвестная кирка.", show_alert=True)
-            return
-        # Запускаем Telegram Stars инвойс
-        try:
-            bot.send_invoice(
-                chat_id=chat_id,
-                title=f"Кирка {p['name']}",
-                description=f"Донатная кирка {p['name']} ({p['dig_min']:,}–{p['dig_max']:,} ударов за кампанию)",
-                invoice_payload=f"premium_pickaxe:{pick_key}",  # ← ИСПРАВЛЕНО
-                provider_token="",          # пустой для Stars
-                currency="XTR",             # Telegram Stars
-                prices=[telebot.types.LabeledPrice(label=p["name"], amount=p["cost_stars"])],
-            )
-        except Exception as e:
-            print(f"Invoice error: {e}")
-            bot.answer_callback_query(call.id, "❌ Ошибка при создании инвойса.", show_alert=True)
-        return
-
-    # ===== КИРКИ: выбрать =====
-    if cd.startswith("pick_select_"):
-        pick_key = cd.removeprefix("pick_select_")
-        ok, msg  = select_pickaxe(data, pick_key)
-        bot.answer_callback_query(call.id, msg, show_alert=True)
-        if ok:
-            save_user(data["id"], data)
-        page = get_pickaxe_page(pick_key)
-        edit(pickaxe_detail_text(data, pick_key), pickaxe_detail_keyboard(data, pick_key, page))
-        return
-
-    # ===== ДЛИТЕЛЬНОСТИ: просмотр карточки =====
-    if cd.startswith("dur_info_"):
-        dur_key = cd.removeprefix("dur_info_")
-        edit(duration_detail_text(data, dur_key), duration_detail_keyboard(data, dur_key))
-        return
-
-    # ===== ДЛИТЕЛЬНОСТИ: купить =====
-    if cd.startswith("dur_buy_"):
-        dur_key = cd.removeprefix("dur_buy_")
-        ok, msg = buy_duration(data, dur_key)
-        bot.answer_callback_query(call.id, msg, show_alert=True)
-        if ok:
-            save_user(data["id"], data)
-        edit(duration_detail_text(data, dur_key), duration_detail_keyboard(data, dur_key))
-        return
-
-    # ===== ДЛИТЕЛЬНОСТИ: выбрать =====
-    if cd.startswith("dur_select_"):
-        dur_key = cd.removeprefix("dur_select_")
-        ok, msg = select_duration(data, dur_key)
-        bot.answer_callback_query(call.id, msg, show_alert=True)
-        if ok:
-            save_user(data["id"], data)
-        edit(duration_detail_text(data, dur_key), duration_detail_keyboard(data, dur_key))
-        return
-
-    # ===== ШАХТА =====
-    if cd == "mine":
-        edit(mine_text(data), mine_keyboard(data))
-        return
-
-    if cd == "mine_start":
-        if data["mine_start"] is not None and not data["mine_collected"]:
-            bot.answer_callback_query(call.id, "⛏️ Шахта уже работает!", show_alert=True)
-            return
-        data["mine_start"]          = now_ts()
-        data["mine_campaigns_done"] = 0
-        data["mine_collected"]      = False
-        save_user(data["id"], data)
-        edit(mine_text(data), mine_keyboard(data))
-        return
-
-    if cd == "mine_refresh":
-        edit(mine_text(data), mine_keyboard(data))
-        return
-
-    if cd == "mine_collect":
-        if data["mine_start"] is None:
-            bot.answer_callback_query(call.id, "Сначала запусти шахту!", show_alert=True)
-            return
-        prog, result_text = collect_mine(data)
-        if not result_text:
-            bot.answer_callback_query(call.id, "⏳ Ещё ни одной кампании не завершено!", show_alert=True)
-            return
-        save_user(data["id"], data)
-        edit(result_text, mine_keyboard(data))
-        return
-
-    if cd == "mine_sell_screen":
-        edit(sell_screen_text(data), sell_keyboard())
-        return
-
-    if cd == "mine_sell_all":
-        total, report = sell_all_ores(data)
-        if total == 0:
-            bot.answer_callback_query(call.id, "Нечего продавать!", show_alert=True)
-            return
-        save_user(data["id"], data)
-        sell_text = (
-            f"💰 <b>ПРОДАЖА РУД</b>\n"
-            f"━━━━━━━━━━━━━━━━━━━━\n\n"
-            f"{report}\n\n"
-            f"✅ Итого получено: <b>{total:,} 💰</b>\n"
-            f"💳 Баланс: <b>{data['balance']:,} 💰</b>"
-        )
-        edit(sell_text, mine_keyboard(data))
-        return
-
-    # ===== МАСТЕРСКАЯ (с поддержкой страниц) =====
-    if cd == "mine_workshop" or cd == "mine_workshop_0":
-        edit(workshop_text(data, 0), workshop_keyboard(data, 0))
-        return
-
-    if cd.startswith("mine_workshop_"):
-        try:
-            page = int(cd.removeprefix("mine_workshop_"))
-        except ValueError:
-            page = 0
-        edit(workshop_text(data, page), workshop_keyboard(data, page))
-        return
-
-    if cd == "mine_duration_shop":
-        edit(duration_shop_text(data), duration_shop_keyboard(data))
-        return
-
-    # ===== НАЗАД В МЕНЮ =====
-    if cd == "back_to_menu":
-        try:
-            bot.edit_message_text(
-                WELCOME_TEXT, chat_id, message_id,
-                parse_mode="HTML",
-                disable_web_page_preview=True,
-                reply_markup=main_menu_keyboard()
-            )
-        except Exception as e:
-            if "message is not modified" not in str(e):
-                print(e)
-        return
-
-    # ===== ОСТАЛЬНЫЕ РАЗДЕЛЫ =====
-    responses = {
-        "stats":    "📊 *СТАТИСТИКА*\n━━━━━━━━━━━━━━━━━━━━\n\n📝 Раздел в разработке...",
-        "hunt":     "🏹 *ОХОТА*\n━━━━━━━━━━━━━━━━━━━━\n\n📝 Раздел в разработке...",
-        "status":   "📌 *СТАТУС*\n━━━━━━━━━━━━━━━━━━━━\n\n📝 Раздел в разработке...",
-        "exchange": "💱 *БИРЖА*\n━━━━━━━━━━━━━━━━━━━━\n\n📝 Раздел в разработке...",
-        "leaders":  "🏆 *ЛИДЕРЫ*\n━━━━━━━━━━━━━━━━━━━━\n\n📝 Раздел в разработке...",
-        "settings": "⚙️ *НАСТРОЙКИ*\n━━━━━━━━━━━━━━━━━━━━\n\n📝 Раздел в разработке...",
-    }
-    text = responses.get(cd, "❓ Неизвестная команда")
-    try:
-        bot.edit_message_text(
-            text, chat_id, message_id,
-            parse_mode="Markdown", reply_markup=back_button()
-        )
-    except Exception as e:
-        if "message is not modified" not in str(e):
-            print(e)
 
 
 # ===== ОПЛАТА ЧЕРЕЗ TELEGRAM STARS =====
@@ -339,12 +354,15 @@ def handle_successful_payment(message):
         pick_key = payload.split(":", 1)[1]
         from miner import grant_premium_pickaxe
         from database import get_user, save_user
-        data = get_user(message.from_user.id)
-        if data:
-            ok, msg = grant_premium_pickaxe(data, pick_key)
-            if ok:
-                save_user(data["id"], data)
-            bot.send_message(message.chat.id, msg, parse_mode="HTML")
+        uid = message.from_user.id
+        # Тоже берём Lock — защита от двойной выдачи через Stars
+        with _get_user_lock(uid):
+            data = get_user(uid)
+            if data:
+                ok, msg = grant_premium_pickaxe(data, pick_key)
+                if ok:
+                    save_user(data["id"], data)
+                bot.send_message(message.chat.id, msg, parse_mode="HTML")
 
 
 if __name__ == "__main__":
