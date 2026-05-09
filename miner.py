@@ -31,15 +31,15 @@ MAX_LEVEL = 75
 
 # ---------- РУДЫ ----------
 ORES = [
-    {"name": "🪨 Камень",  "key": "stone",    "chance": 75.00, "weight": 500, "price": 10},
-    {"name": "🖤 Уголь",   "key": "coal",     "chance": 30.00, "weight": 200, "price": 15},
-    {"name": "🟤 Медь",    "key": "copper",   "chance": 20.00, "weight": 120, "price": 25},
-    {"name": "⚙️ Железо",  "key": "iron",     "chance":  8.00, "weight":  60, "price": 80},
-    {"name": "🌕 Золото",  "key": "gold",     "chance":  3.00, "weight":  20, "price": 200},
-    {"name": "💎 Алмаз",   "key": "diamond",  "chance":  1.00, "weight":   8, "price": 500},
-    {"name": "🔮 Мифрил",  "key": "mithril",  "chance":  0.10, "weight":   3, "price": 4500},
-    {"name": "☢️ Уран",    "key": "uranium",  "chance":  0.04, "weight":   2, "price": 15000},
-    {"name": "💜 Аметист", "key": "amethyst", "chance":  0.01, "weight":   1, "price": 50000},
+    {"name": "🪨 Камень",  "key": "stone",    "chance": 75.00, "weight": 500, "price": 50},
+    {"name": "🖤 Уголь",   "key": "coal",     "chance": 30.00, "weight": 200, "price": 85},
+    {"name": "🟤 Медь",    "key": "copper",   "chance": 20.00, "weight": 120, "price": 125},
+    {"name": "⚙️ Железо",  "key": "iron",     "chance":  8.00, "weight":  60, "price": 280},
+    {"name": "🌕 Золото",  "key": "gold",     "chance":  3.00, "weight":  20, "price": 800},
+    {"name": "💎 Алмаз",   "key": "diamond",  "chance":  1.00, "weight":   8, "price": 5000},
+    {"name": "🔮 Мифрил",  "key": "mithril",  "chance":  0.10, "weight":   3, "price": 45000},
+    {"name": "☢️ Уран",    "key": "uranium",  "chance":  0.04, "weight":   2, "price": 150000},
+    {"name": "💜 Аметист", "key": "amethyst", "chance":  0.01, "weight":   1, "price": 500000},
 ]
 ORES_BY_KEY = {o["key"]: o for o in ORES}
 
