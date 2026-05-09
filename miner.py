@@ -598,7 +598,7 @@ def mine_text(data: dict) -> str:
     status = (
         '<tg-emoji emoji-id="5206607081334906820">🎟</tg-emoji> <b>Добыча завершена!</b>'
         if prog["finished"]
-        else f'<tg-emoji emoji-id="5341498088408234504">🎟</tg-emoji> Идёт добыча...</b>'
+        else f'<b><tg-emoji emoji-id="5341498088408234504">🎟</tg-emoji> Идёт добыча...</b>'
     )
     return (
         '<tg-emoji emoji-id="5197371802136892976">🎟</tg-emoji> <b>Шахта</b>\n'
