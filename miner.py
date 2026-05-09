@@ -601,14 +601,14 @@ def mine_text(data: dict) -> str:
         else f'<b><tg-emoji emoji-id="5341498088408234504">🎟</tg-emoji> Идёт добыча...</b>'
     )
     return (
-        '<tg-emoji emoji-id="5197371802136892976">🎟</tg-emoji> <b>Шахта</b>\n'
+        '<b><tg-emoji emoji-id="5197371802136892976">🎟</tg-emoji> <b>Шахта</b>\n'
         "━━━━━━━━━━━━━━━━━━━━\n\n"
         f'<tg-emoji emoji-id="5397782960512444700">🎟</tg-emoji>Выбрано: <b>{pick['name']}</b>\n'
         f'<tg-emoji emoji-id="5375338737028841420">🎟</tg-emoji>Кампаний: <b>{prog['campaigns_done']}/{prog['total_campaigns']}</b>\n\n'
         f'<tg-emoji emoji-id="5231200819986047254">🎟</tg-emoji> Прогресс:\n  {bar}\n\n'
         f"{status}\n\n"
         '<b><tg-emoji emoji-id="5906841463894841921">🎟</tg-emoji> Инвентарь:</b>\n'
-        f"{ore_inventory_text(data)}"
+        f"{ore_inventory_text(data)}</b>"
     )
 
 
