@@ -596,18 +596,18 @@ def mine_text(data: dict) -> str:
     prog   = calc_mine_progress(data)
     bar    = progress_bar(prog["percent"])
     status = (
-        "✅ <b>Добыча завершена!</b> Забери результат."
+        '<tg-emoji emoji-id="5206607081334906820">🎟</tg-emoji> <b>Добыча завершена!</b>'
         if prog["finished"]
-        else f"🔄 Идёт добыча... осталось <b>{fmt_time(prog['time_left'])}</b>"
+        else f'<tg-emoji emoji-id="5341498088408234504">🎟</tg-emoji> Идёт добыча...</b>'
     )
     return (
-        "⛏️ <b>ШАХТА</b>\n"
+        '<tg-emoji emoji-id="5197371802136892976">🎟</tg-emoji> <b>Шахта</b>\n'
         "━━━━━━━━━━━━━━━━━━━━\n\n"
-        f"Кирка: <b>{pick['name']}</b>\n"
-        f"⛏ Кампаний: <b>{prog['campaigns_done']}/{prog['total_campaigns']}</b>\n\n"
-        f"📊 Прогресс:\n  {bar}\n\n"
+        f'<tg-emoji emoji-id="5397782960512444700">🎟</tg-emoji>Выбрано: <b>{pick['name']}</b>\n'
+        f'<tg-emoji emoji-id="5375338737028841420">🎟</tg-emoji>Кампаний: <b>{prog['campaigns_done']}/{prog['total_campaigns']}</b>\n\n'
+        f'<tg-emoji emoji-id="5231200819986047254">🎟</tg-emoji> Прогресс:\n  {bar}\n\n'
         f"{status}\n\n"
-        "<b>📦 Инвентарь:</b>\n"
+        '<b><tg-emoji emoji-id="5906841463894841921">🎟</tg-emoji> Инвентарь:</b>\n'
         f"{ore_inventory_text(data)}"
     )
 
