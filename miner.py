@@ -556,8 +556,12 @@ def calc_mine_progress(data: dict) -> dict:
     }
 
 
-def ore_inventory_text(data: dict) -> str:
-    """Текст инвентаря без итоговой суммы, только список руд"""
+def ore_inventory_text(data: dict, short: bool = False) -> str:
+    """
+    Текст инвентаря.
+    short=True — показывает только первые 3 руды + '...и ещё' если их больше.
+    short=False — показывает все руды (полный инвентарь).
+    """
     lines = []
     for ore in ORES:
         qty = data["ores"].get(ore["key"], 0)
@@ -565,6 +569,27 @@ def ore_inventory_text(data: dict) -> str:
             lines.append(f"  {ore['name']}: <b>{qty}</b>")
     if not lines:
         return "  Инвентарь пуст"
+    if short and len(lines) > 3:
+        return "\n".join(lines[:3]) + "\n  <i>...и ещё</i>"
+    return "\n".join(lines)
+
+
+def inventory_screen_text(data: dict) -> str:
+    """Полный экран инвентаря с итоговой стоимостью."""
+    lines = [f"📦 <b>ИНВЕНТАРЬ</b>\n━━━━━━━━━━━━━━━━━━━━\n"]
+    has_ores   = False
+    total_value = 0
+    for ore in ORES:
+        qty = data["ores"].get(ore["key"], 0)
+        if qty > 0:
+            has_ores = True
+            worth = qty * ore["price"]
+            total_value += worth
+            lines.append(f"  {ore['name']}: <b>{qty}</b> (≈ {_fmt_num(worth)} {COIN})")
+    if not has_ores:
+        lines.append("  Инвентарь пуст")
+    else:
+        lines.append(f"\n💵 Итого если продать: <b>{_fmt_num(total_value)} {COIN}</b>")
     return "\n".join(lines)
 
 
@@ -584,10 +609,7 @@ def mine_text(data: dict) -> str:
             "━━━━━━━━━━━━━━━━━━━━\n\n"
             f'<tg-emoji emoji-id="5397782960512444700">🎟</tg-emoji>Выбрано: <b>{pick["name"]}</b>\n'
             f'<tg-emoji emoji-id="5440621591387980068">🎟</tg-emoji> Длительность: <b>{dur["label"]}</b>\n\n'
-            '<details>\n'
-            '<summary><b><tg-emoji emoji-id="5906841463894841921">🎟</tg-emoji> Инвентарь</b> ▼</summary>\n\n'
-            f'{ore_inventory_text(data)}\n\n'
-            '</details>\n\n'
+            f'<b>📦 Инвентарь:</b>\n{ore_inventory_text(data, short=True)}\n\n'
             'Нажми <b><tg-emoji emoji-id="5906727823355156804">🎟</tg-emoji> Запустить</b> чтобы начать добычу!'
         )
 
@@ -605,10 +627,7 @@ def mine_text(data: dict) -> str:
         f'<tg-emoji emoji-id="5375338737028841420">🎟</tg-emoji>Кампаний: <b>{prog["campaigns_done"]}/{prog["total_campaigns"]}</b>\n\n'
         f'<tg-emoji emoji-id="5231200819986047254">🎟</tg-emoji> Прогресс:\n  {bar}\n\n'
         f"{status}\n\n"
-        '<details>\n'
-        '<summary><b><tg-emoji emoji-id="5906841463894841921">🎟</tg-emoji> Инвентарь</b> ▼</summary>\n\n'
-        f'{ore_inventory_text(data)}\n\n'
-        '</details>'
+        f'<b>📦 Инвентарь:</b>\n{ore_inventory_text(data, short=True)}'
     )
 
 
@@ -757,13 +776,24 @@ def mine_keyboard(data: dict) -> InlineKeyboardMarkup:
 
     has_ores = any(data["ores"].get(o["key"], 0) > 0 for o in ORES)
     if has_ores:
-        kb.add(InlineKeyboardButton("💰 Продать", callback_data="mine_sell_screen"))
+        kb.add(
+            InlineKeyboardButton("💰 Продать",    callback_data="mine_sell_screen"),
+            InlineKeyboardButton("📦 Инвентарь",  callback_data="mine_inventory"),
+        )
+    else:
+        kb.add(InlineKeyboardButton("📦 Инвентарь", callback_data="mine_inventory"))
 
     kb.add(
         InlineKeyboardButton("🔨 Мастерская",   callback_data="mine_workshop_0"),
         InlineKeyboardButton("⏱ Длительность", callback_data="mine_duration_shop"),
     )
     kb.add(_back_btn("back_to_menu", "Назад"))
+    return kb
+
+
+def inventory_keyboard() -> InlineKeyboardMarkup:
+    kb = InlineKeyboardMarkup(row_width=1)
+    kb.add(_back_btn("mine", "Назад"))
     return kb
 
 
