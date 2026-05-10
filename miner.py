@@ -561,14 +561,18 @@ def ore_inventory_text(data: dict, short: bool = False) -> str:
     Текст инвентаря.
     short=True — показывает только первые 3 руды + '...и ещё' если их больше.
     short=False — показывает все руды (полный инвентарь).
+    Каждая руда показывается с ценой в скобках.
     """
     lines = []
     for ore in ORES:
         qty = data["ores"].get(ore["key"], 0)
         if qty > 0:
-            lines.append(f"  {ore['name']}: <b>{qty}</b>")
+            worth = qty * ore["price"]
+            lines.append(f"  {ore['name']}: <b>{qty}</b> (≈ {_fmt_num(worth)} {COIN})")
+    
     if not lines:
         return "  Инвентарь пуст"
+    
     if short and len(lines) > 3:
         return "\n".join(lines[:3]) + "\n  <i>...и ещё</i>"
     return "\n".join(lines)
@@ -577,8 +581,9 @@ def ore_inventory_text(data: dict, short: bool = False) -> str:
 def inventory_screen_text(data: dict) -> str:
     """Полный экран инвентаря с итоговой стоимостью."""
     lines = [f"📦 <b>ИНВЕНТАРЬ</b>\n━━━━━━━━━━━━━━━━━━━━\n"]
-    has_ores   = False
+    has_ores = False
     total_value = 0
+    
     for ore in ORES:
         qty = data["ores"].get(ore["key"], 0)
         if qty > 0:
@@ -586,10 +591,12 @@ def inventory_screen_text(data: dict) -> str:
             worth = qty * ore["price"]
             total_value += worth
             lines.append(f"  {ore['name']}: <b>{qty}</b> (≈ {_fmt_num(worth)} {COIN})")
+    
     if not has_ores:
         lines.append("  Инвентарь пуст")
     else:
         lines.append(f"\n💵 Итого если продать: <b>{_fmt_num(total_value)} {COIN}</b>")
+    
     return "\n".join(lines)
 
 
