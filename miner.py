@@ -616,11 +616,11 @@ def workshop_text(data: dict, page: int = 0) -> str:
     current    = data.get("pickaxe", "wood_1")
     page_label = WORKSHOP_PAGE_LABELS[page]
     return (
-        '<tg-emoji emoji-id="5906841463894841921">🎟</tg-emoji><b>Мастерская</b>\n'
+        '<tg-emoji emoji-id="5278702045883292456">🎟</tg-emoji><b>Мастерская</b>\n'
         "━━━━━━━━━━━━━━━━━━━━\n\n"
-        f'<tg-emoji emoji-id="5906841463894841921">🎟</tg-emoji> Баланс: <b>{_fmt_num(data['balance'])}</b>\n'
-        f'<tg-emoji emoji-id="5906841463894841921">🎟</tg-emoji> Выбрано: <b>{current}</b>\n'
-        f'<tg-emoji emoji-id="5906841463894841921">🎟</tg-emoji> Страница: <b>{page + 1}/{WORKSHOP_TOTAL_PAGES}</b>\n\n'
+        f'<tg-emoji emoji-id="5278467510604160626">🎟</tg-emoji> Баланс: <b>{_fmt_num(data['balance'])}</b>\n'
+        f'<tg-emoji emoji-id="5397782960512444700">🎟</tg-emoji> Выбрано: <b>{current}</b>\n'
+        f'<tg-emoji emoji-id="5444856076954520455">🎟</tg-emoji> Страница: <b>{page + 1}/{WORKSHOP_TOTAL_PAGES}</b>\n\n'
         "Выбери кирку для подробностей:"
     )
 
@@ -631,13 +631,13 @@ def pickaxe_detail_text(data: dict, pick_key: str) -> str:
     tier  = TIER_LABELS.get(p.get("tier", ""), "")
 
     if pick_key == data.get("pickaxe", "wood_1"):
-        status = "✅ Активна"
+        status = "✅Выбрано"
     elif pick_key in owned:
         status = "🔘 Куплена (не активна)"
     elif p["currency"] == "stars":
         status = f"⭐ Только за звёзды — {p['cost_stars']} {STAR}"
     else:
-        status = "🛒 Не куплена"
+        status = " ❌Не куплена"
 
     # Блок цен
     if p["currency"] == "stars":
