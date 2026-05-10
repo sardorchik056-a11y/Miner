@@ -617,7 +617,7 @@ def mine_text(data: dict) -> str:
             f'<tg-emoji emoji-id="5397782960512444700">🎟</tg-emoji><b>Выбрано: {pick["name"]}</b>\n'
             f'<tg-emoji emoji-id="5440621591387980068">🎟</tg-emoji><b>Длительность: {dur["label"]}</b>\n\n'
             f'<blockquote><b><tg-emoji emoji-id="5445221832074483553">🎟</tg-emoji><b>Инвентарь:</b>\n{ore_inventory_text(data, short=True)}</b></blockquote>\n\n'
-            'Нажми <b><tg-emoji emoji-id="5906727823355156804">🎟</tg-emoji> Запустить чтобы начать добычу!</b>'
+            '<b>Нажми <tg-emoji emoji-id="5906727823355156804">🎟</tg-emoji> Запустить чтобы начать добычу!</b>'
         )
 
     prog   = calc_mine_progress(data)
@@ -632,7 +632,7 @@ def mine_text(data: dict) -> str:
         "━━━━━━━━━━━━━━━━━━━━\n\n"
         f'<tg-emoji emoji-id="5397782960512444700">🎟</tg-emoji><b>Выбрано: {pick["name"]}</b>\n'
         f'<tg-emoji emoji-id="5375338737028841420">🎟</tg-emoji><b>Кампаний: {prog["campaigns_done"]}/{prog["total_campaigns"]}</b>\n\n'
-        f'<tg-emoji emoji-id="5231200819986047254">🎟</tg-emoji><b>Прогресс:\n  {bar}<b>\n\n'
+        f'<tg-emoji emoji-id="5231200819986047254">🎟</tg-emoji><b>Прогресс:\n  {bar}</b>\n\n'
         f"{status}\n\n"
         f'<blockquote><b><tg-emoji emoji-id="5445221832074483553">🎟</tg-emoji> Инвентарь:\n{ore_inventory_text(data, short=True)}</b></blockquote>'
     )
