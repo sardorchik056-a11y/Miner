@@ -17,6 +17,7 @@ from miner import (
     duration_detail_text, duration_detail_keyboard,
     sell_screen_text, sell_keyboard,
     shop_pickaxes_text, shop_pickaxes_keyboard,
+    inventory_screen_text, inventory_keyboard,
     init_mine_data,
     collect_mine,
     sell_all_ores,
@@ -287,6 +288,11 @@ def handle_callback(call):
                 f"💳 Баланс: <b>{data['balance']:,} 💰</b>"
             )
             edit(sell_text, mine_keyboard(data))
+            return
+
+        # ===== ИНВЕНТАРЬ =====
+        if cd == "mine_inventory":
+            edit(inventory_screen_text(data), inventory_keyboard())
             return
 
         # ===== МАСТЕРСКАЯ (с поддержкой страниц) =====
