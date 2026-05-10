@@ -601,7 +601,7 @@ def mine_text(data: dict) -> str:
         else f'<b><tg-emoji emoji-id="5341498088408234504">🎟</tg-emoji> Идёт добыча...</b>'
     )
     return (
-        '<b><tg-emoji emoji-id="5197371802136892976">🎟</tg-emoji> <b>Шахта</b>\n'
+        '<tg-emoji emoji-id="5197371802136892976">🎟</tg-emoji> <b>Шахта</b>\n'
         "━━━━━━━━━━━━━━━━━━━━\n\n"
         f'<tg-emoji emoji-id="5397782960512444700">🎟</tg-emoji>Выбрано: <b>{pick['name']}</b>\n'
         f'<tg-emoji emoji-id="5375338737028841420">🎟</tg-emoji>Кампаний: <b>{prog['campaigns_done']}/{prog['total_campaigns']}</b>\n\n'
@@ -616,12 +616,12 @@ def workshop_text(data: dict, page: int = 0) -> str:
     current    = data.get("pickaxe", "wood_1")
     page_label = WORKSHOP_PAGE_LABELS[page]
     return (
-        '<tg-emoji emoji-id="5278702045883292456">🎟</tg-emoji><b>Мастерская</b>\n'
+        '<b><tg-emoji emoji-id="5278702045883292456">🎟</tg-emoji><b>Мастерская</b>\n'
         "━━━━━━━━━━━━━━━━━━━━\n\n"
         f'<tg-emoji emoji-id="5278467510604160626">🎟</tg-emoji> Баланс: <b>{_fmt_num(data['balance'])}</b>\n'
         f'<tg-emoji emoji-id="5397782960512444700">🎟</tg-emoji> Выбрано: <b>{current}</b>\n'
         f'<tg-emoji emoji-id="5444856076954520455">🎟</tg-emoji> Страница: <b>{page + 1}/{WORKSHOP_TOTAL_PAGES}</b>\n\n'
-        "Выбери кирку для подробностей:"
+        "Выберите товар ниже:</b>"
     )
 
 
