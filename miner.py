@@ -557,22 +557,19 @@ def calc_mine_progress(data: dict) -> dict:
 
 
 def ore_inventory_text(data: dict) -> str:
+    """Текст инвентаря без итоговой суммы, только список руд"""
     lines = []
-    total_value = 0
     for ore in ORES:
         qty = data["ores"].get(ore["key"], 0)
         if qty > 0:
-            worth = qty * ore["price"]
-            total_value += worth
-            lines.append(f"  {ore['name']}: <b>{qty}</b>  <i>({worth:,} {COIN})</i>")
+            lines.append(f"  {ore['name']}: <b>{qty}</b>")
     if not lines:
         return "  Инвентарь пуст"
-    lines.append(f"\n  {COIN} Итого: <b>{total_value:,} монет</b>")
     return "\n".join(lines)
 
 
 # ============================================================
-#  ТЕКСТЫ ЭКРАНОВ (ИСПРАВЛЕННЫЕ)
+#  ТЕКСТЫ ЭКРАНОВ
 # ============================================================
 
 def mine_text(data: dict) -> str:
@@ -580,7 +577,6 @@ def mine_text(data: dict) -> str:
     pick     = PICKAXES[pick_key]
     dur_key  = data.get("mine_duration_key", "5min")
     dur      = DURATIONS[dur_key]
-    total_camps, _ = get_session_params(data)
 
     if data["mine_start"] is None or data["mine_collected"]:
         return (
@@ -588,8 +584,10 @@ def mine_text(data: dict) -> str:
             "━━━━━━━━━━━━━━━━━━━━\n\n"
             f'<tg-emoji emoji-id="5397782960512444700">🎟</tg-emoji>Выбрано: <b>{pick["name"]}</b>\n'
             f'<tg-emoji emoji-id="5440621591387980068">🎟</tg-emoji> Длительность: <b>{dur["label"]}</b>\n\n'
-            '<blockquote><b><tg-emoji emoji-id="5906841463894841921">🎟</tg-emoji> Инвентарь:</b>\n'
-            f'{ore_inventory_text(data)}\n\n</blockquote>'
+            '<details>\n'
+            '<summary><b><tg-emoji emoji-id="5906841463894841921">🎟</tg-emoji> Инвентарь</b> ▼</summary>\n\n'
+            f'{ore_inventory_text(data)}\n\n'
+            '</details>\n\n'
             'Нажми <b><tg-emoji emoji-id="5906727823355156804">🎟</tg-emoji> Запустить</b> чтобы начать добычу!'
         )
 
@@ -607,8 +605,10 @@ def mine_text(data: dict) -> str:
         f'<tg-emoji emoji-id="5375338737028841420">🎟</tg-emoji>Кампаний: <b>{prog["campaigns_done"]}/{prog["total_campaigns"]}</b>\n\n'
         f'<tg-emoji emoji-id="5231200819986047254">🎟</tg-emoji> Прогресс:\n  {bar}\n\n'
         f"{status}\n\n"
-        '<blockquote><b><tg-emoji emoji-id="5906841463894841921">🎟</tg-emoji> Инвентарь:</b>\n'
-        f'{ore_inventory_text(data)}\n\n</blockquote>'
+        '<details>\n'
+        '<summary><b><tg-emoji emoji-id="5906841463894841921">🎟</tg-emoji> Инвентарь</b> ▼</summary>\n\n'
+        f'{ore_inventory_text(data)}\n\n'
+        '</details>'
     )
 
 
@@ -631,13 +631,13 @@ def pickaxe_detail_text(data: dict, pick_key: str) -> str:
     tier  = TIER_LABELS.get(p.get("tier", ""), "")
 
     if pick_key == data.get("pickaxe", "wood_1"):
-        status = "✅Выбрано"
+        status = "✅ Выбрано"
     elif pick_key in owned:
         status = "🔘 Куплена (не активна)"
     elif p["currency"] == "stars":
         status = f"⭐ Только за звёзды — {p['cost_stars']} {STAR}"
     else:
-        status = " ❌Не куплена"
+        status = "❌ Не куплена"
 
     # Блок цен
     if p["currency"] == "stars":
