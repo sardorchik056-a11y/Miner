@@ -580,7 +580,7 @@ def ore_inventory_text(data: dict, short: bool = False) -> str:
 
 def inventory_screen_text(data: dict) -> str:
     """Полный экран инвентаря с итоговой стоимостью."""
-    lines = [f"<tg-emoji emoji-id="5445221832074483553">🎟</tg-emoji> <b>Инвентарь</b>\n━━━━━━━━━━━━━━━━━━━━\n"]
+    lines = [f'<tg-emoji emoji-id="5445221832074483553">🎟</tg-emoji> <b>Инвентарь</b>\n━━━━━━━━━━━━━━━━━━━━\n']
     has_ores = False
     total_value = 0
     
