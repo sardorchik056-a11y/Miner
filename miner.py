@@ -595,7 +595,7 @@ def inventory_screen_text(data: dict) -> str:
     if not has_ores:
         lines.append("  Инвентарь пуст")
     else:
-        lines.append(f"\n<b>Итого: {_fmt_num(total_value)} {COIN}</b>")
+        lines.append(f'\n<b><tg-emoji emoji-id="5303214794336125778">🎟</tg-emoji>Итого: {_fmt_num(total_value)} {COIN}</b>')
     
     return "\n".join(lines)
 
