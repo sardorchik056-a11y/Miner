@@ -580,7 +580,7 @@ def ore_inventory_text(data: dict, short: bool = False) -> str:
 
 def inventory_screen_text(data: dict) -> str:
     """Полный экран инвентаря с итоговой стоимостью."""
-    lines = [f"📦 <b>ИНВЕНТАРЬ</b>\n━━━━━━━━━━━━━━━━━━━━\n"]
+    lines = [f"<tg-emoji emoji-id="5445221832074483553">🎟</tg-emoji> <b>Инвентарь</b>\n━━━━━━━━━━━━━━━━━━━━\n"]
     has_ores = False
     total_value = 0
     
@@ -590,12 +590,12 @@ def inventory_screen_text(data: dict) -> str:
             has_ores = True
             worth = qty * ore["price"]
             total_value += worth
-            lines.append(f"  {ore['name']}: <b>{qty}</b> (≈ {_fmt_num(worth)} {COIN})")
+            lines.append(f"<blockquote>  <b>{ore['name']}: {qty}</b> (≈ {_fmt_num(worth)} {COIN})</blockquote>")
     
     if not has_ores:
         lines.append("  Инвентарь пуст")
     else:
-        lines.append(f"\n💵 Итого если продать: <b>{_fmt_num(total_value)} {COIN}</b>")
+        lines.append(f"\n<b>Итого: {_fmt_num(total_value)} {COIN}</b>")
     
     return "\n".join(lines)
 
