@@ -614,10 +614,10 @@ def mine_text(data: dict) -> str:
         return (
             '<tg-emoji emoji-id="5197371802136892976">🎟</tg-emoji> <b>Шахта</b>\n'
             "━━━━━━━━━━━━━━━━━━━━\n\n"
-            f'<tg-emoji emoji-id="5397782960512444700">🎟</tg-emoji>Выбрано: <b>{pick["name"]}</b>\n'
-            f'<tg-emoji emoji-id="5440621591387980068">🎟</tg-emoji> Длительность: <b>{dur["label"]}</b>\n\n'
-            f'<b>📦 Инвентарь:</b>\n{ore_inventory_text(data, short=True)}\n\n'
-            'Нажми <b><tg-emoji emoji-id="5906727823355156804">🎟</tg-emoji> Запустить</b> чтобы начать добычу!'
+            f'<tg-emoji emoji-id="5397782960512444700">🎟</tg-emoji><b>Выбрано: {pick["name"]}</b>\n'
+            f'<tg-emoji emoji-id="5440621591387980068">🎟</tg-emoji><b>Длительность: {dur["label"]}</b>\n\n'
+            f'<blockquote><b><tg-emoji emoji-id="5445221832074483553">🎟</tg-emoji><b>Инвентарь:</b>\n{ore_inventory_text(data, short=True)}</b></blockquote>\n\n'
+            'Нажми <b><tg-emoji emoji-id="5906727823355156804">🎟</tg-emoji> Запустить чтобы начать добычу!</b>'
         )
 
     prog   = calc_mine_progress(data)
@@ -630,11 +630,11 @@ def mine_text(data: dict) -> str:
     return (
         '<tg-emoji emoji-id="5197371802136892976">🎟</tg-emoji> <b>Шахта</b>\n'
         "━━━━━━━━━━━━━━━━━━━━\n\n"
-        f'<tg-emoji emoji-id="5397782960512444700">🎟</tg-emoji>Выбрано: <b>{pick["name"]}</b>\n'
-        f'<tg-emoji emoji-id="5375338737028841420">🎟</tg-emoji>Кампаний: <b>{prog["campaigns_done"]}/{prog["total_campaigns"]}</b>\n\n'
-        f'<tg-emoji emoji-id="5231200819986047254">🎟</tg-emoji> Прогресс:\n  {bar}\n\n'
+        f'<tg-emoji emoji-id="5397782960512444700">🎟</tg-emoji><b>Выбрано: {pick["name"]}</b>\n'
+        f'<tg-emoji emoji-id="5375338737028841420">🎟</tg-emoji><b>Кампаний: {prog["campaigns_done"]}/{prog["total_campaigns"]}</b>\n\n'
+        f'<tg-emoji emoji-id="5231200819986047254">🎟</tg-emoji><b>Прогресс:\n  {bar}<b>\n\n'
         f"{status}\n\n"
-        f'<b>📦 Инвентарь:</b>\n{ore_inventory_text(data, short=True)}'
+        f'<blockquote><b><tg-emoji emoji-id="5445221832074483553">🎟</tg-emoji> Инвентарь:\n{ore_inventory_text(data, short=True)}</b></blockquote>'
     )
 
 
@@ -642,12 +642,12 @@ def workshop_text(data: dict, page: int = 0) -> str:
     current    = data.get("pickaxe", "wood_1")
     page_label = WORKSHOP_PAGE_LABELS[page]
     return (
-        '<tg-emoji emoji-id="5278702045883292456">🎟</tg-emoji> <b>Мастерская</b>\n'
+        '<b><tg-emoji emoji-id="5278702045883292456">🎟</tg-emoji> <b>Мастерская</b>\n'
         "━━━━━━━━━━━━━━━━━━━━\n\n"
         f'<tg-emoji emoji-id="5278467510604160626">🎟</tg-emoji> Баланс: <b>{_fmt_num(data["balance"])}</b>\n'
         f'<tg-emoji emoji-id="5397782960512444700">🎟</tg-emoji> Выбрано: <b>{current}</b>\n'
         f'<tg-emoji emoji-id="5444856076954520455">🎟</tg-emoji> Страница: <b>{page + 1}/{WORKSHOP_TOTAL_PAGES}</b>\n\n'
-        "Выберите товар ниже:"
+        "Выберите товар ниже:</b>"
     )
 
 
