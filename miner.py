@@ -17,15 +17,49 @@ import random
 from datetime import datetime, timezone
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-# ---------- ЭМОДЗИ ДЛЯ КНОПОК ----------
-EMOJI_NOT_BOUGHT  = "5406683434124859552"   # не куплено
+# ============================================================
+#  PREMIUM EMOJI IDs — замени на свои
+# ============================================================
+
+# Статусы кирок / длительностей
+EMOJI_NOT_BOUGHT  = "5240241223632954241"   # не куплено
 EMOJI_SELECTED    = "5206607081334906820"   # выбрано / активно
 EMOJI_BACK        = "6039539366177541657"   # назад
-EMOJI_COIN        = "5199552030615558774"   # монета
-EMOJI_STAR        = "5368324170671202286"   # звезда Telegram
+
+# Валюты
+EMOJI_COIN        = "5199552030615558774"   # монета (в тексте сообщений)
+EMOJI_STAR        = "5267500801240092311"   # звезда Telegram (в тексте сообщений)
+
+# Кнопки шахты
+EMOJI_BTN_START   = "5906891238270834298"   # ▶️ Запустить
+EMOJI_BTN_COLLECT = "5310278924616356636"   # 🎒 Забрать добычу
+EMOJI_BTN_COLLECT_PART = "5310278924616356636"  # 🎒 Забрать (частично)
+EMOJI_BTN_REFRESH = "5386367538735104399"   # 🔄 Обновить
+EMOJI_BTN_SELL    = "5429518319243775957"   # 💰 Продать
+EMOJI_BTN_INV     = "5445221832074483553"   # 📦 Инвентарь
+EMOJI_BTN_WORKSHOP = "5278702045883292456"  # 🔨 Мастерская
+EMOJI_BTN_DURATION = "5440621591387980068"  # ⏱ Длительность
+
+# Кнопки покупки / действий с кирками
+EMOJI_BTN_BUY_COINS  = "5199552030615558774"  # 💰 Купить за монеты
+EMOJI_BTN_BUY_STARS  = "5267500801240092311"  # ⭐ Купить за звёзды
+EMOJI_BTN_FREE       = "5199552030615558774"  # 🆓 Бесплатно
+EMOJI_BTN_SELECT     = "5397916757333654639"  # 🔘 Выбрать
+EMOJI_BTN_ACTIVE     = "5206607081334906820"  # ✅ Активна
+EMOJI_BTN_NO_COINS   = "5240241223632954241"  # 🚫 Монеты недоступны
+
+# Кнопки покупки / действий с длительностью
+EMOJI_BTN_DUR_BUY    = "5199552030615558774"  # 🛒 Купить длительность
+EMOJI_BTN_SELL_ALL   = "5429518319243775957"  # ✅ Продать всё
+
+
+def _emoji_btn(emoji_id: str, fallback: str) -> str:
+    """Формирует tg-emoji тег для кнопок."""
+    return f'<tg-emoji emoji-id="{emoji_id}">{fallback}</tg-emoji>'
+
 
 COIN = f'<tg-emoji emoji-id="{EMOJI_COIN}">💰</tg-emoji>'
-STAR = f'<tg-emoji emoji-id="{EMOJI_STAR}">⭐</tg-emoji>'
+STAR = f'<tg-emoji emoji-id="5267500801240092311">⭐</tg-emoji>'
 
 MAX_LEVEL = 75
 
@@ -557,22 +591,16 @@ def calc_mine_progress(data: dict) -> dict:
 
 
 def ore_inventory_text(data: dict, short: bool = False) -> str:
-    """
-    Текст инвентаря.
-    short=True — показывает только первые 3 руды + '...и ещё' если их больше.
-    short=False — показывает все руды (полный инвентарь).
-    Каждая руда показывается с ценой в скобках.
-    """
     lines = []
     for ore in ORES:
         qty = data["ores"].get(ore["key"], 0)
         if qty > 0:
             worth = qty * ore["price"]
             lines.append(f"  {ore['name']}: <b>{qty}</b> (≈ {_fmt_num(worth)} {COIN})")
-    
+
     if not lines:
         return "  Инвентарь пуст"
-    
+
     if short and len(lines) > 3:
         return "\n".join(lines[:3]) + "\n  <i>...и ещё</i>"
     return "\n".join(lines)
@@ -583,7 +611,7 @@ def inventory_screen_text(data: dict) -> str:
     lines = [f'<tg-emoji emoji-id="5445221832074483553">🎟</tg-emoji> <b>Инвентарь</b>\n━━━━━━━━━━━━━━━━━━━━\n']
     has_ores = False
     total_value = 0
-    
+
     for ore in ORES:
         qty = data["ores"].get(ore["key"], 0)
         if qty > 0:
@@ -591,12 +619,12 @@ def inventory_screen_text(data: dict) -> str:
             worth = qty * ore["price"]
             total_value += worth
             lines.append(f"<blockquote>  <b>{ore['name']}: {qty}</b> (≈ {_fmt_num(worth)} {COIN})</blockquote>")
-    
+
     if not has_ores:
         lines.append("  Инвентарь пуст")
     else:
         lines.append(f'\n<b><tg-emoji emoji-id="5303214794336125778">🎟</tg-emoji>Итого: {_fmt_num(total_value)} {COIN}</b>')
-    
+
     return "\n".join(lines)
 
 
@@ -680,7 +708,7 @@ def pickaxe_detail_text(data: dict, pick_key: str) -> str:
     return (
         f"<b><b>{p['name']}</b>\n"
         "━━━━━━━━━━━━━━━━━━━━\n\n"
-        f'<blockquote><tg-emoji emoji-id="5278467510604160626">🎟</tg-emoji> Баланс: <b>{_fmt_num(data['balance'])}</b>\n'
+        f'<blockquote><tg-emoji emoji-id="5278467510604160626">🎟</tg-emoji> Баланс: <b>{_fmt_num(data["balance"])}</b>\n'
         f"Название: <b>{p['name']}</b>\n"
         f"🏷 Тир: <b>{tier}</b>\n"
         f"Каждые 5 мин: <b>{p['dig_min']:,}–{p['dig_max']:,}</b></blockquote>\n\n"
@@ -755,6 +783,15 @@ def sell_screen_text(data: dict) -> str:
 #  КЛАВИАТУРЫ
 # ============================================================
 
+def _prem_btn(emoji_id: str, label: str, callback: str) -> InlineKeyboardButton:
+    """Кнопка с premium emoji."""
+    return InlineKeyboardButton(
+        label,
+        callback_data=callback,
+        icon_custom_emoji_id=emoji_id
+    )
+
+
 def _back_btn(callback: str, label: str = "Назад") -> InlineKeyboardButton:
     return InlineKeyboardButton(
         label,
@@ -772,27 +809,27 @@ def mine_keyboard(data: dict) -> InlineKeyboardMarkup:
         is_finished = prog["finished"]
 
     if not is_running:
-        kb.add(InlineKeyboardButton("▶️ Запустить", callback_data="mine_start"))
+        kb.add(_prem_btn(EMOJI_BTN_START, "Запустить", "mine_start"))
     elif is_finished:
-        kb.add(InlineKeyboardButton("🎒 Забрать добычу", callback_data="mine_collect"))
+        kb.add(_prem_btn(EMOJI_BTN_COLLECT, "Забрать добычу", "mine_collect"))
     else:
         kb.add(
-            InlineKeyboardButton("🔄 Обновить",           callback_data="mine_refresh"),
-            InlineKeyboardButton("🎒 Забрать (частично)", callback_data="mine_collect"),
+            _prem_btn(EMOJI_BTN_REFRESH, "Обновить",           "mine_refresh"),
+            _prem_btn(EMOJI_BTN_COLLECT_PART, "Забрать", "mine_collect"),
         )
 
     has_ores = any(data["ores"].get(o["key"], 0) > 0 for o in ORES)
     if has_ores:
         kb.add(
-            InlineKeyboardButton("💰 Продать",    callback_data="mine_sell_screen"),
-            InlineKeyboardButton("📦 Инвентарь",  callback_data="mine_inventory"),
+            _prem_btn(EMOJI_BTN_SELL,    "Продать",    "mine_sell_screen"),
+            _prem_btn(EMOJI_BTN_INV,     "Инвентарь",  "mine_inventory"),
         )
     else:
-        kb.add(InlineKeyboardButton("📦 Инвентарь", callback_data="mine_inventory"))
+        kb.add(_prem_btn(EMOJI_BTN_INV, "Инвентарь", "mine_inventory"))
 
     kb.add(
-        InlineKeyboardButton("🔨 Мастерская",   callback_data="mine_workshop_0"),
-        InlineKeyboardButton("⏱ Длительность", callback_data="mine_duration_shop"),
+        _prem_btn(EMOJI_BTN_WORKSHOP,  "Мастерская",   "mine_workshop_0"),
+        _prem_btn(EMOJI_BTN_DURATION,  "Длительность", "mine_duration_shop"),
     )
     kb.add(_back_btn("back_to_menu", "Назад"))
     return kb
@@ -806,7 +843,7 @@ def inventory_keyboard() -> InlineKeyboardMarkup:
 
 def sell_keyboard() -> InlineKeyboardMarkup:
     kb = InlineKeyboardMarkup(row_width=1)
-    kb.add(InlineKeyboardButton("✅ Продать всё", callback_data="mine_sell_all"))
+    kb.add(_prem_btn(EMOJI_BTN_SELL_ALL, "Продать всё", "mine_sell_all"))
     kb.add(_back_btn("mine", "Назад"))
     return kb
 
@@ -874,43 +911,39 @@ def pickaxe_detail_keyboard(data: dict, pick_key: str, page: int = -1) -> Inline
         page = get_pickaxe_page(pick_key)
 
     if pick_key == data.get("pickaxe", "wood_1"):
-        kb.add(InlineKeyboardButton("✅ Уже активна", callback_data="noop"))
+        # Уже активна — одна кнопка-заглушка
+        kb.add(_prem_btn(EMOJI_BTN_ACTIVE, "Уже активна", "noop"))
 
     elif pick_key in owned:
-        kb.add(InlineKeyboardButton(
-            "🔘 Выбрать эту кирку",
-            callback_data=f"pick_select_{pick_key}"
-        ))
+        # Куплена, но не выбрана — только «Выбрать»
+        kb.add(_prem_btn(EMOJI_BTN_SELECT, "Выбрать", f"pick_select_{pick_key}"))
 
     elif p["currency"] == "stars":
-        kb.add(InlineKeyboardButton(
-            "🚫 Монеты недоступны",
-            callback_data="noop"
-        ))
-        kb.add(InlineKeyboardButton(
-            f"⭐ Купить за {p['cost_stars']:,} звёзд",
-            callback_data=f"pick_buy_stars_{pick_key}"
+        # Только за звёзды
+        kb.add(_prem_btn(EMOJI_BTN_NO_COINS, "Монеты недоступны", "noop"))
+        kb.add(_prem_btn(
+            EMOJI_BTN_BUY_STARS,
+            f"{p['cost_stars']:,} ⭐",
+            f"pick_buy_stars_{pick_key}"
         ))
 
     elif p["cost"] == 0:
-        kb.add(InlineKeyboardButton(
-            "🆓 Получить бесплатно",
-            callback_data=f"pick_buy_{pick_key}"
-        ))
-        kb.add(InlineKeyboardButton(
-            "⭐ Получить бесплатно (звёзды)",
-            callback_data=f"pick_buy_stars_{pick_key}"
-        ))
+        # Бесплатная
+        kb.add(_prem_btn(EMOJI_BTN_FREE, "Бесплатно", f"pick_buy_{pick_key}"))
+        kb.add(_prem_btn(EMOJI_BTN_FREE, "Бесплатно ⭐", f"pick_buy_stars_{pick_key}"))
 
     else:
+        # Платная — монеты + звёзды, только цифры без лишнего текста
         cost_stars = p.get("cost_stars", 0)
-        kb.add(InlineKeyboardButton(
-            f"💰 Купить за {_fmt_num(p['cost'])} монет",
-            callback_data=f"pick_buy_{pick_key}"
+        kb.add(_prem_btn(
+            EMOJI_BTN_BUY_COINS,
+            f"{_fmt_num(p['cost'])} 💰",
+            f"pick_buy_{pick_key}"
         ))
-        kb.add(InlineKeyboardButton(
-            f"⭐ Купить за {cost_stars:,} звёзд",
-            callback_data=f"pick_buy_stars_{pick_key}"
+        kb.add(_prem_btn(
+            EMOJI_BTN_BUY_STARS,
+            f"{cost_stars:,} ⭐",
+            f"pick_buy_stars_{pick_key}"
         ))
 
     kb.add(_back_btn(f"mine_workshop_{page}", "◀️ Назад"))
@@ -952,15 +985,19 @@ def duration_detail_keyboard(data: dict, dur_key: str) -> InlineKeyboardMarkup:
     owned_durs = data.get("owned_durations", ["5min"])
 
     if dur_key == data.get("mine_duration_key", "5min"):
-        kb.add(InlineKeyboardButton("✅ Уже активна", callback_data="noop"))
+        # Уже активна
+        kb.add(_prem_btn(EMOJI_BTN_ACTIVE, "Уже активна", "noop"))
+
     elif dur_key in owned_durs:
-        kb.add(InlineKeyboardButton(
-            "🔘 Выбрать эту длительность", callback_data=f"dur_select_{dur_key}"
-        ))
+        # Куплена, но не активна
+        kb.add(_prem_btn(EMOJI_BTN_SELECT, "Выбрать", f"dur_select_{dur_key}"))
+
     else:
-        kb.add(InlineKeyboardButton(
-            f"🛒 Купить — {_fmt_num(d['cost'])} 💰",
-            callback_data=f"dur_buy_{dur_key}"
+        # Купить — только цена
+        kb.add(_prem_btn(
+            EMOJI_BTN_DUR_BUY,
+            f"{_fmt_num(d['cost'])} 💰",
+            f"dur_buy_{dur_key}"
         ))
 
     kb.add(_back_btn("mine_duration_shop", "Назад"))
