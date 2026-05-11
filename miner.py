@@ -657,13 +657,13 @@ def pickaxe_detail_text(data: dict, pick_key: str) -> str:
     tier  = TIER_LABELS.get(p.get("tier", ""), "")
 
     if pick_key == data.get("pickaxe", "wood_1"):
-        status = "✅ Выбрано"
+        status = "✅Выбрано"
     elif pick_key in owned:
-        status = "🔘 Куплена (не активна)"
+        status = "🔘(не активна)"
     elif p["currency"] == "stars":
         status = f"⭐ Только за звёзды — {p['cost_stars']} {STAR}"
     else:
-        status = "❌ Не куплена"
+        status = "❌Не куплена"
 
     # Блок цен
     if p["currency"] == "stars":
@@ -678,16 +678,16 @@ def pickaxe_detail_text(data: dict, pick_key: str) -> str:
         stars_line = f"  {STAR} За звёзды: <b>{stars:,} звёзд</b>\n"
 
     return (
-        f"<b>КИРКА — {p['name']}</b>\n"
+        f"<b><b>{p['name']}</b>\n"
         "━━━━━━━━━━━━━━━━━━━━\n\n"
-        f"{COIN} Баланс: <b>{_fmt_num(data['balance'])}</b>\n\n"
+        f'<tg-emoji emoji-id="5278467510604160626">🎟</tg-emoji> Баланс: <b>{_fmt_num(data['balance'])}</b>\n\n'
         f"Название: <b>{p['name']}</b>\n"
         f"🏷 Тир: <b>{tier}</b>\n"
-        f"⛏ Ударов за кампанию: <b>{p['dig_min']:,}–{p['dig_max']:,}</b>\n\n"
-        f"💵 <b>Цены:</b>\n"
+        f"Каждые 5 мин: <b>{p['dig_min']:,}–{p['dig_max']:,}</b>\n\n"
+        f'<tg-emoji emoji-id="5287231198098117669">🎟</tg-emoji><b>Цены:</b>\n'
         f"{coins_line}"
         f"{stars_line}\n"
-        f"📌 Статус: <b>{status}</b>"
+        f"Статус: <b>{status}</b></b>"
     )
 
 
