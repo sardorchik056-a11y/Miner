@@ -686,7 +686,7 @@ def pickaxe_detail_text(data: dict, pick_key: str) -> str:
         f"Каждые 5 мин: <b>{p['dig_min']:,}–{p['dig_max']:,}</b></blockquote>\n\n"
         f'<blockquote><tg-emoji emoji-id="5287231198098117669">🎟</tg-emoji><b>Цены:</b>\n'
         f"{coins_line}"
-        f"{stars_line}\n<blockquote>"
+        f"{stars_line}\n</blockquote>"
         f"Статус: <b>{status}</b></b>"
     )
 
