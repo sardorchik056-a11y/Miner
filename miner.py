@@ -62,8 +62,8 @@ def _emoji_btn(emoji_id: str, fallback: str) -> str:
     return f'<tg-emoji emoji-id="{emoji_id}">{fallback}</tg-emoji>'
 
 
-COIN = f'<tg-emoji emoji-id="{EMOJI_COIN}">💰</tg-emoji>'
-STAR = f'<tg-emoji emoji-id="5267500801240092311">⭐</tg-emoji>'
+COIN = f'<tg-emoji emoji-id="{EMOJI_COIN}"></tg-emoji>'
+STAR = f'<tg-emoji emoji-id="5267500801240092311"></tg-emoji>'
 
 MAX_LEVEL = 75
 
