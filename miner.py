@@ -680,13 +680,13 @@ def pickaxe_detail_text(data: dict, pick_key: str) -> str:
     return (
         f"<b><b>{p['name']}</b>\n"
         "━━━━━━━━━━━━━━━━━━━━\n\n"
-        f'<tg-emoji emoji-id="5278467510604160626">🎟</tg-emoji> Баланс: <b>{_fmt_num(data['balance'])}</b>\n\n'
+        f'<blockquote><tg-emoji emoji-id="5278467510604160626">🎟</tg-emoji> Баланс: <b>{_fmt_num(data['balance'])}</b>\n'
         f"Название: <b>{p['name']}</b>\n"
         f"🏷 Тир: <b>{tier}</b>\n"
-        f"Каждые 5 мин: <b>{p['dig_min']:,}–{p['dig_max']:,}</b>\n\n"
-        f'<tg-emoji emoji-id="5287231198098117669">🎟</tg-emoji><b>Цены:</b>\n'
+        f"Каждые 5 мин: <b>{p['dig_min']:,}–{p['dig_max']:,}</b></blockquote>\n\n"
+        f'<blockquote><tg-emoji emoji-id="5287231198098117669">🎟</tg-emoji><b>Цены:</b>\n'
         f"{coins_line}"
-        f"{stars_line}\n"
+        f"{stars_line}\n<blockquote>"
         f"Статус: <b>{status}</b></b>"
     )
 
