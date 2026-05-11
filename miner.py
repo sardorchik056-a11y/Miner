@@ -31,14 +31,14 @@ EMOJI_COIN        = "5199552030615558774"   # монета (в тексте со
 EMOJI_STAR        = "5267500801240092311"   # звезда Telegram (в тексте сообщений)
 
 # Кнопки шахты
-EMOJI_BTN_START   = "5906891238270834298"   # ▶️ Запустить
-EMOJI_BTN_COLLECT = "5310278924616356636"   # 🎒 Забрать добычу
-EMOJI_BTN_COLLECT_PART = "5310278924616356636"  # 🎒 Забрать (частично)
-EMOJI_BTN_REFRESH = "5386367538735104399"   # 🔄 Обновить
-EMOJI_BTN_SELL    = "5429518319243775957"   # 💰 Продать
-EMOJI_BTN_INV     = "5445221832074483553"   # 📦 Инвентарь
-EMOJI_BTN_WORKSHOP = "5278702045883292456"  # 🔨 Мастерская
-EMOJI_BTN_DURATION = "5440621591387980068"  # ⏱ Длительность
+EMOJI_BTN_START        = "5906891238270834298"   # ▶️ Запустить
+EMOJI_BTN_COLLECT      = "5310278924616356636"   # 🎒 Забрать добычу
+EMOJI_BTN_COLLECT_PART = "5310278924616356636"   # 🎒 Забрать (частично)
+EMOJI_BTN_REFRESH      = "5386367538735104399"   # 🔄 Обновить
+EMOJI_BTN_SELL         = "5429518319243775957"   # 💰 Продать
+EMOJI_BTN_INV          = "5445221832074483553"   # 📦 Инвентарь
+EMOJI_BTN_WORKSHOP     = "5278702045883292456"   # 🔨 Мастерская
+EMOJI_BTN_DURATION     = "5440621591387980068"   # ⏱ Длительность
 
 # Кнопки покупки / действий с кирками
 EMOJI_BTN_BUY_COINS  = "5199552030615558774"  # 💰 Купить за монеты
@@ -51,6 +51,10 @@ EMOJI_BTN_NO_COINS   = "5240241223632954241"  # 🚫 Монеты недосту
 # Кнопки покупки / действий с длительностью
 EMOJI_BTN_DUR_BUY    = "5199552030615558774"  # 🛒 Купить длительность
 EMOJI_BTN_SELL_ALL   = "5429518319243775957"  # ✅ Продать всё
+
+# Навигация по страницам мастерской — замени ID на свои
+EMOJI_BTN_PAGE_PREV  = "5391032818111363540"  # ◀️ Предыдущая страница
+EMOJI_BTN_PAGE_NEXT  = "5391032818111363540"  # ▶️ Следующая страница
 
 
 def _emoji_btn(emoji_id: str, fallback: str) -> str:
@@ -814,22 +818,22 @@ def mine_keyboard(data: dict) -> InlineKeyboardMarkup:
         kb.add(_prem_btn(EMOJI_BTN_COLLECT, "Забрать добычу", "mine_collect"))
     else:
         kb.add(
-            _prem_btn(EMOJI_BTN_REFRESH, "Обновить",           "mine_refresh"),
+            _prem_btn(EMOJI_BTN_REFRESH, "Обновить", "mine_refresh"),
             _prem_btn(EMOJI_BTN_COLLECT_PART, "Забрать", "mine_collect"),
         )
 
     has_ores = any(data["ores"].get(o["key"], 0) > 0 for o in ORES)
     if has_ores:
         kb.add(
-            _prem_btn(EMOJI_BTN_SELL,    "Продать",    "mine_sell_screen"),
-            _prem_btn(EMOJI_BTN_INV,     "Инвентарь",  "mine_inventory"),
+            _prem_btn(EMOJI_BTN_SELL, "Продать",   "mine_sell_screen"),
+            _prem_btn(EMOJI_BTN_INV,  "Инвентарь", "mine_inventory"),
         )
     else:
         kb.add(_prem_btn(EMOJI_BTN_INV, "Инвентарь", "mine_inventory"))
 
     kb.add(
-        _prem_btn(EMOJI_BTN_WORKSHOP,  "Мастерская",   "mine_workshop_0"),
-        _prem_btn(EMOJI_BTN_DURATION,  "Длительность", "mine_duration_shop"),
+        _prem_btn(EMOJI_BTN_WORKSHOP, "Мастерская",   "mine_workshop_0"),
+        _prem_btn(EMOJI_BTN_DURATION, "Длительность", "mine_duration_shop"),
     )
     kb.add(_back_btn("back_to_menu", "Назад"))
     return kb
@@ -885,15 +889,19 @@ def workshop_keyboard(data: dict, page: int = 0) -> InlineKeyboardMarkup:
         row = buttons[i : i + 2]
         kb.add(*row)
 
-    # Навигация между страницами
+    # Навигация между страницами — с premium emoji
     nav_row = []
     if page > 0:
-        nav_row.append(InlineKeyboardButton(
-            f"◀️ стр. {page}", callback_data=f"mine_workshop_{page - 1}"
+        nav_row.append(_prem_btn(
+            EMOJI_BTN_PAGE_PREV,
+            f"стр. {page}",
+            f"mine_workshop_{page - 1}"
         ))
     if page < WORKSHOP_TOTAL_PAGES - 1:
-        nav_row.append(InlineKeyboardButton(
-            f"стр. {page + 2} ▶️", callback_data=f"mine_workshop_{page + 1}"
+        nav_row.append(_prem_btn(
+            EMOJI_BTN_PAGE_NEXT,
+            f"стр. {page + 2}",
+            f"mine_workshop_{page + 1}"
         ))
     if nav_row:
         kb.add(*nav_row)
