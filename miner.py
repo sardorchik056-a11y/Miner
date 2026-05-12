@@ -763,12 +763,12 @@ def sell_screen_text(data: dict) -> str:
     has_ores = any(data["ores"].get(o["key"], 0) > 0 for o in ORES)
     if not has_ores:
         return (
-            f"{COIN} <b>ПРОДАЖА РУД</b>\n"
+            f'<tg-emoji emoji-id="5429518319243775957">🎟</tg-emoji><b>Продажа</b>\n'
             "━━━━━━━━━━━━━━━━━━━━\n\n"
-            "📦 Инвентарь пуст — нечего продавать!\n\n"
+            '<tg-emoji emoji-id="5445221832074483553">🎟</tg-emoji> Инвентарь пуст — нечего продавать!\n\n'
             "Запусти шахту и накопи руды."
         )
-    lines = [f"{COIN} <b>ПРОДАЖА РУД</b>\n━━━━━━━━━━━━━━━━━━━━\n\n<b>Цены скупщика:</b>\n"]
+    lines = [f'<tg-emoji emoji-id="5429518319243775957">🎟</tg-emoji> <b>Продажа</b>\n━━━━━━━━━━━━━━━━━━━━\n\n<b><tg-emoji emoji-id="5305699699204837855">🎟</tg-emoji>Цены скупщика:</b>\n']
     total_value = 0
     for ore in ORES:
         qty = data["ores"].get(ore["key"], 0)
@@ -776,8 +776,8 @@ def sell_screen_text(data: dict) -> str:
             worth = qty * ore["price"]
             total_value += worth
             lines.append(f"  {ore['name']}: <b>{qty}</b> x {ore['price']:,} = <b>{worth:,} {COIN}</b>")
-    lines.append(f"\n{COIN} Баланс сейчас: <b>{_fmt_num(data['balance'])}</b>")
-    lines.append(f"📈 Получишь: <b>+{_fmt_num(total_value)} {COIN}</b>")
+    lines.append(f'\n<tg-emoji emoji-id="5278467510604160626">🎟</tg-emoji> Баланс: <b>{_fmt_num(data['balance'])}</b>')
+    lines.append(f'<tg-emoji emoji-id="5429651785352501917">🎟</tg-emoji> К получению: <b>+{_fmt_num(total_value)} {COIN}</b>')
     return "\n".join(lines)
 
 
@@ -929,30 +929,30 @@ def pickaxe_detail_keyboard(data: dict, pick_key: str, page: int = -1) -> Inline
         kb.add(_prem_btn(EMOJI_BTN_NO_COINS, "Монеты недоступны", "noop"))
         kb.add(_prem_btn(
             EMOJI_BTN_BUY_STARS,
-            f"{p['cost_stars']:,} ⭐",
+            f"{p['cost_stars']:,} ",
             f"pick_buy_stars_{pick_key}"
         ))
 
     elif p["cost"] == 0:
         # Бесплатная
         kb.add(_prem_btn(EMOJI_BTN_FREE, "Бесплатно", f"pick_buy_{pick_key}"))
-        kb.add(_prem_btn(EMOJI_BTN_FREE, "Бесплатно ⭐", f"pick_buy_stars_{pick_key}"))
+        kb.add(_prem_btn(EMOJI_BTN_FREE, "Бесплатно", f"pick_buy_stars_{pick_key}"))
 
     else:
         # Платная — монеты + звёзды, только цифры без лишнего текста
         cost_stars = p.get("cost_stars", 0)
         kb.add(_prem_btn(
             EMOJI_BTN_BUY_COINS,
-            f"{_fmt_num(p['cost'])} 💰",
+            f"{_fmt_num(p['cost'])} ",
             f"pick_buy_{pick_key}"
         ))
         kb.add(_prem_btn(
             EMOJI_BTN_BUY_STARS,
-            f"{cost_stars:,} ⭐",
+            f"{cost_stars:,} ",
             f"pick_buy_stars_{pick_key}"
         ))
 
-    kb.add(_back_btn(f"mine_workshop_{page}", "◀️ Назад"))
+    kb.add(_back_btn(f"mine_workshop_{page}", " Назад"))
     return kb
 
 
@@ -1002,7 +1002,7 @@ def duration_detail_keyboard(data: dict, dur_key: str) -> InlineKeyboardMarkup:
         # Купить — только цена
         kb.add(_prem_btn(
             EMOJI_BTN_DUR_BUY,
-            f"{_fmt_num(d['cost'])} 💰",
+            f"{_fmt_num(d['cost'])} ",
             f"dur_buy_{dur_key}"
         ))
 
