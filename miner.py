@@ -894,13 +894,13 @@ def workshop_keyboard(data: dict, page: int = 0) -> InlineKeyboardMarkup:
     if page > 0:
         nav_row.append(_prem_btn(
             EMOJI_BTN_PAGE_PREV,
-            f"стр. {page}",
+            f"{page}",
             f"mine_workshop_{page - 1}"
         ))
     if page < WORKSHOP_TOTAL_PAGES - 1:
         nav_row.append(_prem_btn(
             EMOJI_BTN_PAGE_NEXT,
-            f"стр. {page + 2}",
+            f"{page + 2}",
             f"mine_workshop_{page + 1}"
         ))
     if nav_row:
