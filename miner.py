@@ -62,8 +62,8 @@ def _emoji_btn(emoji_id: str, fallback: str) -> str:
     return f'<tg-emoji emoji-id="{emoji_id}">{fallback}</tg-emoji>'
 
 
-COIN = f'<tg-emoji emoji-id="{EMOJI_COIN}"></tg-emoji>'
-STAR = f'<tg-emoji emoji-id="5267500801240092311"></tg-emoji>'
+COIN = f'<tg-emoji emoji-id="{EMOJI_COIN}">🪙</tg-emoji>'
+STAR = f'<tg-emoji emoji-id="5267500801240092311">⭐</tg-emoji>'
 
 MAX_LEVEL = 75
 
@@ -775,7 +775,7 @@ def sell_screen_text(data: dict) -> str:
         if qty > 0:
             worth = qty * ore["price"]
             total_value += worth
-            lines.append(f"  {ore['name']}: <b>{qty}</b> x {ore['price']:,} = <b>{worth:,} {COIN}</b>")
+            lines.append(f"<blockquote>  <b>{ore['name']}: {qty}</b> (≈ {_fmt_num(worth)} {COIN})</blockquote>")
     lines.append(f'\n<tg-emoji emoji-id="5278467510604160626">🎟</tg-emoji> Баланс: <b>{_fmt_num(data['balance'])}</b>')
     lines.append(f'<tg-emoji emoji-id="5429651785352501917">🎟</tg-emoji> К получению: <b>+{_fmt_num(total_value)} {COIN}</b>')
     return "\n".join(lines)
