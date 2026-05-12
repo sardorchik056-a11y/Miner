@@ -693,7 +693,7 @@ def pickaxe_detail_text(data: dict, pick_key: str) -> str:
     elif pick_key in owned:
         status = "🔘(не активна)"
     elif p["currency"] == "stars":
-        status = f"⭐ Только за звёзды — {p['cost_stars']} {STAR}"
+        status = f"⭐за звёзды — {p['cost_stars']} {STAR}"
     else:
         status = "❌Не куплена"
 
@@ -729,12 +729,12 @@ def duration_shop_text(data: dict) -> str:
     owned_durs = data.get("owned_durations", ["5min"])
     owned_cnt  = len([k for k in DURATIONS_ORDER if k in owned_durs])
     return (
-        "⏱ <b>ДЛИТЕЛЬНОСТЬ СЕССИИ</b>\n"
+        '<tg-emoji emoji-id="5440621591387980068">🎟</tg-emoji> <b>Длительность сессии</b>\n'
         "━━━━━━━━━━━━━━━━━━━━\n\n"
-        f"{COIN} Баланс: <b>{_fmt_num(data['balance'])}</b>\n"
-        f"📌 Активна: <b>{cur_label}</b>\n"
-        f"🔓 Открыто: <b>{owned_cnt}/{len(DURATIONS_ORDER)}</b>\n\n"
-        "Выбери длительность для подробностей:"
+        f'<tg-emoji emoji-id="5278467510604160626">🎟</tg-emoji> Баланс: <b>{_fmt_num(data['balance'])}{COIN}</b>\n'
+        f'<tg-emoji emoji-id="5456140674028019486">🎟</tg-emoji> Активна: <b>{cur_label}</b>\n'
+        f'<tg-emoji emoji-id="5296369303661067030">🎟</tg-emoji> Открыто: <b>{owned_cnt}/{len(DURATIONS_ORDER)}</b>\n\n'
+        "Выберите для подробностей:"
     )
 
 
@@ -745,19 +745,17 @@ def duration_detail_text(data: dict, dur_key: str) -> str:
     if dur_key == data.get("mine_duration_key", "5min"):
         status = "✅ Активна"
     elif dur_key in owned_durs:
-        status = "🔘 Куплена (не активна)"
+        status = "🔘(не активна)"
     else:
-        status = "🛒 Не куплена"
+        status = "❌Не куплена"
 
     return (
-        f"⏱ <b>ДЛИТЕЛЬНОСТЬ — {d['label']}</b>\n"
+        f'<tg-emoji emoji-id="5440621591387980068">🎟</tg-emoji> <b>Длительность — {d['label']}</b>\n'
         "━━━━━━━━━━━━━━━━━━━━\n\n"
-        f"{COIN} Баланс: <b>{_fmt_num(data['balance'])}</b>\n\n"
-        f"⏱ Время сессии: <b>{d['label']}</b>\n"
-        f"🔄 Кампаний: <b>{d['campaigns']}</b> (по 5 мин каждая)\n"
-        f"⏳ Итого: <b>{fmt_time(d['campaigns'] * CAMPAIGN_SECONDS)}</b>\n"
-        f"{COIN} Цена: <b>{_fmt_num(d['cost']) if d['cost'] else 'Бесплатно'}</b>\n"
-        f"📌 Статус: <b>{status}</b>"
+        f'<tg-emoji emoji-id="5278467510604160626">🎟</tg-emoji> Баланс: <b>{_fmt_num(data['balance'])}{COIN}</b>\n\n'
+        f'<tg-emoji emoji-id="5382194935057372936">🎟</tg-emoji> Время сессии: <b>{d['label']}</b>\n'
+        f'<tg-emoji emoji-id="5330320040883411678">🎟</tg-emoji> Цена: <b>{_fmt_num(d['cost']) if d['cost'] else 'Бесплатно'}{COIN}</b>\n'
+        f'<tg-emoji emoji-id="5438496463044752972">🎟</tg-emoji> Статус: <b>{status}</b>'
     )
 
 
