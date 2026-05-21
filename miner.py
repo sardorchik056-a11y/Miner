@@ -70,7 +70,7 @@ MAX_LEVEL = 75
 # ---------- РУДЫ ----------
 ORES = [
     {"name": "🪨 Камень",  "key": "stone",    "chance": 75.00, "weight": 500, "price": 50},
-    {"name": '<tg-emoji emoji-id="5339390195768774311">🖤</tg-emoji> Уголь',   "key": "coal",     "chance": 30.00, "weight": 200, "price": 85},
+    {"name": '<tg-emoji emoji-id="5773638078321135255">🖤</tg-emoji> Уголь',   "key": "coal",     "chance": 30.00, "weight": 200, "price": 85},
     {"name": '<tg-emoji emoji-id="5339390195768774311">🟤</tg-emoji> Медь',    "key": "copper",   "chance": 20.00, "weight": 120, "price": 125},
     {"name": '<tg-emoji emoji-id="5206502799528976649">⚙️</tg-emoji> Железо',  "key": "iron",     "chance":  8.00, "weight":  60, "price": 280},
     {"name": '<tg-emoji emoji-id="5445256208992718797">🌕</tg-emoji> Золото',  "key": "gold",     "chance":  3.00, "weight":  20, "price": 800},
