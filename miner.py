@@ -1113,7 +1113,7 @@ def collect_mine(data: dict) -> tuple:
     results  = {}
     for _ in range(new_campaigns):
         for ore, qty in roll_ore(pick_key):
-            results[ore["name"]] = results.get(ore["name"], 0) + qty
+            results[ore["key"]] = results.get(ore["key"], 0) + qty
             data["ores"][ore["key"]] = data["ores"].get(ore["key"], 0) + qty
 
     data["mine_campaigns_done"] = prog["campaigns_done"]
@@ -1123,10 +1123,15 @@ def collect_mine(data: dict) -> tuple:
     total_ore_count = sum(results.values())
     add_xp(data, total_ore_count * XP_PER_ORE)
 
-    loot = (
-        "\n".join(f"  {n}: <b>+{q}</b>" for n, q in results.items())
-        if results else "  Ничего не нашли 😔"
-    )
+    if results:
+        loot_lines = []
+        for key, qty in results.items():
+            ore   = ORES_BY_KEY[key]
+            worth = qty * ore["price"]
+            loot_lines.append(f"<blockquote>  <b>{ore['name']}: {qty}</b> (≈ {_fmt_num(worth)} {COIN})</blockquote>")
+        loot = "\n".join(loot_lines)
+    else:
+        loot = "  Ничего не нашли 😔"
     bar = progress_bar(prog["percent"])
     result_text = (
         f"⛏️ <b>РЕЗУЛЬТАТ ДОБЫЧИ</b>\n"
