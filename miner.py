@@ -70,14 +70,14 @@ MAX_LEVEL = 75
 # ---------- РУДЫ ----------
 ORES = [
     {"name": "🪨 Камень",  "key": "stone",    "chance": 75.00, "weight": 500, "price": 50},
-    {"name": "🖤 Уголь",   "key": "coal",     "chance": 30.00, "weight": 200, "price": 85},
-    {"name": "🟤 Медь",    "key": "copper",   "chance": 20.00, "weight": 120, "price": 125},
-    {"name": "⚙️ Железо",  "key": "iron",     "chance":  8.00, "weight":  60, "price": 280},
-    {"name": "🌕 Золото",  "key": "gold",     "chance":  3.00, "weight":  20, "price": 800},
-    {"name": "💎 Алмаз",   "key": "diamond",  "chance":  1.00, "weight":   8, "price": 5000},
-    {"name": "🔮 Мифрил",  "key": "mithril",  "chance":  0.10, "weight":   3, "price": 45000},
-    {"name": "☢️ Уран",    "key": "uranium",  "chance":  0.04, "weight":   2, "price": 150000},
-    {"name": "💜 Аметист", "key": "amethyst", "chance":  0.01, "weight":   1, "price": 500000},
+    {"name": '<tg-emoji emoji-id="5339390195768774311">🖤</tg-emoji> Уголь',   "key": "coal",     "chance": 30.00, "weight": 200, "price": 85},
+    {"name": '<tg-emoji emoji-id="5339390195768774311">🟤</tg-emoji> Медь',    "key": "copper",   "chance": 20.00, "weight": 120, "price": 125},
+    {"name": '<tg-emoji emoji-id="5206502799528976649">⚙️</tg-emoji> Железо',  "key": "iron",     "chance":  8.00, "weight":  60, "price": 280},
+    {"name": '<tg-emoji emoji-id="5445256208992718797">🌕</tg-emoji> Золото',  "key": "gold",     "chance":  3.00, "weight":  20, "price": 800},
+    {"name": '<tg-emoji emoji-id="5201914481671682382">💎</tg-emoji> Алмаз',   "key": "diamond",  "chance":  1.00, "weight":   8, "price": 5000},
+    {"name": '<tg-emoji emoji-id="5217620305194800391">🔮</tg-emoji> Мифрил',  "key": "mithril",  "chance":  0.10, "weight":   3, "price": 45000},
+    {"name": '<tg-emoji emoji-id="5447225730670813734">☢️</tg-emoji> Уран',    "key": "uranium",  "chance":  0.04, "weight":   2, "price": 150000},
+    {"name": '<tg-emoji emoji-id="5314686299796427450">💜</tg-emoji> Аметист', "key": "amethyst", "chance":  0.01, "weight":   1, "price": 500000},
 ]
 ORES_BY_KEY = {o["key"]: o for o in ORES}
 
