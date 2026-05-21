@@ -281,11 +281,11 @@ def handle_callback(call):
                 return
             save_user(data["id"], data)
             sell_text = (
-                f"💰 <b>ПРОДАЖА РУД</b>\n"
+                f'<tg-emoji emoji-id="5206607081334906820">🎟</tg-emoji> <b>Успешно!</b>\n'
                 f"━━━━━━━━━━━━━━━━━━━━\n\n"
                 f"{report}\n\n"
-                f"✅ Итого получено: <b>{total:,} 💰</b>\n"
-                f"💳 Баланс: <b>{data['balance']:,} 💰</b>"
+                f'<b><tg-emoji emoji-id="5429651785352501917">🎟</tg-emoji> Итого получено: <b>{total:,} <tg-emoji emoji-id="5199552030615558774">🎟</tg-emoji></b>\n'
+                f'<tg-emoji emoji-id="5278467510604160626">🎟</tg-emoji> Баланс: <b>{data['balance']:,} <tg-emoji emoji-id="5199552030615558774">🎟</tg-emoji></b></b>'
             )
             edit(sell_text, mine_keyboard(data))
             return
