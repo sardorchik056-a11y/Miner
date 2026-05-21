@@ -731,9 +731,9 @@ def duration_shop_text(data: dict) -> str:
     return (
         '<tg-emoji emoji-id="5440621591387980068">🎟</tg-emoji> <b>Длительность сессии</b>\n'
         "━━━━━━━━━━━━━━━━━━━━\n\n"
-        f'<tg-emoji emoji-id="5278467510604160626">🎟</tg-emoji> Баланс: <b>{_fmt_num(data['balance'])}{COIN}</b>\n'
+        f'<blockquote><tg-emoji emoji-id="5278467510604160626">🎟</tg-emoji> Баланс: <b>{_fmt_num(data['balance'])}{COIN}</b>\n'
         f'<tg-emoji emoji-id="5456140674028019486">🎟</tg-emoji> Активна: <b>{cur_label}</b>\n'
-        f'<tg-emoji emoji-id="5296369303661067030">🎟</tg-emoji> Открыто: <b>{owned_cnt}/{len(DURATIONS_ORDER)}</b>\n\n'
+        f'<tg-emoji emoji-id="5296369303661067030">🎟</tg-emoji> Открыто: <b>{owned_cnt}/{len(DURATIONS_ORDER)}</b></blockquote>\n\n'
         "Выберите для подробностей:"
     )
 
@@ -776,8 +776,8 @@ def sell_screen_text(data: dict) -> str:
             worth = qty * ore["price"]
             total_value += worth
             lines.append(f"<blockquote>  <b>{ore['name']}: {qty}</b> (≈ {_fmt_num(worth)} {COIN})</blockquote>")
-    lines.append(f'\n<tg-emoji emoji-id="5278467510604160626">🎟</tg-emoji> Баланс: <b>{_fmt_num(data['balance'])}</b>')
-    lines.append(f'<tg-emoji emoji-id="5429651785352501917">🎟</tg-emoji> К получению: <b>+{_fmt_num(total_value)} {COIN}</b>')
+    lines.append(f'\n<b><tg-emoji emoji-id="5278467510604160626">🎟</tg-emoji> Баланс: <b>{_fmt_num(data['balance'])}</b>')
+    lines.append(f'<tg-emoji emoji-id="5429651785352501917">🎟</tg-emoji> К получению: <b>+{_fmt_num(total_value)} {COIN}</b><b>')
     return "\n".join(lines)
 
 
@@ -1134,14 +1134,14 @@ def collect_mine(data: dict) -> tuple:
         loot = "  Ничего не нашли 😔"
     bar = progress_bar(prog["percent"])
     result_text = (
-        f"⛏️ <b>РЕЗУЛЬТАТ ДОБЫЧИ</b>\n"
+        f'<b><tg-emoji emoji-id="5197371802136892976">🎟</tg-emoji> <b>Результат добычи.</b>\n'
         f"━━━━━━━━━━━━━━━━━━━━\n"
-        f"Кампаний: <b>{new_campaigns}</b>\n"
-        f"📊 {bar}\n\n"
+        f'<tg-emoji emoji-id="5375338737028841420">🎟</tg-emoji>Кампаний: <b>{new_campaigns}</b>\n'
+        f'<tg-emoji emoji-id="5231200819986047254">🎟</tg-emoji> {bar}\n\n'
         f"{loot}\n\n"
     )
     if prog["finished"]:
-        result_text += "✅ Сессия завершена. Запусти снова!"
+        result_text += "✅Сессия завершена!</b>"
     else:
         result_text += f"⏳ Шахта работает. Осталось: <b>{fmt_time(prog['time_left'])}</b>"
 
