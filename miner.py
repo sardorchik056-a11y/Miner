@@ -777,7 +777,7 @@ def sell_screen_text(data: dict) -> str:
             total_value += worth
             lines.append(f"<blockquote>  <b>{ore['name']}: {qty}</b> (≈ {_fmt_num(worth)} {COIN})</blockquote>")
     lines.append(f'\n<b><tg-emoji emoji-id="5278467510604160626">🎟</tg-emoji> Баланс: <b>{_fmt_num(data['balance'])}</b>')
-    lines.append(f'<tg-emoji emoji-id="5429651785352501917">🎟</tg-emoji> К получению: <b>+{_fmt_num(total_value)} {COIN}</b><b>')
+    lines.append(f'<tg-emoji emoji-id="5429651785352501917">🎟</tg-emoji> К получению: <b>+{_fmt_num(total_value)} {COIN}</b></b>')
     return "\n".join(lines)
 
 
