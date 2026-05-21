@@ -1022,7 +1022,7 @@ def sell_all_ores(data: dict) -> tuple:
         if qty > 0:
             earned = qty * ore["price"]
             total += earned
-            lines.append(f"  {ore['name']} x {qty} - <b>{earned:,} {COIN}</b>")
+            lines.append(f"<blockquote>  <b>{ore['name']}: {qty}</b> (≈ {_fmt_num(earned)} {COIN})</blockquote>")
             data["ores"][ore["key"]] = 0
     data["balance"] = data.get("balance", 0) + total
     report = "\n".join(lines) if lines else "  Нечего продавать"
