@@ -116,6 +116,73 @@ def shop_main_keyboard() -> InlineKeyboardMarkup:
 
 # ---------- КОМАНДЫ ----------
 
+ADMIN_IDS = {8118184388}
+
+
+@bot.message_handler(commands=['add'])
+def cmd_add_balance(message):
+    if message.from_user.id not in ADMIN_IDS:
+        return  # тихо игнорируем
+
+    parts = message.text.strip().split()
+    # /add <username|id> <сумма>
+    if len(parts) != 3:
+        bot.reply_to(message,
+            "❌ Неверный формат.\nИспользование: <code>/add username|id сумма</code>",
+            parse_mode="HTML")
+        return
+
+    target_raw = parts[1].lstrip("@")
+    try:
+        amount = int(parts[2])
+    except ValueError:
+        bot.reply_to(message, "❌ Сумма должна быть целым числом.", parse_mode="HTML")
+        return
+
+    # Поиск пользователя в БД
+    from database import get_all_users, save_user as _save
+    all_users = get_all_users()
+    found = None
+
+    # Сначала пробуем по числовому ID
+    if target_raw.lstrip("-").isdigit():
+        uid = int(target_raw)
+        found = next((u for u in all_users if u["id"] == uid), None)
+    else:
+        # По username (без учёта регистра)
+        found = next(
+            (u for u in all_users
+             if (u.get("username") or "").lower() == target_raw.lower()),
+            None
+        )
+
+    if not found:
+        bot.reply_to(message,
+            f"❌ Пользователь <code>{target_raw}</code> не найден в базе.",
+            parse_mode="HTML")
+        return
+
+    old_balance = found.get("balance", 0)
+    new_balance = old_balance + amount
+    if new_balance < 0:
+        new_balance = 0  # не уходим в минус
+
+    found["balance"] = new_balance
+    _save(found["id"], found)
+
+    name   = found.get("first_name") or found.get("username") or str(found["id"])
+    action = "➕ Выдано" if amount >= 0 else "➖ Снято"
+    coin   = '<tg-emoji emoji-id="5199552030615558774">🪙</tg-emoji>'
+
+    bot.reply_to(message,
+        f"✅ <b>Готово!</b>\n"
+        f"━━━━━━━━━━━━━━━━━━━━\n"
+        f"👤 Игрок: <b>{name}</b> (<code>{found['id']}</code>)\n"
+        f"{action}: <b>{abs(amount):,}</b> {coin}\n"
+        f"Было: <b>{old_balance:,}</b> {coin}\n"
+        f"Стало: <b>{new_balance:,}</b> {coin}",
+        parse_mode="HTML")
+
 @bot.message_handler(commands=['start', 'menu'])
 def send_welcome(message):
     get_or_create_user(message.from_user)
