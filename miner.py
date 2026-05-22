@@ -554,9 +554,11 @@ def _fmt_num(n: int) -> str:
     return f"{n:,}"
 
 
-def roll_ore(pick_key: str) -> list:
+def roll_ore(pick_key: str, multiplier: float = 1.0) -> list:
     pick    = PICKAXES[pick_key]
-    n_digs  = random.randint(pick["dig_min"], pick["dig_max"])
+    dig_min = max(1, int(pick["dig_min"] * multiplier))
+    dig_max = max(1, int(pick["dig_max"] * multiplier))
+    n_digs  = random.randint(dig_min, dig_max)
     found   = {}
     weights = [o["weight"] for o in ORES]
     for _ in range(n_digs):
@@ -1109,10 +1111,13 @@ def collect_mine(data: dict) -> tuple:
     if new_campaigns == 0:
         return prog, ""
 
+    from shop import get_active_booster_multiplier, get_active_booster_info, _multiplier_label
+    multiplier = get_active_booster_multiplier(data)
+
     pick_key = data.get("pickaxe", "wood_1")
     results  = {}
     for _ in range(new_campaigns):
-        for ore, qty in roll_ore(pick_key):
+        for ore, qty in roll_ore(pick_key, multiplier):
             results[ore["key"]] = results.get(ore["key"], 0) + qty
             data["ores"][ore["key"]] = data["ores"].get(ore["key"], 0) + qty
 
@@ -1132,12 +1137,22 @@ def collect_mine(data: dict) -> tuple:
         loot = "\n".join(loot_lines)
     else:
         loot = "  Ничего не нашли 😔"
+
     bar = progress_bar(prog["percent"])
+
+    # Строка об активном ускорителе
+    booster_line = ""
+    active = get_active_booster_info(data)
+    if active:
+        mult_label = _multiplier_label(active["multiplier"])
+        booster_line = f'<tg-emoji emoji-id="5206607081334906820">✅</tg-emoji> Ускоритель <b>{mult_label}</b> активен\n'
+
     result_text = (
         f'<b><tg-emoji emoji-id="5197371802136892976">🎟</tg-emoji> <b>Результат добычи.</b>\n'
         f"━━━━━━━━━━━━━━━━━━━━\n"
         f'<tg-emoji emoji-id="5375338737028841420">🎟</tg-emoji>Кампаний: <b>{new_campaigns}</b>\n'
-        f'<tg-emoji emoji-id="5231200819986047254">🎟</tg-emoji> {bar}\n\n'
+        f'<tg-emoji emoji-id="5231200819986047254">🎟</tg-emoji> {bar}\n'
+        f"{booster_line}\n"
         f"{loot}\n\n"
     )
     if prog["finished"]:
