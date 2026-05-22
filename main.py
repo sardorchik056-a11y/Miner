@@ -26,6 +26,12 @@ from miner import (
     get_pickaxe_page,
     EMOJI_BACK,
 )
+from shop import (
+    cases_shop_text, cases_shop_keyboard,
+    boosters_inventory_text, boosters_inventory_keyboard,
+    booster_detail_text, booster_detail_keyboard,
+    open_case, activate_booster,
+)
 
 bot = telebot.TeleBot('8796618330:AAEx3qgVKofsK8ObQEM169AiRj7YWohZl_4')
 
@@ -84,7 +90,9 @@ def main_menu_keyboard() -> InlineKeyboardMarkup:
 
 
 def profile_keyboard() -> InlineKeyboardMarkup:
-    kb = InlineKeyboardMarkup()
+    kb = InlineKeyboardMarkup(row_width=1)
+    kb.add(InlineKeyboardButton("🎒 Инвентарь ускорителей", callback_data="profile_boosters",
+                                icon_custom_emoji_id="5445221832074483553"))
     kb.add(_back_btn("back_to_menu", "Назад"))
     return kb
 
@@ -100,6 +108,8 @@ SHOP_TEXT = "🛒 <b>МАГАЗИН</b>\n━━━━━━━━━━━━━
 
 def shop_main_keyboard() -> InlineKeyboardMarkup:
     kb = InlineKeyboardMarkup(row_width=1)
+    kb.add(InlineKeyboardButton("📦 Кейсы", callback_data="shop_cases",
+                                icon_custom_emoji_id="5413019438989576513"))
     kb.add(_back_btn("back_to_menu", "Назад"))
     return kb
 
@@ -155,6 +165,41 @@ def handle_callback(call):
         # ===== МАГАЗИН =====
         if cd == "shop":
             edit(SHOP_TEXT, shop_main_keyboard())
+            return
+
+        if cd == "shop_cases":
+            edit(cases_shop_text(), cases_shop_keyboard())
+            return
+
+        # ===== КЕЙСЫ: открыть =====
+        if cd.startswith("case_open_"):
+            case_key = cd.removeprefix("case_open_")
+            ok, msg, instance = open_case(data, case_key)
+            if ok:
+                save_user(data["id"], data)
+            bot.answer_callback_query(call.id, "📦 Открываем кейс...", show_alert=False)
+            edit(msg, cases_shop_keyboard())
+            return
+
+        # ===== ИНВЕНТАРЬ УСКОРИТЕЛЕЙ =====
+        if cd == "profile_boosters":
+            edit(boosters_inventory_text(data), boosters_inventory_keyboard(data))
+            return
+
+        # ===== КАРТОЧКА УСКОРИТЕЛЯ =====
+        if cd.startswith("boost_info_"):
+            instance_id = cd.removeprefix("boost_info_")
+            edit(booster_detail_text(data, instance_id), booster_detail_keyboard(instance_id))
+            return
+
+        # ===== АКТИВАЦИЯ УСКОРИТЕЛЯ =====
+        if cd.startswith("boost_activate_"):
+            instance_id = cd.removeprefix("boost_activate_")
+            ok, msg = activate_booster(data, instance_id)
+            bot.answer_callback_query(call.id, msg if not ok else "⚡ Ускоритель активирован!", show_alert=True)
+            if ok:
+                save_user(data["id"], data)
+            edit(boosters_inventory_text(data), boosters_inventory_keyboard(data))
             return
 
         if cd == "shop_pickaxes":
