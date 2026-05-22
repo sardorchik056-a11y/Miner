@@ -2,27 +2,28 @@
 #  shop.py  —  Магазин кейсов и ускорителей TGStellar
 #  Кейс "Обычный" — 10 000 монет
 #  Лут: ускорители 1.2×, 1.5×, 2× на разные длительности
-#  Ускорители влияют на ВСЕ показатели кирки игрока
 # ============================================================
 
 import random
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
-from miner import COIN, EMOJI_BACK
+from miner import (
+    COIN,
+    EMOJI_BACK,
+    EMOJI_BTN_BUY_COINS,   # монета — кнопка купить
+    EMOJI_BTN_SELL,        # 💰 — цена / потрачено
+    EMOJI_BTN_COLLECT,     # 🎒 — инвентарь
+    EMOJI_BTN_ACTIVE,      # ✅ — активировать / активно
+    EMOJI_BTN_SELECT,      # 🔘 — выбрать / детали
+    EMOJI_BTN_DURATION,    # ⏱ — таймер
+    EMOJI_BTN_INV,         # 📦 — кейс / инвентарь
+    EMOJI_BTN_WORKSHOP,    # 🔨 — магазин
+    EMOJI_NOT_BOUGHT,      # 🚫 — не активен
+    EMOJI_SELECTED,        # ✅ — выбрано
+)
 
-# ============================================================
-#  EMOJI IDs (замени на свои при необходимости)
-# ============================================================
-EMOJI_CASE        = "5413019438989576513"  # 📦 Кейс
-EMOJI_BOOSTER     = "5226711870492507932"  # ⚡ Ускоритель
-EMOJI_INVENTORY   = "5445221832074483553"  # 🎒 Инвентарь
-EMOJI_ACTIVATE    = "5206607081334906820"  # ✅ Активировать
-EMOJI_ACTIVE_NOW  = "5399304898493894765"  # 🟢 Активен
-EMOJI_TIMER       = "5440621591387980068"  # ⏱ Таймер
-EMOJI_SHOP_CASES  = "5406683434124859552"  # 🛒 Магазин
 
-
-def _prem_btn(emoji_id: str, label: str, cb: str) -> InlineKeyboardButton:
+def _btn(emoji_id: str, label: str, cb: str) -> InlineKeyboardButton:
     return InlineKeyboardButton(label, callback_data=cb, icon_custom_emoji_id=emoji_id)
 
 
@@ -30,20 +31,22 @@ def _back_btn(cb: str, label: str = "Назад") -> InlineKeyboardButton:
     return InlineKeyboardButton(label, callback_data=cb, icon_custom_emoji_id=EMOJI_BACK)
 
 
+def _tg(emoji_id: str, fallback: str) -> str:
+    return f'<tg-emoji emoji-id="{emoji_id}">{fallback}</tg-emoji>'
+
+
 # ============================================================
-#  ОПРЕДЕЛЕНИЕ УСКОРИТЕЛЕЙ
-#  Структура: { "key": { multiplier, duration_sec, label, rarity } }
+#  ДЛИТЕЛЬНОСТИ
 # ============================================================
 
-# Длительности в секундах
 _DUR = {
-    "10min":  10 * 60,
-    "30min":  30 * 60,
-    "1h":     60 * 60,
-    "2h":     2  * 60 * 60,
-    "4h":     4  * 60 * 60,
-    "10h":    10 * 60 * 60,
-    "24h":    24 * 60 * 60,
+    "10min": 10 * 60,
+    "30min": 30 * 60,
+    "1h":    60 * 60,
+    "2h":    2  * 60 * 60,
+    "4h":    4  * 60 * 60,
+    "10h":   10 * 60 * 60,
+    "24h":   24 * 60 * 60,
 }
 
 _DUR_LABELS = {
@@ -56,33 +59,35 @@ _DUR_LABELS = {
     "24h":   "24 часа",
 }
 
-# Шансы выпадения для каждого ускорителя (в рамках своего кейса)
-# Используются как веса при взвешенном рандоме
+# ============================================================
+#  ПУЛ УСКОРИТЕЛЕЙ
+# ============================================================
+
 _BOOSTER_POOL = [
-    # ── 1.2× ─────────────────────────────────────────────────────────────────
-    {"key": "boost_1.2x_10min",  "multiplier": 1.2, "dur_key": "10min",  "chance": 80},
-    {"key": "boost_1.2x_30min",  "multiplier": 1.2, "dur_key": "30min",  "chance": 65},
-    {"key": "boost_1.2x_1h",     "multiplier": 1.2, "dur_key": "1h",     "chance": 45},
-    {"key": "boost_1.2x_2h",     "multiplier": 1.2, "dur_key": "2h",     "chance": 35},
-    {"key": "boost_1.2x_4h",     "multiplier": 1.2, "dur_key": "4h",     "chance": 25},
-    {"key": "boost_1.2x_10h",    "multiplier": 1.2, "dur_key": "10h",    "chance": 18},
-    {"key": "boost_1.2x_24h",    "multiplier": 1.2, "dur_key": "24h",    "chance": 10},
-    # ── 1.5× ─────────────────────────────────────────────────────────────────
-    {"key": "boost_1.5x_10min",  "multiplier": 1.5, "dur_key": "10min",  "chance": 60},
-    {"key": "boost_1.5x_30min",  "multiplier": 1.5, "dur_key": "30min",  "chance": 40},
-    {"key": "boost_1.5x_1h",     "multiplier": 1.5, "dur_key": "1h",     "chance": 35},
-    {"key": "boost_1.5x_2h",     "multiplier": 1.5, "dur_key": "2h",     "chance": 25},
-    {"key": "boost_1.5x_4h",     "multiplier": 1.5, "dur_key": "4h",     "chance": 19},
-    {"key": "boost_1.5x_10h",    "multiplier": 1.5, "dur_key": "10h",    "chance": 12},
-    {"key": "boost_1.5x_24h",    "multiplier": 1.5, "dur_key": "24h",    "chance":  5},
-    # ── 2× ───────────────────────────────────────────────────────────────────
-    {"key": "boost_2x_10min",    "multiplier": 2.0, "dur_key": "10min",  "chance": 40},
-    {"key": "boost_2x_30min",    "multiplier": 2.0, "dur_key": "30min",  "chance": 30},
-    {"key": "boost_2x_1h",       "multiplier": 2.0, "dur_key": "1h",     "chance": 22},
-    {"key": "boost_2x_2h",       "multiplier": 2.0, "dur_key": "2h",     "chance": 12},
-    {"key": "boost_2x_4h",       "multiplier": 2.0, "dur_key": "4h",     "chance":  8},
-    {"key": "boost_2x_10h",      "multiplier": 2.0, "dur_key": "10h",    "chance":  3},
-    {"key": "boost_2x_24h",      "multiplier": 2.0, "dur_key": "24h",    "chance":  1},
+    # ── 1.2× ──────────────────────────────────────────────
+    {"key": "boost_1.2x_10min", "multiplier": 1.2, "dur_key": "10min", "chance": 80},
+    {"key": "boost_1.2x_30min", "multiplier": 1.2, "dur_key": "30min", "chance": 65},
+    {"key": "boost_1.2x_1h",    "multiplier": 1.2, "dur_key": "1h",    "chance": 45},
+    {"key": "boost_1.2x_2h",    "multiplier": 1.2, "dur_key": "2h",    "chance": 35},
+    {"key": "boost_1.2x_4h",    "multiplier": 1.2, "dur_key": "4h",    "chance": 25},
+    {"key": "boost_1.2x_10h",   "multiplier": 1.2, "dur_key": "10h",   "chance": 18},
+    {"key": "boost_1.2x_24h",   "multiplier": 1.2, "dur_key": "24h",   "chance": 10},
+    # ── 1.5× ──────────────────────────────────────────────
+    {"key": "boost_1.5x_10min", "multiplier": 1.5, "dur_key": "10min", "chance": 60},
+    {"key": "boost_1.5x_30min", "multiplier": 1.5, "dur_key": "30min", "chance": 40},
+    {"key": "boost_1.5x_1h",    "multiplier": 1.5, "dur_key": "1h",    "chance": 35},
+    {"key": "boost_1.5x_2h",    "multiplier": 1.5, "dur_key": "2h",    "chance": 25},
+    {"key": "boost_1.5x_4h",    "multiplier": 1.5, "dur_key": "4h",    "chance": 19},
+    {"key": "boost_1.5x_10h",   "multiplier": 1.5, "dur_key": "10h",   "chance": 12},
+    {"key": "boost_1.5x_24h",   "multiplier": 1.5, "dur_key": "24h",   "chance":  5},
+    # ── 2× ────────────────────────────────────────────────
+    {"key": "boost_2x_10min",   "multiplier": 2.0, "dur_key": "10min", "chance": 40},
+    {"key": "boost_2x_30min",   "multiplier": 2.0, "dur_key": "30min", "chance": 30},
+    {"key": "boost_2x_1h",      "multiplier": 2.0, "dur_key": "1h",    "chance": 22},
+    {"key": "boost_2x_2h",      "multiplier": 2.0, "dur_key": "2h",    "chance": 12},
+    {"key": "boost_2x_4h",      "multiplier": 2.0, "dur_key": "4h",    "chance":  8},
+    {"key": "boost_2x_10h",     "multiplier": 2.0, "dur_key": "10h",   "chance":  3},
+    {"key": "boost_2x_24h",     "multiplier": 2.0, "dur_key": "24h",   "chance":  1},
 ]
 
 BOOSTERS_BY_KEY = {b["key"]: b for b in _BOOSTER_POOL}
@@ -93,20 +98,18 @@ BOOSTERS_BY_KEY = {b["key"]: b for b in _BOOSTER_POOL}
 
 CASES = {
     "common": {
-        "key":   "common",
-        "name":  "Обычный",
-        "cost":  10_000,
-        "emoji": "📦",
-        "pool":  _BOOSTER_POOL,   # все ускорители в одном пуле
+        "key":  "common",
+        "name": "Обычный",
+        "cost": 10_000,
+        "pool": _BOOSTER_POOL,
     },
 }
-
 
 # ============================================================
 #  УТИЛИТЫ
 # ============================================================
 
-def _fmt_num(n: int | float) -> str:
+def _fmt_num(n) -> str:
     return f"{int(n):,}".replace(",", " ")
 
 
@@ -126,9 +129,7 @@ def _rarity_label(chance: int) -> str:
 
 
 def _booster_name(b: dict) -> str:
-    mult  = _multiplier_label(b["multiplier"])
-    dur   = _DUR_LABELS[b["dur_key"]]
-    return f"⚡ Ускоритель {mult} на {dur}"
+    return f"Ускоритель {_multiplier_label(b['multiplier'])} на {_DUR_LABELS[b['dur_key']]}"
 
 
 def _now_ts() -> float:
@@ -153,10 +154,6 @@ def _fmt_time_left(seconds: float) -> str:
 # ============================================================
 
 def open_case(data: dict, case_key: str) -> tuple[bool, str, dict | None]:
-    """
-    Открывает кейс. Возвращает (ok, message, booster_dict | None).
-    При успехе кладёт бустер в data["boosters_inventory"].
-    """
     case = CASES.get(case_key)
     if not case:
         return False, "❌ Неизвестный кейс.", None
@@ -165,34 +162,32 @@ def open_case(data: dict, case_key: str) -> tuple[bool, str, dict | None]:
     if data.get("balance", 0) < cost:
         return False, f"❌ Недостаточно монет!\nНужно: {_fmt_num(cost)} {COIN}", None
 
-    # Взвешенный рандом
     pool    = case["pool"]
     weights = [b["chance"] for b in pool]
     dropped = random.choices(pool, weights=weights, k=1)[0]
 
     data["balance"] -= cost
 
-    # Добавляем в инвентарь (список словарей с уникальным instance_id)
-    inv = data.setdefault("boosters_inventory", [])
+    inv      = data.setdefault("boosters_inventory", [])
     instance = {
-        "instance_id": f"{dropped['key']}_{int(_now_ts())}_{random.randint(1000,9999)}",
-        "key":         dropped["key"],
-        "multiplier":  dropped["multiplier"],
-        "dur_key":     dropped["dur_key"],
+        "instance_id":  f"{dropped['key']}_{int(_now_ts())}_{random.randint(1000,9999)}",
+        "key":          dropped["key"],
+        "multiplier":   dropped["multiplier"],
+        "dur_key":      dropped["dur_key"],
         "duration_sec": _DUR[dropped["dur_key"]],
-        "chance":      dropped["chance"],
+        "chance":       dropped["chance"],
     }
     inv.append(instance)
 
     name = _booster_name(dropped)
     msg  = (
-        f'<tg-emoji emoji-id="{EMOJI_CASE}">📦</tg-emoji> <b>Кейс открыт!</b>\n'
+        f"{_tg(EMOJI_BTN_INV, '📦')} <b>Кейс открыт!</b>\n"
         f"━━━━━━━━━━━━━━━━━━━━\n\n"
         f"Ты получил:\n"
-        f'<tg-emoji emoji-id="{EMOJI_BOOSTER}">⚡</tg-emoji> <b>{name}</b>\n'
+        f"{_tg(EMOJI_BTN_DURATION, '⏱')} <b>{name}</b>\n"
         f"Редкость: {_rarity_label(dropped['chance'])}\n\n"
-        f'Потрачено: {_fmt_num(cost)} {COIN}\n'
-        f'Баланс: {_fmt_num(data["balance"])} {COIN}'
+        f"Потрачено: {_fmt_num(cost)} {COIN}\n"
+        f"Баланс: {_fmt_num(data['balance'])} {COIN}"
     )
     return True, msg, instance
 
@@ -202,24 +197,18 @@ def open_case(data: dict, case_key: str) -> tuple[bool, str, dict | None]:
 # ============================================================
 
 def activate_booster(data: dict, instance_id: str) -> tuple[bool, str]:
-    """Активирует ускоритель из инвентаря."""
-    inv = data.get("boosters_inventory", [])
+    inv  = data.get("boosters_inventory", [])
     item = next((x for x in inv if x["instance_id"] == instance_id), None)
     if not item:
         return False, "❌ Ускоритель не найден."
 
-    # Проверяем: нет ли уже активного
     active = data.get("active_booster")
-    if active:
-        ends_at = active.get("ends_at", 0)
-        if ends_at > _now_ts():
-            left = _fmt_time_left(ends_at - _now_ts())
-            return False, f"❌ Уже активен ускоритель! Осталось: {left}"
+    if active and active.get("ends_at", 0) > _now_ts():
+        left = _fmt_time_left(active["ends_at"] - _now_ts())
+        return False, f"❌ Уже активен ускоритель!\nОсталось: {left}"
 
-    # Убираем из инвентаря
     data["boosters_inventory"] = [x for x in inv if x["instance_id"] != instance_id]
 
-    # Активируем
     ends_at = _now_ts() + item["duration_sec"]
     data["active_booster"] = {
         "key":        item["key"],
@@ -228,31 +217,27 @@ def activate_booster(data: dict, instance_id: str) -> tuple[bool, str]:
         "ends_at":    ends_at,
     }
 
-    name = _booster_name(item)
-    dur  = _DUR_LABELS[item["dur_key"]]
     mult = _multiplier_label(item["multiplier"])
+    dur  = _DUR_LABELS[item["dur_key"]]
     return True, (
-        f'<tg-emoji emoji-id="{EMOJI_ACTIVATE}">✅</tg-emoji> <b>Ускоритель активирован!</b>\n'
+        f"{_tg(EMOJI_BTN_ACTIVE, '✅')} <b>Ускоритель активирован!</b>\n"
         f"━━━━━━━━━━━━━━━━━━━━\n\n"
-        f"<b>{name}</b>\n"
+        f"<b>{_booster_name(item)}</b>\n"
         f"Все показатели кирки ×{mult} на {dur}!"
     )
 
 
 def get_active_booster_multiplier(data: dict) -> float:
-    """Возвращает текущий множитель (1.0 если нет активного)."""
     active = data.get("active_booster")
     if not active:
         return 1.0
     if active.get("ends_at", 0) > _now_ts():
         return active["multiplier"]
-    # Истёк — очищаем
     data["active_booster"] = None
     return 1.0
 
 
 def get_active_booster_info(data: dict) -> dict | None:
-    """Возвращает dict активного бустера или None."""
     active = data.get("active_booster")
     if not active:
         return None
@@ -263,35 +248,64 @@ def get_active_booster_info(data: dict) -> dict | None:
 
 
 # ============================================================
-#  UI: МАГАЗИН КЕЙСОВ
+#  UI: СПИСОК КЕЙСОВ (главная страница магазина кейсов)
 # ============================================================
 
 def cases_shop_text() -> str:
-    lines = [
-        f'<tg-emoji emoji-id="{EMOJI_SHOP_CASES}">🛒</tg-emoji> <b>МАГАЗИН КЕЙСОВ</b>\n'
+    return (
+        f"{_tg(EMOJI_BTN_WORKSHOP, '🔨')} <b>МАГАЗИН КЕЙСОВ</b>\n"
         f"━━━━━━━━━━━━━━━━━━━━\n\n"
         f"Открывай кейсы и получай ускорители!\n"
         f"Ускорители временно улучшают все показатели твоей кирки.\n\n"
-    ]
-    for c in CASES.values():
-        lines.append(
-            f'{c["emoji"]} <b>{c["name"]} кейс</b>\n'
-            f'   Цена: <b>{_fmt_num(c["cost"])} {COIN}</b>\n'
-            f'   Содержит: ускорители ×1.2 / ×1.5 / ×2\n'
-        )
-    return "".join(lines)
+        f"{_tg(EMOJI_BTN_INV, '📦')} <b>Обычный кейс</b>\n"
+        f"   Цена: <b>10 000</b> {COIN}\n"
+        f"   Содержит: ускорители ×1.2 / ×1.5 / ×2\n"
+    )
 
 
 def cases_shop_keyboard() -> InlineKeyboardMarkup:
     kb = InlineKeyboardMarkup(row_width=1)
     for c in CASES.values():
-        kb.add(_prem_btn(EMOJI_CASE, f'📦 {c["name"]} кейс — {_fmt_num(c["cost"])} монет', f'case_open_{c["key"]}'))
+        kb.add(_btn(EMOJI_BTN_SELECT, f'📦 {c["name"]} кейс', f'case_info_{c["key"]}'))
     kb.add(_back_btn("shop", "Назад в магазин"))
     return kb
 
 
 # ============================================================
-#  UI: ИНВЕНТАРЬ УСКОРИТЕЛЕЙ (в профиле)
+#  UI: КАРТОЧКА КЕЙСА (инфо + кнопка купить)
+# ============================================================
+
+def case_detail_text(data: dict, case_key: str) -> str:
+    case    = CASES[case_key]
+    balance = data.get("balance", 0)
+    can_buy = balance >= case["cost"]
+    bal_str = f"{_fmt_num(balance)} {COIN}"
+
+    return (
+        f"{_tg(EMOJI_BTN_INV, '📦')} <b>{case['name']} кейс</b>\n"
+        f"━━━━━━━━━━━━━━━━━━━━\n\n"
+        f"Цена: <b>{_fmt_num(case['cost'])}</b> {COIN}\n"
+        f"Твой баланс: <b>{bal_str}</b>\n\n"
+        f"<b>Возможный лут:</b>\n"
+        f"{_tg(EMOJI_BTN_DURATION, '⏱')} Ускоритель 1.2× (10мин – 24ч)\n"
+        f"{_tg(EMOJI_BTN_DURATION, '⏱')} Ускоритель 1.5× (10мин – 24ч)\n"
+        f"{_tg(EMOJI_BTN_DURATION, '⏱')} Ускоритель 2× (10мин – 24ч)\n\n"
+        f"{'✅ Достаточно монет для покупки!' if can_buy else '❌ Недостаточно монет.'}"
+    )
+
+
+def case_detail_keyboard(case_key: str, can_buy: bool) -> InlineKeyboardMarkup:
+    kb = InlineKeyboardMarkup(row_width=1)
+    if can_buy:
+        kb.add(_btn(EMOJI_BTN_BUY_COINS, f"🛒 Купить и открыть", f"case_open_{case_key}"))
+    else:
+        kb.add(_btn(EMOJI_NOT_BOUGHT, "❌ Недостаточно монет", "noop"))
+    kb.add(_back_btn("shop_cases", "Назад"))
+    return kb
+
+
+# ============================================================
+#  UI: ИНВЕНТАРЬ УСКОРИТЕЛЕЙ
 # ============================================================
 
 def boosters_inventory_text(data: dict) -> str:
@@ -299,30 +313,27 @@ def boosters_inventory_text(data: dict) -> str:
     active = get_active_booster_info(data)
 
     lines = [
-        f'<tg-emoji emoji-id="{EMOJI_INVENTORY}">🎒</tg-emoji> <b>ИНВЕНТАРЬ — УСКОРИТЕЛИ</b>\n'
+        f"{_tg(EMOJI_BTN_COLLECT, '🎒')} <b>ИНВЕНТАРЬ — УСКОРИТЕЛИ</b>\n"
         f"━━━━━━━━━━━━━━━━━━━━\n\n"
     ]
 
-    # Активный бустер
     if active:
         left = _fmt_time_left(active["ends_at"] - _now_ts())
         mult = _multiplier_label(active["multiplier"])
         dur  = _DUR_LABELS[active["dur_key"]]
         lines.append(
-            f'<tg-emoji emoji-id="{EMOJI_ACTIVE_NOW}">🟢</tg-emoji> <b>Активен:</b> '
-            f'Ускоритель {mult} на {dur}\n'
-            f'<tg-emoji emoji-id="{EMOJI_TIMER}">⏱</tg-emoji> Осталось: <b>{left}</b>\n\n'
+            f"{_tg(EMOJI_SELECTED, '✅')} <b>Активен:</b> Ускоритель {mult} на {dur}\n"
+            f"{_tg(EMOJI_BTN_DURATION, '⏱')} Осталось: <b>{left}</b>\n\n"
         )
     else:
-        lines.append("Нет активного ускорителя.\n\n")
+        lines.append(f"{_tg(EMOJI_NOT_BOUGHT, '🚫')} Нет активного ускорителя.\n\n")
 
     if not inv:
         lines.append("Инвентарь пуст. Открой кейс в магазине!")
     else:
         lines.append(f"<b>В инвентаре ({len(inv)} шт.):</b>\n")
-        for i, item in enumerate(inv[:10], 1):  # Показываем до 10
-            name = _booster_name(item)
-            lines.append(f"  {i}. {name}\n")
+        for i, item in enumerate(inv[:10], 1):
+            lines.append(f"  {i}. {_booster_name(item)}\n")
         if len(inv) > 10:
             lines.append(f"\n  ... и ещё {len(inv) - 10} шт.")
 
@@ -332,10 +343,9 @@ def boosters_inventory_text(data: dict) -> str:
 def boosters_inventory_keyboard(data: dict) -> InlineKeyboardMarkup:
     kb  = InlineKeyboardMarkup(row_width=1)
     inv = data.get("boosters_inventory", [])
-    for item in inv[:8]:  # До 8 кнопок
-        name = _booster_name(item)
-        kb.add(_prem_btn(EMOJI_BOOSTER, name, f'boost_info_{item["instance_id"]}'))
-    kb.add(_prem_btn(EMOJI_SHOP_CASES, "Открыть кейс", "shop_cases"))
+    for item in inv[:8]:
+        kb.add(_btn(EMOJI_BTN_DURATION, _booster_name(item), f'boost_info_{item["instance_id"]}'))
+    kb.add(_btn(EMOJI_BTN_INV, "📦 Открыть кейс", "shop_cases"))
     kb.add(_back_btn("profile", "Назад в профиль"))
     return kb
 
@@ -350,44 +360,38 @@ def booster_detail_text(data: dict, instance_id: str) -> str:
     if not item:
         return "❌ Ускоритель не найден."
 
-    mult    = _multiplier_label(item["multiplier"])
-    dur     = _DUR_LABELS[item["dur_key"]]
-    rarity  = _rarity_label(item["chance"])
-    name    = _booster_name(item)
-    active  = get_active_booster_info(data)
-
-    # Описание эффекта
-    effect_lines = (
-        f"  • Ударов за кампанию: ×{mult}\n"
-        f"  • Монет в час: ×{mult}\n"
-        f"  • Скорость добычи: ×{mult}"
-    )
+    mult   = _multiplier_label(item["multiplier"])
+    dur    = _DUR_LABELS[item["dur_key"]]
+    rarity = _rarity_label(item["chance"])
+    active = get_active_booster_info(data)
 
     warning = ""
     if active:
-        left = _fmt_time_left(active["ends_at"] - _now_ts())
+        left     = _fmt_time_left(active["ends_at"] - _now_ts())
         act_mult = _multiplier_label(active["multiplier"])
         act_dur  = _DUR_LABELS[active["dur_key"]]
         warning  = (
-            f"\n\n⚠️ Сейчас активен <b>Ускоритель {act_mult} на {act_dur}</b>\n"
+            f"\n\n⚠️ Сейчас активен Ускоритель {act_mult} на {act_dur}\n"
             f"Осталось: <b>{left}</b>\n"
             f"Активация заменит текущий!"
         )
 
     return (
-        f'<tg-emoji emoji-id="{EMOJI_BOOSTER}">⚡</tg-emoji> <b>{name}</b>\n'
+        f"{_tg(EMOJI_BTN_DURATION, '⏱')} <b>{_booster_name(item)}</b>\n"
         f"━━━━━━━━━━━━━━━━━━━━\n\n"
         f"Редкость: {rarity}\n"
         f"Длительность: <b>{dur}</b>\n"
         f"Множитель: <b>{mult}</b>\n\n"
         f"<b>Эффект (все показатели кирки):</b>\n"
-        f"{effect_lines}"
+        f"  • Ударов за кампанию: ×{mult}\n"
+        f"  • Монет в час: ×{mult}\n"
+        f"  • Скорость добычи: ×{mult}"
         f"{warning}"
     )
 
 
 def booster_detail_keyboard(instance_id: str) -> InlineKeyboardMarkup:
     kb = InlineKeyboardMarkup(row_width=1)
-    kb.add(_prem_btn(EMOJI_ACTIVATE, "✅ Активировать", f"boost_activate_{instance_id}"))
+    kb.add(_btn(EMOJI_BTN_ACTIVE, "✅ Активировать", f"boost_activate_{instance_id}"))
     kb.add(_back_btn("profile_boosters", "Назад"))
     return kb
