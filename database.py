@@ -69,6 +69,8 @@ def get_or_create_user(user) -> dict:
             "level":      1,
             "xp":         0,
             "xp_max":     xp_for_level(1),
+            "boosters_inventory": [],
+            "active_booster":     None,
             **init_mine_data(),
         }
         save_user(uid, data)
@@ -83,6 +85,8 @@ def get_or_create_user(user) -> dict:
             "mine_campaigns_done": 0,
             "mine_collected":      False,
             "xp_max":              xp_for_level(data.get("level", 1)),
+            "boosters_inventory":  [],
+            "active_booster":      None,
         }
         for key, val in defaults.items():
             if key not in data:
@@ -169,6 +173,18 @@ def profile_text(d: dict) -> str:
         bar_str  = xp_bar(xp, xp_max)
         xp_str   = f"<b>{xp:,}/{xp_max:,}</b>"
 
+    # Ускоритель
+    from shop import get_active_booster_info, _multiplier_label, _DUR_LABELS, _fmt_time_left, _now_ts
+    active = get_active_booster_info(d)
+    if active:
+        mult        = _multiplier_label(active["multiplier"])
+        dur         = _DUR_LABELS[active["dur_key"]]
+        left        = _fmt_time_left(active["ends_at"] - _now_ts())
+        booster_line = f'│  ⚡  Ускоритель: <b>{mult} на {dur}</b> (⏱ {left})\n'
+    else:
+        inv_count    = len(d.get("boosters_inventory", []))
+        booster_line = f'│  🎒  Инвентарь: <b>{inv_count} ускор.</b>\n'
+
     return (
         f"┌──────────────────────────\n"
         f'│  <tg-emoji emoji-id="5906581476639513176">🎟</tg-emoji>  <b>{name}</b>\n'
@@ -182,6 +198,8 @@ def profile_text(d: dict) -> str:
         f'│  <tg-emoji emoji-id="5375338737028841420">🎟</tg-emoji>  Уровень: {lvl_line}\n'
         f'│  <tg-emoji emoji-id="5341498088408234504">🎟</tg-emoji>  Опыт:    {xp_str}\n'
         f"│       {bar_str}\n"
+        f"├──────────────────────────\n"
+        f"{booster_line}"
         f"├──────────────────────────\n"
         f'│  {COIN}  Баланс: <b>{d["balance"]:,}</b>\n'
         f"└──────────────────────────"
