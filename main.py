@@ -238,14 +238,27 @@ def handle_callback(call):
             edit(cases_shop_text(), cases_shop_keyboard())
             return
 
-        # ===== КЕЙСЫ: открыть =====
+        # ===== КЕЙСЫ: карточка кейса (инфо + кнопка купить) =====
+        if cd.startswith("case_info_"):
+            case_key = cd.removeprefix("case_info_")
+            from shop import case_detail_text, case_detail_keyboard, CASES
+            case     = CASES.get(case_key)
+            if not case:
+                bot.answer_callback_query(call.id, "❌ Кейс не найден.", show_alert=True)
+                return
+            can_buy = data.get("balance", 0) >= case["cost"]
+            edit(case_detail_text(data, case_key), case_detail_keyboard(case_key, can_buy))
+            return
+
+        # ===== КЕЙСЫ: купить и открыть =====
         if cd.startswith("case_open_"):
             case_key = cd.removeprefix("case_open_")
             ok, msg, instance = open_case(data, case_key)
             if ok:
                 save_user(data["id"], data)
-            bot.answer_callback_query(call.id, "📦 Открываем кейс...", show_alert=False)
-            edit(msg, cases_shop_keyboard())
+                edit(msg, cases_shop_keyboard())
+            else:
+                bot.answer_callback_query(call.id, msg, show_alert=True)
             return
 
         # ===== ИНВЕНТАРЬ УСКОРИТЕЛЕЙ =====
