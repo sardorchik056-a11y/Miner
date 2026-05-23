@@ -180,10 +180,11 @@ def profile_text(d: dict) -> str:
         mult        = _multiplier_label(active["multiplier"])
         dur         = _DUR_LABELS[active["dur_key"]]
         left        = _fmt_time_left(active["ends_at"] - _now_ts())
-        booster_line = f'│  ⚡  Ускоритель: <b>{mult} на {dur}</b> (⏱ {left})\n'
+        booster_line = f'│  ⚡  Ускоритель: <b>{mult} на {dur}</b> — ⏱ {left}\n'
+        booster_sep  = "├──────────────────────────\n"
     else:
-        inv_count    = len(d.get("boosters_inventory", []))
-        booster_line = f'│  🎒  Инвентарь: <b>{inv_count} ускор.</b>\n'
+        booster_line = ""
+        booster_sep  = ""
 
     return (
         f"┌──────────────────────────\n"
@@ -198,7 +199,7 @@ def profile_text(d: dict) -> str:
         f'│  <tg-emoji emoji-id="5375338737028841420">🎟</tg-emoji>  Уровень: {lvl_line}\n'
         f'│  <tg-emoji emoji-id="5341498088408234504">🎟</tg-emoji>  Опыт:    {xp_str}\n'
         f"│       {bar_str}\n"
-        f"├──────────────────────────\n"
+        f"{booster_sep}"
         f"{booster_line}"
         f"├──────────────────────────\n"
         f'│  {COIN}  Баланс: <b>{d["balance"]:,}</b>\n'
