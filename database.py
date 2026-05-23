@@ -173,18 +173,26 @@ def profile_text(d: dict) -> str:
         bar_str  = xp_bar(xp, xp_max)
         xp_str   = f"<b>{xp:,}/{xp_max:,}</b>"
 
-    # Ускоритель
-    from shop import get_active_booster_info, _multiplier_label, _DUR_LABELS, _fmt_time_left, _now_ts
-    active = get_active_booster_info(d)
-    if active:
-        mult        = _multiplier_label(active["multiplier"])
-        dur         = _DUR_LABELS[active["dur_key"]]
-        left        = _fmt_time_left(active["ends_at"] - _now_ts())
-        booster_line = f'│  ⚡  Ускоритель: <b>{mult} на {dur}</b> — ⏱ {left}\n'
-        booster_sep  = "├──────────────────────────\n"
-    else:
-        booster_line = ""
-        booster_sep  = ""
+    # Ускорители
+    from shop import get_active_booster_info, get_active_xp_booster_info, _multiplier_label, _DUR_LABELS, _fmt_time_left, _now_ts
+    active    = get_active_booster_info(d)
+    xp_active = get_active_xp_booster_info(d)
+
+    booster_lines = ""
+    booster_sep   = ""
+
+    if active or xp_active:
+        booster_sep = "├──────────────────────────\n"
+        if active:
+            mult = _multiplier_label(active["multiplier"])
+            dur  = _DUR_LABELS[active["dur_key"]]
+            left = _fmt_time_left(active["ends_at"] - _now_ts())
+            booster_lines += f'│  ⚡  Кирка: <b>{mult} на {dur}</b> — ⏱ {left}\n'
+        if xp_active:
+            mult = _multiplier_label(xp_active["multiplier"])
+            dur  = _DUR_LABELS[xp_active["dur_key"]]
+            left = _fmt_time_left(xp_active["ends_at"] - _now_ts())
+            booster_lines += f'│  🔮  XP: <b>×{mult} на {dur}</b> — ⏱ {left}\n'
 
     return (
         f"┌──────────────────────────\n"
@@ -200,7 +208,7 @@ def profile_text(d: dict) -> str:
         f'│  <tg-emoji emoji-id="5341498088408234504">🎟</tg-emoji>  Опыт:    {xp_str}\n'
         f"│       {bar_str}\n"
         f"{booster_sep}"
-        f"{booster_line}"
+        f"{booster_lines}"
         f"├──────────────────────────\n"
         f'│  {COIN}  Баланс: <b>{d["balance"]:,}</b>\n'
         f"└──────────────────────────"
