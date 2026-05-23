@@ -28,10 +28,15 @@ from miner import (
 )
 from shop import (
     cases_shop_text, cases_shop_keyboard,
+    inventory_main_text, inventory_main_keyboard,
     boosters_inventory_text, boosters_inventory_keyboard,
     booster_detail_text, booster_detail_keyboard,
     booster_confirm_replace_text, booster_confirm_replace_keyboard,
+    xp_inventory_text, xp_inventory_keyboard,
+    xp_item_detail_text, xp_item_detail_keyboard,
+    xp_confirm_replace_text, xp_confirm_replace_keyboard,
     open_case, activate_booster, sell_booster,
+    use_xp_item, sell_xp_item,
 )
 
 bot = telebot.TeleBot('8796618330:AAEx3qgVKofsK8ObQEM169AiRj7YWohZl_4')
@@ -262,18 +267,28 @@ def handle_callback(call):
                 bot.answer_callback_query(call.id, msg, show_alert=True)
             return
 
-        # ===== ИНВЕНТАРЬ УСКОРИТЕЛЕЙ =====
+        # ===== ИНВЕНТАРЬ — главная страница выбора раздела =====
         if cd == "profile_boosters":
+            edit(inventory_main_text(data), inventory_main_keyboard())
+            return
+
+        # ===== ИНВЕНТАРЬ — раздел ускорителей кирки =====
+        if cd == "inv_boosters":
             edit(boosters_inventory_text(data), boosters_inventory_keyboard(data))
             return
 
-        # ===== КАРТОЧКА УСКОРИТЕЛЯ =====
+        # ===== ИНВЕНТАРЬ — раздел XP-предметов =====
+        if cd == "inv_xp":
+            edit(xp_inventory_text(data), xp_inventory_keyboard(data))
+            return
+
+        # ===== КАРТОЧКА УСКОРИТЕЛЯ КИРКИ =====
         if cd.startswith("boost_info_"):
             instance_id = cd.removeprefix("boost_info_")
             edit(booster_detail_text(data, instance_id), booster_detail_keyboard(data, instance_id))
             return
 
-        # ===== АКТИВАЦИЯ УСКОРИТЕЛЯ =====
+        # ===== АКТИВАЦИЯ УСКОРИТЕЛЯ КИРКИ =====
         if cd.startswith("boost_activate_"):
             instance_id = cd.removeprefix("boost_activate_")
             ok, msg = activate_booster(data, instance_id)
@@ -282,13 +297,12 @@ def handle_callback(call):
                 bot.answer_callback_query(call.id, "⚡ Ускоритель активирован!", show_alert=True)
                 edit(boosters_inventory_text(data), boosters_inventory_keyboard(data))
             elif msg.startswith("CONFIRM_REPLACE:"):
-                # Нужно подтверждение замены
                 edit(booster_confirm_replace_text(data, instance_id), booster_confirm_replace_keyboard(instance_id))
             else:
                 bot.answer_callback_query(call.id, msg, show_alert=True)
             return
 
-        # ===== ПОДТВЕРЖДЕНИЕ ЗАМЕНЫ УСКОРИТЕЛЯ =====
+        # ===== ПОДТВЕРЖДЕНИЕ ЗАМЕНЫ УСКОРИТЕЛЯ КИРКИ =====
         if cd.startswith("boost_replace_"):
             instance_id = cd.removeprefix("boost_replace_")
             ok, msg = activate_booster(data, instance_id, force=True)
@@ -298,7 +312,7 @@ def handle_callback(call):
             edit(boosters_inventory_text(data), boosters_inventory_keyboard(data))
             return
 
-        # ===== ПРОДАЖА УСКОРИТЕЛЯ =====
+        # ===== ПРОДАЖА УСКОРИТЕЛЯ КИРКИ =====
         if cd.startswith("boost_sell_"):
             instance_id = cd.removeprefix("boost_sell_")
             ok, msg, price = sell_booster(data, instance_id)
@@ -306,6 +320,52 @@ def handle_callback(call):
             if ok:
                 save_user(data["id"], data)
             edit(boosters_inventory_text(data), boosters_inventory_keyboard(data))
+            return
+
+        # ===== КАРТОЧКА XP-ПРЕДМЕТА =====
+        if cd.startswith("xp_info_"):
+            instance_id = cd.removeprefix("xp_info_")
+            inv  = data.get("xp_inventory", [])
+            item = next((x for x in inv if x["instance_id"] == instance_id), None)
+            if not item:
+                bot.answer_callback_query(call.id, "❌ Предмет не найден.", show_alert=True)
+                return
+            is_boost = item["type"] == "xp_boost"
+            edit(xp_item_detail_text(data, instance_id), xp_item_detail_keyboard(instance_id, is_boost))
+            return
+
+        # ===== ИСПОЛЬЗОВАНИЕ XP-ПРЕДМЕТА =====
+        if cd.startswith("xp_use_"):
+            instance_id = cd.removeprefix("xp_use_")
+            ok, msg = use_xp_item(data, instance_id)
+            if ok:
+                save_user(data["id"], data)
+                bot.answer_callback_query(call.id, "✅ Применено!", show_alert=True)
+                edit(xp_inventory_text(data), xp_inventory_keyboard(data))
+            elif msg.startswith("CONFIRM_REPLACE_XP:"):
+                edit(xp_confirm_replace_text(data, instance_id), xp_confirm_replace_keyboard(instance_id))
+            else:
+                bot.answer_callback_query(call.id, msg, show_alert=True)
+            return
+
+        # ===== ПОДТВЕРЖДЕНИЕ ЗАМЕНЫ XP-УСКОРИТЕЛЯ =====
+        if cd.startswith("xp_replace_"):
+            instance_id = cd.removeprefix("xp_replace_")
+            ok, msg = use_xp_item(data, instance_id, force=True)
+            bot.answer_callback_query(call.id, "🔮 XP-ускоритель заменён!" if ok else msg, show_alert=True)
+            if ok:
+                save_user(data["id"], data)
+            edit(xp_inventory_text(data), xp_inventory_keyboard(data))
+            return
+
+        # ===== ПРОДАЖА XP-ПРЕДМЕТА =====
+        if cd.startswith("xp_sell_"):
+            instance_id = cd.removeprefix("xp_sell_")
+            ok, msg, price = sell_xp_item(data, instance_id)
+            bot.answer_callback_query(call.id, f"💰 Продано за {price:,} монет!" if ok else msg, show_alert=True)
+            if ok:
+                save_user(data["id"], data)
+            edit(xp_inventory_text(data), xp_inventory_keyboard(data))
             return
 
         if cd == "shop_pickaxes":
