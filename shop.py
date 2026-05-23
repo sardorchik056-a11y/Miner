@@ -92,6 +92,46 @@ _BOOSTER_POOL = [
 
 BOOSTERS_BY_KEY = {b["key"]: b for b in _BOOSTER_POOL}
 
+MAX_INVENTORY = 10  # максимум ускорителей в инвентаре
+
+# Цена продажи ускорителя зависит от множителя и длительности
+_SELL_PRICES = {
+    ("1.2", "10min"): 500,
+    ("1.2", "30min"): 1_200,
+    ("1.2", "1h"):    2_000,
+    ("1.2", "2h"):    3_500,
+    ("1.2", "4h"):    5_500,
+    ("1.2", "10h"):   10_000,
+    ("1.2", "24h"):   18_000,
+    ("1.5", "10min"): 800,
+    ("1.5", "30min"): 2_000,
+    ("1.5", "1h"):    3_500,
+    ("1.5", "2h"):    6_000,
+    ("1.5", "4h"):    9_000,
+    ("1.5", "10h"):   16_000,
+    ("1.5", "24h"):   28_000,
+    ("2.0", "10min"): 1_200,
+    ("2.0", "30min"): 3_000,
+    ("2.0", "1h"):    5_500,
+    ("2.0", "2h"):    9_500,
+    ("2.0", "4h"):    15_000,
+    ("2.0", "10h"):   26_000,
+    ("2.0", "24h"):   45_000,
+}
+
+
+def get_sell_price(item: dict) -> int:
+    mult_key = f"{item['multiplier']:.1f}".rstrip("0").rstrip(".")
+    # normalise: 2.0 → "2.0", 1.2 → "1.2"
+    mult_key = f"{item['multiplier']}"
+    if mult_key == "2.0":
+        mult_key = "2.0"
+    elif mult_key == "1.5":
+        mult_key = "1.5"
+    else:
+        mult_key = "1.2"
+    return _SELL_PRICES.get((mult_key, item["dur_key"]), 1_000)
+
 # ============================================================
 #  КЕЙСЫ
 # ============================================================
@@ -119,13 +159,6 @@ def _multiplier_label(mult: float) -> str:
     if mult == 2.0: return "2×"
     return f"{mult}×"
 
-
-def _rarity_label(chance: int) -> str:
-    if chance >= 70: return "🟢 Обычная"
-    if chance >= 40: return "🔵 Редкая"
-    if chance >= 15: return "🟣 Эпическая"
-    if chance >= 5:  return "🟠 Легендарная"
-    return "🔴 Мифическая"
 
 
 def _booster_name(b: dict) -> str:
@@ -162,13 +195,16 @@ def open_case(data: dict, case_key: str) -> tuple[bool, str, dict | None]:
     if data.get("balance", 0) < cost:
         return False, f"❌ Недостаточно монет!\nНужно: {_fmt_num(cost)} {COIN}", None
 
+    inv = data.setdefault("boosters_inventory", [])
+    if len(inv) >= MAX_INVENTORY:
+        return False, f"❌ Инвентарь полон!\nМаксимум {MAX_INVENTORY} ускорителей. Активируй или продай лишние.", None
+
     pool    = case["pool"]
     weights = [b["chance"] for b in pool]
     dropped = random.choices(pool, weights=weights, k=1)[0]
 
     data["balance"] -= cost
 
-    inv      = data.setdefault("boosters_inventory", [])
     instance = {
         "instance_id":  f"{dropped['key']}_{int(_now_ts())}_{random.randint(1000,9999)}",
         "key":          dropped["key"],
@@ -184,10 +220,10 @@ def open_case(data: dict, case_key: str) -> tuple[bool, str, dict | None]:
         f"{_tg(EMOJI_BTN_INV, '📦')} <b>Кейс открыт!</b>\n"
         f"━━━━━━━━━━━━━━━━━━━━\n\n"
         f"Ты получил:\n"
-        f"{_tg(EMOJI_BTN_DURATION, '⏱')} <b>{name}</b>\n"
-        f"Редкость: {_rarity_label(dropped['chance'])}\n\n"
+        f"{_tg(EMOJI_BTN_DURATION, '⏱')} <b>{name}</b>\n\n"
         f"Потрачено: {_fmt_num(cost)} {COIN}\n"
-        f"Баланс: {_fmt_num(data['balance'])} {COIN}"
+        f"Баланс: {_fmt_num(data['balance'])} {COIN}\n"
+        f"В инвентаре: {len(inv)}/{MAX_INVENTORY}"
     )
     return True, msg, instance
 
@@ -196,16 +232,25 @@ def open_case(data: dict, case_key: str) -> tuple[bool, str, dict | None]:
 #  ЛОГИКА: активация ускорителя
 # ============================================================
 
-def activate_booster(data: dict, instance_id: str) -> tuple[bool, str]:
+def activate_booster(data: dict, instance_id: str, force: bool = False) -> tuple[bool, str]:
+    """
+    Активирует ускоритель из инвентаря.
+    Если уже есть активный и force=False — возвращает (False, ...) с предложением подтвердить.
+    Если force=True — заменяет без вопросов.
+    """
     inv  = data.get("boosters_inventory", [])
     item = next((x for x in inv if x["instance_id"] == instance_id), None)
     if not item:
         return False, "❌ Ускоритель не найден."
 
     active = data.get("active_booster")
-    if active and active.get("ends_at", 0) > _now_ts():
-        left = _fmt_time_left(active["ends_at"] - _now_ts())
-        return False, f"❌ Уже активен ускоритель!\nОсталось: {left}"
+    has_active = active and active.get("ends_at", 0) > _now_ts()
+
+    if has_active and not force:
+        left     = _fmt_time_left(active["ends_at"] - _now_ts())
+        act_mult = _multiplier_label(active["multiplier"])
+        act_dur  = _DUR_LABELS[active["dur_key"]]
+        return False, f"CONFIRM_REPLACE:{instance_id}"
 
     data["boosters_inventory"] = [x for x in inv if x["instance_id"] != instance_id]
 
@@ -225,6 +270,26 @@ def activate_booster(data: dict, instance_id: str) -> tuple[bool, str]:
         f"<b>{_booster_name(item)}</b>\n"
         f"Все показатели кирки ×{mult} на {dur}!"
     )
+
+
+def sell_booster(data: dict, instance_id: str) -> tuple[bool, str, int]:
+    """Продаёт ускоритель из инвентаря. Возвращает (ok, msg, price)."""
+    inv  = data.get("boosters_inventory", [])
+    item = next((x for x in inv if x["instance_id"] == instance_id), None)
+    if not item:
+        return False, "❌ Ускоритель не найден.", 0
+
+    price = get_sell_price(item)
+    data["boosters_inventory"] = [x for x in inv if x["instance_id"] != instance_id]
+    data["balance"] = data.get("balance", 0) + price
+
+    return True, (
+        f"💰 <b>Ускоритель продан!</b>\n"
+        f"━━━━━━━━━━━━━━━━━━━━\n\n"
+        f"{_booster_name(item)}\n"
+        f"Получено: <b>+{_fmt_num(price)} {COIN}</b>\n"
+        f"Баланс: <b>{_fmt_num(data['balance'])} {COIN}</b>"
+    ), price
 
 
 def get_active_booster_multiplier(data: dict) -> float:
@@ -331,11 +396,10 @@ def boosters_inventory_text(data: dict) -> str:
     if not inv:
         lines.append("Инвентарь пуст. Открой кейс в магазине!")
     else:
-        lines.append(f"<b>В инвентаре ({len(inv)} шт.):</b>\n")
-        for i, item in enumerate(inv[:10], 1):
-            lines.append(f"  {i}. {_booster_name(item)}\n")
-        if len(inv) > 10:
-            lines.append(f"\n  ... и ещё {len(inv) - 10} шт.")
+        lines.append(f"<b>В инвентаре ({len(inv)}/{MAX_INVENTORY}):</b>\n")
+        for i, item in enumerate(inv, 1):
+            price = get_sell_price(item)
+            lines.append(f"  {i}. {_booster_name(item)} — продажа: {_fmt_num(price)} {COIN}\n")
 
     return "".join(lines)
 
@@ -343,7 +407,7 @@ def boosters_inventory_text(data: dict) -> str:
 def boosters_inventory_keyboard(data: dict) -> InlineKeyboardMarkup:
     kb  = InlineKeyboardMarkup(row_width=1)
     inv = data.get("boosters_inventory", [])
-    for item in inv[:8]:
+    for item in inv[:MAX_INVENTORY]:
         kb.add(_btn(EMOJI_BTN_DURATION, _booster_name(item), f'boost_info_{item["instance_id"]}'))
     kb.add(_btn(EMOJI_BTN_INV, "📦 Открыть кейс", "shop_cases"))
     kb.add(_back_btn("profile", "Назад в профиль"))
@@ -362,7 +426,7 @@ def booster_detail_text(data: dict, instance_id: str) -> str:
 
     mult   = _multiplier_label(item["multiplier"])
     dur    = _DUR_LABELS[item["dur_key"]]
-    rarity = _rarity_label(item["chance"])
+    price  = get_sell_price(item)
     active = get_active_booster_info(data)
 
     warning = ""
@@ -372,26 +436,60 @@ def booster_detail_text(data: dict, instance_id: str) -> str:
         act_dur  = _DUR_LABELS[active["dur_key"]]
         warning  = (
             f"\n\n⚠️ Сейчас активен Ускоритель {act_mult} на {act_dur}\n"
-            f"Осталось: <b>{left}</b>\n"
-            f"Активация заменит текущий!"
+            f"Осталось: <b>{left}</b>"
         )
 
     return (
         f"{_tg(EMOJI_BTN_DURATION, '⏱')} <b>{_booster_name(item)}</b>\n"
         f"━━━━━━━━━━━━━━━━━━━━\n\n"
-        f"Редкость: {rarity}\n"
         f"Длительность: <b>{dur}</b>\n"
         f"Множитель: <b>{mult}</b>\n\n"
         f"<b>Эффект (все показатели кирки):</b>\n"
         f"  • Ударов за кампанию: ×{mult}\n"
         f"  • Монет в час: ×{mult}\n"
-        f"  • Скорость добычи: ×{mult}"
+        f"  • Скорость добычи: ×{mult}\n\n"
+        f"💰 Цена продажи: <b>{_fmt_num(price)} {COIN}</b>"
         f"{warning}"
     )
 
 
-def booster_detail_keyboard(instance_id: str) -> InlineKeyboardMarkup:
+def booster_detail_keyboard(data: dict, instance_id: str) -> InlineKeyboardMarkup:
     kb = InlineKeyboardMarkup(row_width=1)
-    kb.add(_btn(EMOJI_BTN_ACTIVE, "✅ Активировать", f"boost_activate_{instance_id}"))
+    kb.add(_btn(EMOJI_BTN_ACTIVE,   "✅ Активировать", f"boost_activate_{instance_id}"))
+    kb.add(_btn(EMOJI_BTN_SELL,     "💰 Продать",      f"boost_sell_{instance_id}"))
     kb.add(_back_btn("profile_boosters", "Назад"))
+    return kb
+
+
+def booster_confirm_replace_text(data: dict, instance_id: str) -> str:
+    """Текст запроса подтверждения замены активного ускорителя."""
+    inv    = data.get("boosters_inventory", [])
+    item   = next((x for x in inv if x["instance_id"] == instance_id), None)
+    active = get_active_booster_info(data)
+
+    if not item or not active:
+        return "❌ Ошибка."
+
+    left     = _fmt_time_left(active["ends_at"] - _now_ts())
+    act_mult = _multiplier_label(active["multiplier"])
+    act_dur  = _DUR_LABELS[active["dur_key"]]
+    new_mult = _multiplier_label(item["multiplier"])
+    new_dur  = _DUR_LABELS[item["dur_key"]]
+
+    return (
+        f"⚠️ <b>Замена ускорителя</b>\n"
+        f"━━━━━━━━━━━━━━━━━━━━\n\n"
+        f"Сейчас активен: <b>Ускоритель {act_mult} на {act_dur}</b>\n"
+        f"Осталось: <b>{left}</b>\n\n"
+        f"Заменить на: <b>Ускоритель {new_mult} на {new_dur}</b>?\n\n"
+        f"Старый ускоритель будет потерян!"
+    )
+
+
+def booster_confirm_replace_keyboard(instance_id: str) -> InlineKeyboardMarkup:
+    kb = InlineKeyboardMarkup(row_width=2)
+    kb.add(
+        InlineKeyboardButton("✅ Да, заменить", callback_data=f"boost_replace_{instance_id}"),
+        InlineKeyboardButton("❌ Отмена",        callback_data=f"boost_info_{instance_id}"),
+    )
     return kb
