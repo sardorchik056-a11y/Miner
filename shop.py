@@ -326,16 +326,19 @@ def open_case(data: dict, case_key: str) -> tuple[bool, str, dict | None]:
         name     = _xp_item_name(dropped)
         inv_line = f"В XP-инвентаре: {len(inv)}/{MAX_XP_INVENTORY}"
 
-    rarity = dropped.get("rarity", "")
+    rarity   = dropped.get("rarity", "")
+    rar_line = f"│  {rarity}\n" if rarity else ""
     msg = (
-        f"{_tg(EMOJI_BTN_INV, '📦')} <b>Кейс открыт!</b>\n"
-        f"━━━━━━━━━━━━━━━━━━━━\n\n"
-        f"Ты получил:\n"
-        f"<b>{name}</b>\n"
-        f"{rarity}\n\n"
-        f"Потрачено: {_fmt_num(cost)} {COIN}\n"
-        f"Баланс: {_fmt_num(data['balance'])} {COIN}\n"
-        f"{inv_line}"
+        f"┌──────────────────────────\n"
+        f"│  {_tg(EMOJI_BTN_INV, '📦')}  <b>Кейс открыт!</b>\n"
+        f"├──────────────────────────\n"
+        f"│  🎁  <b>{name}</b>\n"
+        f"{rar_line}"
+        f"├──────────────────────────\n"
+        f"│  {COIN}  Потрачено: <b>{_fmt_num(cost)}</b>\n"
+        f"│  {COIN}  Баланс:    <b>{_fmt_num(data['balance'])}</b>\n"
+        f"│  📦  {inv_line}\n"
+        f"└──────────────────────────"
     )
     return True, msg, instance
 
@@ -368,10 +371,12 @@ def activate_booster(data: dict, instance_id: str, force: bool = False) -> tuple
     mult = _multiplier_label(item["multiplier"])
     dur  = _DUR_LABELS[item["dur_key"]]
     return True, (
-        f"{_tg(EMOJI_BTN_ACTIVE, '✅')} <b>Ускоритель активирован!</b>\n"
-        f"━━━━━━━━━━━━━━━━━━━━\n\n"
-        f"<b>{_booster_name(item)}</b>\n"
-        f"Все показатели кирки ×{mult} на {dur}!"
+        f"┌──────────────────────────\n"
+        f"│  {_tg(EMOJI_BTN_ACTIVE, '✅')}  <b>Ускоритель активирован!</b>\n"
+        f"├──────────────────────────\n"
+        f"│  ⚡  <b>{_booster_name(item)}</b>\n"
+        f"│  Все показатели кирки ×{mult} на {dur}!\n"
+        f"└──────────────────────────"
     )
 
 
@@ -386,11 +391,13 @@ def sell_booster(data: dict, instance_id: str) -> tuple[bool, str, int]:
     data["balance"] = data.get("balance", 0) + price
 
     return True, (
-        f"💰 <b>Ускоритель продан!</b>\n"
-        f"━━━━━━━━━━━━━━━━━━━━\n\n"
-        f"{_booster_name(item)}\n"
-        f"Получено: <b>+{_fmt_num(price)} {COIN}</b>\n"
-        f"Баланс: <b>{_fmt_num(data['balance'])} {COIN}</b>"
+        f"┌──────────────────────────\n"
+        f"│  💰  <b>Ускоритель продан!</b>\n"
+        f"├──────────────────────────\n"
+        f"│  ⚡  {_booster_name(item)}\n"
+        f"│  {COIN}  +<b>{_fmt_num(price)}</b> монет\n"
+        f"│  {COIN}  Баланс: <b>{_fmt_num(data['balance'])}</b>\n"
+        f"└──────────────────────────"
     ), price
 
 
@@ -427,9 +434,11 @@ def use_xp_item(data: dict, instance_id: str, force: bool = False) -> tuple[bool
         mult = _multiplier_label(item["multiplier"])
         dur  = _DUR_LABELS[item["dur_key"]]
         return True, (
-            f"🔮 <b>XP-ускоритель активирован!</b>\n"
-            f"━━━━━━━━━━━━━━━━━━━━\n\n"
-            f"Множитель опыта ×{mult} на {dur}!"
+            f"┌──────────────────────────\n"
+            f"│  🔮  <b>XP-ускоритель активирован!</b>\n"
+            f"├──────────────────────────\n"
+            f"│  ✨  Множитель опыта ×{mult} на {dur}!\n"
+            f"└──────────────────────────"
         )
 
     # xp_instant
@@ -455,16 +464,19 @@ def use_xp_item(data: dict, instance_id: str, force: bool = False) -> tuple[bool
     data["xp"]      = xp
     data["xp_max"]  = xp_max
 
-    lvl_msg = f"\n🎉 Уровень повышен до <b>{level}</b>!" * min(lvl_ups, 3)
+    lvl_msg = f"\n│  🎉  Уровень повышен до <b>{level}</b>!" * min(lvl_ups, 3)
     if lvl_ups > 3:
-        lvl_msg = f"\n🎉 Уровень повышен до <b>{level}</b> (+{lvl_ups} ур.)!"
+        lvl_msg = f"\n│  🎉  Уровень повышен до <b>{level}</b> (+{lvl_ups} ур.)!"
 
     return True, (
-        f"⚡ <b>Опыт получен!</b>\n"
-        f"━━━━━━━━━━━━━━━━━━━━\n\n"
-        f"+<b>{_fmt_num(gained)} XP</b>{lvl_msg}\n\n"
-        f"Текущий уровень: <b>{level}</b>\n"
-        f"Опыт: <b>{_fmt_num(xp)}/{_fmt_num(xp_max)}</b>"
+        f"┌──────────────────────────\n"
+        f"│  ⚡  <b>Опыт получен!</b>\n"
+        f"├──────────────────────────\n"
+        f"│  ✨  <b>+{_fmt_num(gained)} XP</b>{lvl_msg}\n"
+        f"├──────────────────────────\n"
+        f"│  Уровень: <b>{level}</b>\n"
+        f"│  Опыт:    <b>{_fmt_num(xp)}/{_fmt_num(xp_max)}</b>\n"
+        f"└──────────────────────────"
     )
 
 
@@ -479,11 +491,13 @@ def sell_xp_item(data: dict, instance_id: str) -> tuple[bool, str, int]:
     data["balance"] = data.get("balance", 0) + price
 
     return True, (
-        f"💰 <b>Продано!</b>\n"
-        f"━━━━━━━━━━━━━━━━━━━━\n\n"
-        f"{_xp_item_name(item)}\n"
-        f"Получено: <b>+{_fmt_num(price)} {COIN}</b>\n"
-        f"Баланс: <b>{_fmt_num(data['balance'])} {COIN}</b>"
+        f"┌──────────────────────────\n"
+        f"│  💰  <b>Продано!</b>\n"
+        f"├──────────────────────────\n"
+        f"│  🔮  {_xp_item_name(item)}\n"
+        f"│  {COIN}  +<b>{_fmt_num(price)}</b> монет\n"
+        f"│  {COIN}  Баланс: <b>{_fmt_num(data['balance'])}</b>\n"
+        f"└──────────────────────────"
     ), price
 
 
@@ -537,15 +551,18 @@ def get_active_xp_booster_info(data: dict) -> dict | None:
 
 def cases_shop_text() -> str:
     return (
-        f"{_tg(EMOJI_BTN_WORKSHOP, '🔨')} <b>МАГАЗИН КЕЙСОВ</b>\n"
-        f"━━━━━━━━━━━━━━━━━━━━\n\n"
-        f"Открывай кейсы и получай бонусы!\n\n"
-        f"{_tg(EMOJI_BTN_INV, '📦')} <b>Обычный кейс</b>\n"
-        f"   Цена: <b>10 000</b> {COIN}\n"
-        f"   Содержит: ускорители кирки ×1.2 / ×1.5 / ×2\n\n"
-        f"🔮 <b>XP-кейс</b>\n"
-        f"   Цена: <b>25 000</b> {COIN}\n"
-        f"   Содержит: моментальный XP + XP-ускорители ×1.4 / ×1.8\n"
+        f"┌──────────────────────────\n"
+        f"│  {_tg(EMOJI_BTN_WORKSHOP, '🔨')}  <b>МАГАЗИН КЕЙСОВ</b>\n"
+        f"│  Открывай кейсы — получай бонусы!\n"
+        f"├──────────────────────────\n"
+        f"│  {_tg(EMOJI_BTN_INV, '📦')}  <b>Обычный кейс</b>\n"
+        f"│       Цена: <b>10 000</b> {COIN}\n"
+        f"│       ×1.2 / ×1.5 / ×2 ускорители кирки\n"
+        f"├──────────────────────────\n"
+        f"│  🔮  <b>XP-кейс</b>\n"
+        f"│       Цена: <b>25 000</b> {COIN}\n"
+        f"│       Моментальный XP + ×1.4 / ×1.8 XP-ускорители\n"
+        f"└──────────────────────────"
     )
 
 
@@ -570,31 +587,37 @@ def case_detail_text(data: dict, case_key: str) -> str:
 
     if case["type"] == "booster":
         loot_lines = (
-            f"{_tg(EMOJI_BTN_DURATION, '⏱')} Ускоритель 1.2× (10мин – 24ч)\n"
-            f"{_tg(EMOJI_BTN_DURATION, '⏱')} Ускоритель 1.5× (10мин – 24ч)\n"
-            f"{_tg(EMOJI_BTN_DURATION, '⏱')} Ускоритель 2× (10мин – 24ч)\n"
+            f"│  {_tg(EMOJI_BTN_DURATION, '⏱')}  Ускоритель 1.2× — 10мин до 24ч\n"
+            f"│  {_tg(EMOJI_BTN_DURATION, '⏱')}  Ускоритель 1.5× — 10мин до 24ч\n"
+            f"│  {_tg(EMOJI_BTN_DURATION, '⏱')}  Ускоритель 2×   — 10мин до 24ч\n"
         )
     else:
         loot_lines = (
-            f"⬜ Моментальный опыт 100 XP — Обычный\n"
-            f"🟩 Моментальный опыт 225 XP — Необычный\n"
-            f"🟦 Моментальный опыт 750 XP — Редкий\n"
-            f"🟪 Моментальный опыт 2 000 XP — Эпический\n"
-            f"🟧 Моментальный опыт 5 000 XP — Легендарный\n"
-            f"🟩 XP-ускоритель ×1.4 (30мин – 48ч)\n"
-            f"🟦🟪 XP-ускоритель ×1.8 (30мин – 48ч)\n"
-            f"🔶 XP-ускоритель ×1.8 на 48ч — Мифический\n"
+            f"│  ⬜  100 XP — Обычный\n"
+            f"│  🟩  225 XP — Необычный\n"
+            f"│  🟦  750 XP — Редкий\n"
+            f"│  🟪  2 000 XP — Эпический\n"
+            f"│  🟧  5 000 XP — Легендарный\n"
+            f"│  🟩  XP-ускоритель ×1.4 (30мин – 48ч)\n"
+            f"│  🟦🟪  XP-ускоритель ×1.8 (30мин – 48ч)\n"
+            f"│  🔶  XP-ускоритель ×1.8 на 48ч — Мифический\n"
         )
 
-    icon = "📦" if case["type"] == "booster" else "🔮"
+    icon     = "📦" if case["type"] == "booster" else "🔮"
+    tg_icon  = _tg(EMOJI_BTN_INV, "📦") if case["type"] == "booster" else "🔮"
+    status   = "✅ Хватает монет" if can_buy else "❌ Недостаточно монет"
     return (
-        f"{_tg(EMOJI_BTN_INV, '📦')} <b>{icon} {case['name']} кейс</b>\n"
-        f"━━━━━━━━━━━━━━━━━━━━\n\n"
-        f"Цена: <b>{_fmt_num(case['cost'])}</b> {COIN}\n"
-        f"Твой баланс: <b>{bal_str}</b>\n\n"
-        f"<b>Возможный лут:</b>\n"
-        f"{loot_lines}\n"
-        f"{'✅ Достаточно монет для покупки!' if can_buy else '❌ Недостаточно монет.'}"
+        f"┌──────────────────────────\n"
+        f"│  {tg_icon}  <b>{case['name']} кейс</b>\n"
+        f"├──────────────────────────\n"
+        f"│  {COIN}  Цена:    <b>{_fmt_num(case['cost'])}</b>\n"
+        f"│  {COIN}  Баланс:  <b>{bal_str}</b>\n"
+        f"├──────────────────────────\n"
+        f"│  <b>Возможный лут:</b>\n"
+        f"{loot_lines}"
+        f"├──────────────────────────\n"
+        f"│  {status}\n"
+        f"└──────────────────────────"
     )
 
 
@@ -623,20 +646,22 @@ def inventory_main_text(data: dict) -> str:
     if active:
         left = _fmt_time_left(active["ends_at"] - _now_ts())
         mult = _multiplier_label(active["multiplier"])
-        b_active_str = f"  ⚡ Активен: {mult} — {left}\n"
+        b_active_str = f"│       ⚡ Активен: <b>{mult}</b> — ⏱ {left}\n"
     if xp_act:
         left = _fmt_time_left(xp_act["ends_at"] - _now_ts())
         mult = _multiplier_label(xp_act["multiplier"])
-        xp_active_str = f"  🔮 Активен: ×{mult} XP — {left}\n"
+        xp_active_str = f"│       🔮 Активен: <b>×{mult} XP</b> — ⏱ {left}\n"
 
     return (
-        f"{_tg(EMOJI_BTN_COLLECT, '🎒')} <b>ИНВЕНТАРЬ</b>\n"
-        f"━━━━━━━━━━━━━━━━━━━━\n\n"
-        f"⚙️ <b>Ускорители кирки</b>  [{len(b_inv)}/{MAX_INVENTORY}]\n"
+        f"┌──────────────────────────\n"
+        f"│  {_tg(EMOJI_BTN_COLLECT, '🎒')}  <b>ИНВЕНТАРЬ</b>\n"
+        f"├──────────────────────────\n"
+        f"│  ⚙️  <b>Ускорители кирки</b>  [{len(b_inv)}/{MAX_INVENTORY}]\n"
         f"{b_active_str}"
-        f"\n🔮 <b>XP-предметы</b>  [{len(xp_inv)}/{MAX_XP_INVENTORY}]\n"
+        f"├──────────────────────────\n"
+        f"│  🔮  <b>XP-предметы</b>  [{len(xp_inv)}/{MAX_XP_INVENTORY}]\n"
         f"{xp_active_str}"
-        f"\nВыбери раздел:"
+        f"└──────────────────────────"
     )
 
 
@@ -658,8 +683,9 @@ def boosters_inventory_text(data: dict) -> str:
     active = get_active_booster_info(data)
 
     lines = [
-        f"⚙️ <b>УСКОРИТЕЛИ КИРКИ</b>\n"
-        f"━━━━━━━━━━━━━━━━━━━━\n\n"
+        f"┌──────────────────────────\n"
+        f"│  ⚙️  <b>УСКОРИТЕЛИ КИРКИ</b>\n"
+        f"├──────────────────────────\n"
     ]
 
     if active:
@@ -667,20 +693,24 @@ def boosters_inventory_text(data: dict) -> str:
         mult = _multiplier_label(active["multiplier"])
         dur  = _DUR_LABELS[active["dur_key"]]
         lines.append(
-            f"{_tg(EMOJI_SELECTED, '✅')} <b>Активен:</b> {mult} на {dur}\n"
-            f"⏱ Осталось: <b>{left}</b>\n\n"
+            f"│  {_tg(EMOJI_SELECTED, '✅')}  <b>Активен:</b> {mult} на {dur}\n"
+            f"│  ⏱  Осталось: <b>{left}</b>\n"
+            f"├──────────────────────────\n"
         )
     else:
-        lines.append(f"{_tg(EMOJI_NOT_BOUGHT, '🚫')} Нет активного ускорителя.\n\n")
+        lines.append(f"│  {_tg(EMOJI_NOT_BOUGHT, '🚫')}  Нет активного ускорителя.\n"
+                     f"├──────────────────────────\n")
 
     if not inv:
-        lines.append("Инвентарь пуст. Открой Обычный кейс!")
+        lines.append("│  📭  Инвентарь пуст. Открой Обычный кейс!\n")
     else:
-        lines.append(f"<b>В инвентаре ({len(inv)}/{MAX_INVENTORY}):</b>\n")
+        lines.append(f"│  <b>В инвентаре ({len(inv)}/{MAX_INVENTORY}):</b>\n")
         for i, item in enumerate(inv, 1):
             price = get_sell_price(item)
-            lines.append(f"  {i}. {_booster_name(item)} — {_fmt_num(price)} {COIN}\n")
+            lines.append(f"│  {i}.  {_booster_name(item)}\n"
+                         f"│       💰 {_fmt_num(price)} {COIN}\n")
 
+    lines.append("└──────────────────────────")
     return "".join(lines)
 
 
@@ -714,21 +744,26 @@ def booster_detail_text(data: dict, instance_id: str) -> str:
         act_mult = _multiplier_label(active["multiplier"])
         act_dur  = _DUR_LABELS[active["dur_key"]]
         warning  = (
-            f"\n\n⚠️ Сейчас активен: {act_mult} на {act_dur}\n"
-            f"Осталось: <b>{left}</b>"
+            f"├──────────────────────────\n"
+            f"│  ⚠️  Активен: <b>{act_mult}</b> на {act_dur}\n"
+            f"│  ⏱  Осталось: <b>{left}</b>\n"
         )
 
     return (
-        f"⚙️ <b>{_booster_name(item)}</b>\n"
-        f"━━━━━━━━━━━━━━━━━━━━\n\n"
-        f"Длительность: <b>{dur}</b>\n"
-        f"Множитель: <b>{mult}</b>\n\n"
-        f"<b>Эффект (все показатели кирки):</b>\n"
-        f"  • Ударов за кампанию: ×{mult}\n"
-        f"  • Монет в час: ×{mult}\n"
-        f"  • Скорость добычи: ×{mult}\n\n"
-        f"💰 Цена продажи: <b>{_fmt_num(price)} {COIN}</b>"
+        f"┌──────────────────────────\n"
+        f"│  ⚡  <b>{_booster_name(item)}</b>\n"
+        f"├──────────────────────────\n"
+        f"│  ⏱  Длительность: <b>{dur}</b>\n"
+        f"│  🔢  Множитель:   <b>{mult}</b>\n"
+        f"├──────────────────────────\n"
+        f"│  <b>Эффект (все показатели кирки):</b>\n"
+        f"│   • Ударов за кампанию: ×{mult}\n"
+        f"│   • Монет в час:         ×{mult}\n"
+        f"│   • Скорость добычи:     ×{mult}\n"
+        f"├──────────────────────────\n"
+        f"│  {COIN}  Цена продажи: <b>{_fmt_num(price)}</b>\n"
         f"{warning}"
+        f"└──────────────────────────"
     )
 
 
@@ -754,12 +789,15 @@ def booster_confirm_replace_text(data: dict, instance_id: str) -> str:
     new_dur  = _DUR_LABELS[item["dur_key"]]
 
     return (
-        f"⚠️ <b>Замена ускорителя</b>\n"
-        f"━━━━━━━━━━━━━━━━━━━━\n\n"
-        f"Сейчас активен: <b>{act_mult} на {act_dur}</b>\n"
-        f"Осталось: <b>{left}</b>\n\n"
-        f"Заменить на: <b>{new_mult} на {new_dur}</b>?\n\n"
-        f"⚠️ Старый ускоритель будет потерян!"
+        f"┌──────────────────────────\n"
+        f"│  ⚠️  <b>Замена ускорителя</b>\n"
+        f"├──────────────────────────\n"
+        f"│  Сейчас активен: <b>{act_mult} на {act_dur}</b>\n"
+        f"│  ⏱  Осталось: <b>{left}</b>\n"
+        f"├──────────────────────────\n"
+        f"│  Заменить на: <b>{new_mult} на {new_dur}</b>?\n"
+        f"│  ⚠️  Старый ускоритель будет потерян!\n"
+        f"└──────────────────────────"
     )
 
 
@@ -781,8 +819,9 @@ def xp_inventory_text(data: dict) -> str:
     xp_act = get_active_xp_booster_info(data)
 
     lines = [
-        f"🔮 <b>XP-ПРЕДМЕТЫ</b>\n"
-        f"━━━━━━━━━━━━━━━━━━━━\n\n"
+        f"┌──────────────────────────\n"
+        f"│  🔮  <b>XP-ПРЕДМЕТЫ</b>\n"
+        f"├──────────────────────────\n"
     ]
 
     if xp_act:
@@ -790,21 +829,26 @@ def xp_inventory_text(data: dict) -> str:
         mult = _multiplier_label(xp_act["multiplier"])
         dur  = _DUR_LABELS[xp_act["dur_key"]]
         lines.append(
-            f"🔮 <b>Активен XP-ускоритель:</b> ×{mult} на {dur}\n"
-            f"⏱ Осталось: <b>{left}</b>\n\n"
+            f"│  🔮  <b>Активен XP-ускоритель:</b> ×{mult} на {dur}\n"
+            f"│  ⏱  Осталось: <b>{left}</b>\n"
+            f"├──────────────────────────\n"
         )
     else:
-        lines.append(f"{_tg(EMOJI_NOT_BOUGHT, '🚫')} Нет активного XP-ускорителя.\n\n")
+        lines.append(f"│  {_tg(EMOJI_NOT_BOUGHT, '🚫')}  Нет активного XP-ускорителя.\n"
+                     f"├──────────────────────────\n")
 
     if not inv:
-        lines.append("XP-инвентарь пуст. Открой XP-кейс!")
+        lines.append("│  📭  XP-инвентарь пуст. Открой XP-кейс!\n")
     else:
-        lines.append(f"<b>В инвентаре ({len(inv)}/{MAX_XP_INVENTORY}):</b>\n")
+        lines.append(f"│  <b>В инвентаре ({len(inv)}/{MAX_XP_INVENTORY}):</b>\n")
         for i, item in enumerate(inv, 1):
             price = get_xp_sell_price(item)
             rar   = item.get("rarity", "")
-            lines.append(f"  {i}. {_xp_item_name(item)}  {rar} — {_fmt_num(price)} {COIN}\n")
+            rar_str = f"  {rar}" if rar else ""
+            lines.append(f"│  {i}.  {_xp_item_name(item)}{rar_str}\n"
+                         f"│       💰 {_fmt_num(price)} {COIN}\n")
 
+    lines.append("└──────────────────────────")
     return "".join(lines)
 
 
@@ -833,13 +877,17 @@ def xp_item_detail_text(data: dict, instance_id: str) -> str:
 
     if item["type"] == "xp_instant":
         desc = (
-            f"⚡ <b>Моментальный опыт</b>\n"
-            f"━━━━━━━━━━━━━━━━━━━━\n\n"
-            f"Опыт: <b>+{_fmt_num(item['xp'])} XP</b>\n"
-            f"Редкость: {rarity}\n\n"
-            f"Применить — сразу получишь опыт.\n"
-            f"Учитывает текущий уровень!\n\n"
-            f"💰 Цена продажи: <b>{_fmt_num(price)} {COIN}</b>"
+            f"┌──────────────────────────\n"
+            f"│  ⚡  <b>Моментальный опыт</b>\n"
+            f"├──────────────────────────\n"
+            f"│  ✨  Опыт: <b>+{_fmt_num(item['xp'])} XP</b>\n"
+            f"│  {rarity}\n"
+            f"├──────────────────────────\n"
+            f"│  Применить — сразу получишь опыт.\n"
+            f"│  Учитывает активный XP-ускоритель!\n"
+            f"├──────────────────────────\n"
+            f"│  {COIN}  Цена продажи: <b>{_fmt_num(price)}</b>\n"
+            f"└──────────────────────────"
         )
         btn_label = "⚡ Применить"
     else:
@@ -851,18 +899,23 @@ def xp_item_detail_text(data: dict, instance_id: str) -> str:
             act_mult = _multiplier_label(xp_act["multiplier"])
             act_dur  = _DUR_LABELS[xp_act["dur_key"]]
             warning  = (
-                f"\n\n⚠️ Активен XP-ускоритель: ×{act_mult} на {act_dur}\n"
-                f"Осталось: <b>{left}</b>"
+                f"├──────────────────────────\n"
+                f"│  ⚠️  Активен: <b>×{act_mult}</b> на {act_dur}\n"
+                f"│  ⏱  Осталось: <b>{left}</b>\n"
             )
         desc = (
-            f"🔮 <b>XP-ускоритель {mult}</b>\n"
-            f"━━━━━━━━━━━━━━━━━━━━\n\n"
-            f"Множитель: <b>×{mult}</b>\n"
-            f"Длительность: <b>{dur}</b>\n"
-            f"Редкость: {rarity}\n\n"
-            f"Умножает весь получаемый опыт на {mult} на {dur}.\n\n"
-            f"💰 Цена продажи: <b>{_fmt_num(price)} {COIN}</b>"
+            f"┌──────────────────────────\n"
+            f"│  🔮  <b>XP-ускоритель {mult}</b>\n"
+            f"├──────────────────────────\n"
+            f"│  🔢  Множитель:    <b>×{mult}</b>\n"
+            f"│  ⏱  Длительность: <b>{dur}</b>\n"
+            f"│  {rarity}\n"
+            f"├──────────────────────────\n"
+            f"│  Умножает весь получаемый опыт на {mult} на {dur}.\n"
+            f"├──────────────────────────\n"
+            f"│  {COIN}  Цена продажи: <b>{_fmt_num(price)}</b>\n"
             f"{warning}"
+            f"└──────────────────────────"
         )
         btn_label = "🔮 Активировать"
 
