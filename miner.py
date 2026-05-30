@@ -1145,7 +1145,7 @@ def collect_mine(data: dict) -> tuple:
     active = get_active_booster_info(data)
     if active:
         mult_label = _multiplier_label(active["multiplier"])
-        booster_line = f'<tg-emoji emoji-id="5206607081334906820">✅</tg-emoji> Ускоритель <b>{mult_label}</b> активен\n'
+        booster_line = f'<tg-emoji emoji-id="5438571934210082705">⚡</tg-emoji> <b>Ускоритель {mult_label} активен</b>\n'
 
     result_text = (
         f'<tg-emoji emoji-id="5197371802136892976">🎟</tg-emoji> <b>Результат добычи</b>\n'
