@@ -184,15 +184,15 @@ def profile_text(d: dict) -> str:
         mult = _multiplier_label(active["multiplier"])
         dur  = _DUR_LABELS[active["dur_key"]]
         left = _fmt_time_left(active["ends_at"] - _now_ts())
-        booster_lines += f'\n<tg-emoji emoji-id="5206607081334906820">⚡</tg-emoji> <b>Кирка: {mult} на {dur} — ⏱ {left}</b>'
+        booster_lines += f'\n<tg-emoji emoji-id="5438571934210082705">⚡</tg-emoji> Кирка: {mult} на {dur} — <tg-emoji emoji-id="5382194935057372936">⏱</tg-emoji> {left}'
     if xp_active:
         mult = _multiplier_label(xp_active["multiplier"])
         dur  = _DUR_LABELS[xp_active["dur_key"]]
         left = _fmt_time_left(xp_active["ends_at"] - _now_ts())
-        booster_lines += f'\n<tg-emoji emoji-id="5206607081334906820">🔮</tg-emoji> <b>XP: ×{mult} на {dur} — ⏱ {left}</b>'
+        booster_lines += f'\n<tg-emoji emoji-id="5224607267797606837">🔮</tg-emoji> XP: ×{mult} на {dur} — <tg-emoji emoji-id="5382194935057372936">⏱</tg-emoji> {left}'
 
     booster_block = (
-        f'\n\n<blockquote><tg-emoji emoji-id="5206607081334906820">⚡</tg-emoji> <b>Активные бусты</b>{booster_lines}</blockquote>'
+        f'\n\n<blockquote><tg-emoji emoji-id="5258203794772085854">⚡</tg-emoji> <b>Активные бусты</b>{booster_lines}</blockquote>'
         if booster_lines else ""
     )
 
