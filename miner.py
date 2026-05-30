@@ -602,13 +602,13 @@ def ore_inventory_text(data: dict, short: bool = False) -> str:
         qty = data["ores"].get(ore["key"], 0)
         if qty > 0:
             worth = qty * ore["price"]
-            lines.append(f"  {ore['name']}: <b>{qty}</b> (≈ {_fmt_num(worth)} {COIN})")
+            lines.append(f"<b>{ore['name']}: {qty}</b> <b>(≈ {_fmt_num(worth)} {COIN})</b>")
 
     if not lines:
-        return "  Инвентарь пуст"
+        return "<b>Инвентарь пуст</b>"
 
     if short and len(lines) > 3:
-        return "\n".join(lines[:3]) + "\n  <i>...и ещё</i>"
+        return "\n".join(lines[:3]) + "\n<b><i>...и ещё</i></b>"
     return "\n".join(lines)
 
 
@@ -624,12 +624,12 @@ def inventory_screen_text(data: dict) -> str:
             has_ores = True
             worth = qty * ore["price"]
             total_value += worth
-            lines.append(f"<blockquote>  <b>{ore['name']}: {qty}</b> (≈ {_fmt_num(worth)} {COIN})</blockquote>")
+            lines.append(f"<blockquote><b>{ore['name']}: {qty} (≈ {_fmt_num(worth)} {COIN})</b></blockquote>")
 
     if not has_ores:
         lines.append("<b>Инвентарь пуст</b>")
     else:
-        lines.append(f'\n<b><tg-emoji emoji-id="5303214794336125778">🎟</tg-emoji>Итого: {_fmt_num(total_value)} {COIN}</b>')
+        lines.append(f'\n<tg-emoji emoji-id="5303214794336125778">🎟</tg-emoji> <b>Итого: {_fmt_num(total_value)} {COIN}</b>')
 
     return "\n".join(lines)
 
@@ -777,7 +777,7 @@ def sell_screen_text(data: dict) -> str:
         if qty > 0:
             worth = qty * ore["price"]
             total_value += worth
-            lines.append(f"<blockquote>  <b>{ore['name']}: {qty}</b> (≈ {_fmt_num(worth)} {COIN})</blockquote>")
+            lines.append(f"<blockquote><b>{ore['name']}: {qty} (≈ {_fmt_num(worth)} {COIN})</b></blockquote>")
     lines.append(f'\n<tg-emoji emoji-id="5278467510604160626">🎟</tg-emoji> <b>Баланс: {_fmt_num(data['balance'])}</b>')
     lines.append(f'<tg-emoji emoji-id="5429651785352501917">🎟</tg-emoji> <b>К получению: +{_fmt_num(total_value)} {COIN}</b>')
     return "\n".join(lines)
@@ -1024,7 +1024,7 @@ def sell_all_ores(data: dict) -> tuple:
         if qty > 0:
             earned = qty * ore["price"]
             total += earned
-            lines.append(f"<blockquote>  <b>{ore['name']}: {qty}</b> (≈ {_fmt_num(earned)} {COIN})</blockquote>")
+            lines.append(f"<blockquote><b>{ore['name']}: {qty} (≈ {_fmt_num(earned)} {COIN})</b></blockquote>")
             data["ores"][ore["key"]] = 0
     data["balance"] = data.get("balance", 0) + total
     report = "\n".join(lines) if lines else "  Нечего продавать"
@@ -1133,10 +1133,10 @@ def collect_mine(data: dict) -> tuple:
         for key, qty in results.items():
             ore   = ORES_BY_KEY[key]
             worth = qty * ore["price"]
-            loot_lines.append(f"<blockquote>  <b>{ore['name']}: {qty}</b> (≈ {_fmt_num(worth)} {COIN})</blockquote>")
+            loot_lines.append(f"<blockquote><b>{ore['name']}: {qty} (≈ {_fmt_num(worth)} {COIN})</b></blockquote>")
         loot = "\n".join(loot_lines)
     else:
-        loot = "  Ничего не нашли 😔"
+        loot = "<b>Ничего не нашли 😔</b>"
 
     bar = progress_bar(prog["percent"])
 
