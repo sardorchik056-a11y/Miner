@@ -115,7 +115,7 @@ SHOP_TEXT = '<blockquote><tg-emoji emoji-id="5406683434124859552">🛒</tg-emoji
 def shop_main_keyboard() -> InlineKeyboardMarkup:
     kb = InlineKeyboardMarkup(row_width=1)
     kb.add(InlineKeyboardButton("Кейсы", callback_data="shop_cases",
-                                icon_custom_emoji_id="5445221832074483553"))
+                                icon_custom_emoji_id="5442939099906325301"))
     kb.add(_back_btn("back_to_menu", "Назад"))
     return kb
 
