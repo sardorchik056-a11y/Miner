@@ -36,6 +36,39 @@ def _tg(emoji_id: str, fallback: str) -> str:
 
 
 # ============================================================
+#  СЛОВАРЬ ПРЕМИУМ-ЭМОДЗИ — замени айди на свои
+#  Сейчас используется один айди-заглушка для всех.
+# ============================================================
+
+_E = {
+    # Используется везде как заглушка — замени каждый на нужный айди
+    "case":       "5413019438989576513",   # 📦 кейс
+    "xp_case":    "5413019438989576513",   # 🔮 XP-кейс
+    "boost":      "5413019438989576513",   # ⚡ ускоритель
+    "xp_boost":   "5413019438989576513",   # 🔮 XP-ускоритель
+    "xp_instant": "5413019438989576513",   # ✨ опыт
+    "coin":       "5413019438989576513",   # 💰 монеты
+    "stats":      "5413019438989576513",   # 📊 статистика
+    "luck":       "5413019438989576513",   # 🍀 удача
+    "inv":        "5413019438989576513",   # 🎒 инвентарь
+    "sell":       "5413019438989576513",   # 💸 продать
+    "activate":   "5413019438989576513",   # ✅ активировать
+    "warn":       "5413019438989576513",   # ⚠️ предупреждение
+    "ok":         "5413019438989576513",   # ✅ ok
+    "cancel":     "5413019438989576513",   # ❌ отмена
+    "shop":       "5413019438989576513",   # 🛒 магазин
+    "back":       "5413019438989576513",   # ◀️ назад
+    "timer":      "5413019438989576513",   # ⏱ таймер
+    "mult":       "5413019438989576513",   # 🔢 множитель
+}
+
+
+def _pe(key: str, fallback: str) -> str:
+    """Премиум-эмодзи по ключу из словаря _E."""
+    return f'<tg-emoji emoji-id="{_E[key]}">{fallback}</tg-emoji>'
+
+
+# ============================================================
 #  ДЛИТЕЛЬНОСТИ
 # ============================================================
 
@@ -327,13 +360,18 @@ def open_case(data: dict, case_key: str) -> tuple[bool, str, dict | None]:
         inv_line = f"В XP-инвентаре: {len(inv)}/{MAX_XP_INVENTORY}"
 
     rarity   = dropped.get("rarity", "")
-    rar_line = f"\n{rarity}" if rarity else ""
+    rar_line = f"\n<b>{rarity}</b>" if rarity else ""
+
+    # Трекинг статистики
+    data["cases_total_opened"] = data.get("cases_total_opened", 0) + 1
+    data["cases_total_spent"]  = data.get("cases_total_spent",  0) + cost
+
     msg = (
-        f"<blockquote>{_tg(EMOJI_BTN_INV, '📦')} <b>Кейс открыт!</b>\n"
-        f"🎁 <b>{name}</b>{rar_line}</blockquote>\n"
-        f"\n<blockquote>{COIN} Потрачено: <b>{_fmt_num(cost)}</b>\n"
-        f"{COIN} Баланс: <b>{_fmt_num(data['balance'])}</b>\n"
-        f"📦 {inv_line}</blockquote>"
+        f"<blockquote>{_pe('case', '📦')} <b>Кейс открыт!</b>\n"
+        f"{_pe('luck', '🍀')} <b>{name}</b>{rar_line}</blockquote>\n"
+        f"\n<blockquote>{COIN} <b>Потрачено: {_fmt_num(cost)}</b>\n"
+        f"{COIN} <b>Баланс: {_fmt_num(data['balance'])}</b>\n"
+        f"{_pe('inv', '🎒')} <b>{inv_line}</b></blockquote>"
     )
     return True, msg, instance
 
@@ -366,9 +404,9 @@ def activate_booster(data: dict, instance_id: str, force: bool = False) -> tuple
     mult = _multiplier_label(item["multiplier"])
     dur  = _DUR_LABELS[item["dur_key"]]
     return True, (
-        f"<blockquote>{_tg(EMOJI_BTN_ACTIVE, '✅')} <b>Ускоритель активирован!</b>\n"
-        f"⚡ <b>{_booster_name(item)}</b>\n"
-        f"Все показатели кирки ×{mult} на {dur}!</blockquote>"
+        f"<blockquote>{_pe('activate', '✅')} <b>Ускоритель активирован!</b>\n"
+        f"{_pe('boost', '⚡')} <b>{_booster_name(item)}</b>\n"
+        f"<b>Все показатели кирки ×{mult} на {dur}!</b></blockquote>"
     )
 
 
@@ -383,10 +421,10 @@ def sell_booster(data: dict, instance_id: str) -> tuple[bool, str, int]:
     data["balance"] = data.get("balance", 0) + price
 
     return True, (
-        f"<blockquote>💰 <b>Ускоритель продан!</b>\n"
-        f"⚡ {_booster_name(item)}\n"
-        f"{COIN} +<b>{_fmt_num(price)}</b> монет\n"
-        f"{COIN} Баланс: <b>{_fmt_num(data['balance'])}</b></blockquote>"
+        f"<blockquote>{_pe('sell', '💸')} <b>Ускоритель продан!</b>\n"
+        f"{_pe('boost', '⚡')} <b>{_booster_name(item)}</b>\n"
+        f"{COIN} <b>+{_fmt_num(price)} монет</b>\n"
+        f"{COIN} <b>Баланс: {_fmt_num(data['balance'])}</b></blockquote>"
     ), price
 
 
@@ -423,8 +461,8 @@ def use_xp_item(data: dict, instance_id: str, force: bool = False) -> tuple[bool
         mult = _multiplier_label(item["multiplier"])
         dur  = _DUR_LABELS[item["dur_key"]]
         return True, (
-            f"<blockquote>🔮 <b>XP-ускоритель активирован!</b>\n"
-            f"✨ Множитель опыта ×{mult} на {dur}!</blockquote>"
+            f"<blockquote>{_pe('xp_boost', '🔮')} <b>XP-ускоритель активирован!</b>\n"
+            f"{_pe('xp_instant', '✨')} <b>Множитель опыта ×{mult} на {dur}!</b></blockquote>"
         )
 
     # xp_instant
@@ -528,24 +566,24 @@ def get_active_xp_booster_info(data: dict) -> dict | None:
 #  UI: СПИСОК КЕЙСОВ
 # ============================================================
 
-def cases_shop_text() -> str:
+def cases_shop_text(data: dict) -> str:
+    total_opened  = data.get("cases_total_opened", 0)
+    total_spent   = data.get("cases_total_spent",  0)
     return (
-        f"<blockquote>{_tg(EMOJI_BTN_WORKSHOP, '🔨')} <b>МАГАЗИН КЕЙСОВ</b>\n"
-        f"Открывай кейсы — получай бонусы!</blockquote>\n"
-        f"\n<blockquote>{_tg(EMOJI_BTN_INV, '📦')} <b>Обычный кейс</b>\n"
-        f"Цена: <b>10 000</b> {COIN}\n"
-        f"×1.2 / ×1.5 / ×2 ускорители кирки</blockquote>\n"
-        f"\n<blockquote>🔮 <b>XP-кейс</b>\n"
-        f"Цена: <b>25 000</b> {COIN}\n"
-        f"Моментальный XP + ×1.4 / ×1.8 XP-ускорители</blockquote>"
+        f"<blockquote>{_pe('shop', '🛒')} <b>МАГАЗИН КЕЙСОВ</b>\n"
+        f"<b>Открывай кейсы и получай бонусы!</b></blockquote>\n"
+        f"\n<blockquote>{_pe('stats', '📊')} <b>Твоя статистика</b>\n"
+        f"<b>Открыто кейсов:</b> <b>{total_opened:,}</b>\n"
+        f"<b>Потрачено монет:</b> <b>{_fmt_num(total_spent)}</b> {COIN}</blockquote>\n"
+        f"\n<blockquote>{_pe('luck', '🍀')} <b>Удачи тебе!</b> <b>Пусть выпадет что-то крутое</b> {_pe('luck', '🍀')}</blockquote>"
     )
 
 
 def cases_shop_keyboard() -> InlineKeyboardMarkup:
     kb = InlineKeyboardMarkup(row_width=1)
     for c in CASES.values():
-        icon = "📦" if c["type"] == "booster" else "🔮"
-        kb.add(_btn(EMOJI_BTN_SELECT, f'{icon} {c["name"]} кейс', f'case_info_{c["key"]}'))
+        e_key = "case" if c["type"] == "booster" else "xp_case"
+        kb.add(_btn(_E[e_key], f'{c["name"]} кейс', f'case_info_{c["key"]}'))
     kb.add(_back_btn("shop", "Назад в магазин"))
     return kb
 
@@ -562,28 +600,28 @@ def case_detail_text(data: dict, case_key: str) -> str:
 
     if case["type"] == "booster":
         loot_lines = (
-            f"{_tg(EMOJI_BTN_DURATION, '⏱')} Ускоритель 1.2× — 10мин до 24ч\n"
-            f"{_tg(EMOJI_BTN_DURATION, '⏱')} Ускоритель 1.5× — 10мин до 24ч\n"
-            f"{_tg(EMOJI_BTN_DURATION, '⏱')} Ускоритель 2×   — 10мин до 24ч"
+            f"{_pe('boost', '⚡')} <b>Ускоритель 1.2× — 10мин до 24ч</b>\n"
+            f"{_pe('boost', '⚡')} <b>Ускоритель 1.5× — 10мин до 24ч</b>\n"
+            f"{_pe('boost', '⚡')} <b>Ускоритель 2× — 10мин до 24ч</b>"
         )
     else:
         loot_lines = (
-            f"⬜ 100 XP — Обычный\n"
-            f"🟩 225 XP — Необычный\n"
-            f"🟦 750 XP — Редкий\n"
-            f"🟪 2 000 XP — Эпический\n"
-            f"🟧 5 000 XP — Легендарный\n"
-            f"🟩 XP-ускоритель ×1.4 (30мин – 48ч)\n"
-            f"🟦🟪 XP-ускоритель ×1.8 (30мин – 48ч)\n"
-            f"🔶 XP-ускоритель ×1.8 на 48ч — Мифический"
+            f"⬜ <b>100 XP — Обычный</b>\n"
+            f"🟩 <b>225 XP — Необычный</b>\n"
+            f"🟦 <b>750 XP — Редкий</b>\n"
+            f"🟪 <b>2 000 XP — Эпический</b>\n"
+            f"🟧 <b>5 000 XP — Легендарный</b>\n"
+            f"🟩 <b>XP-ускоритель ×1.4 (30мин – 48ч)</b>\n"
+            f"🟦🟪 <b>XP-ускоритель ×1.8 (30мин – 48ч)</b>\n"
+            f"🔶 <b>XP-ускоритель ×1.8 на 48ч — Мифический</b>"
         )
 
-    tg_icon  = _tg(EMOJI_BTN_INV, "📦") if case["type"] == "booster" else "🔮"
-    status   = "✅ Хватает монет" if can_buy else "❌ Недостаточно монет"
+    e_key   = "case" if case["type"] == "booster" else "xp_case"
+    status  = f"{_pe('ok', '✅')} <b>Хватает монет</b>" if can_buy else f"{_pe('cancel', '❌')} <b>Недостаточно монет</b>"
     return (
-        f"<blockquote>{tg_icon} <b>{case['name']} кейс</b>\n"
-        f"{COIN} Цена:   <b>{_fmt_num(case['cost'])}</b>\n"
-        f"{COIN} Баланс: <b>{bal_str}</b></blockquote>\n"
+        f"<blockquote>{_pe(e_key, '📦')} <b>{case['name']} кейс</b>\n"
+        f"{COIN} <b>Цена:</b> <b>{_fmt_num(case['cost'])}</b>\n"
+        f"{COIN} <b>Баланс:</b> <b>{bal_str}</b></blockquote>\n"
         f"\n<blockquote><b>Возможный лут:</b>\n"
         f"{loot_lines}</blockquote>\n"
         f"\n<blockquote>{status}</blockquote>"
@@ -593,9 +631,9 @@ def case_detail_text(data: dict, case_key: str) -> str:
 def case_detail_keyboard(case_key: str, can_buy: bool) -> InlineKeyboardMarkup:
     kb = InlineKeyboardMarkup(row_width=1)
     if can_buy:
-        kb.add(_btn(EMOJI_BTN_BUY_COINS, "🛒 Купить и открыть", f"case_open_{case_key}"))
+        kb.add(_btn(_E["shop"], "Купить и открыть", f"case_open_{case_key}"))
     else:
-        kb.add(_btn(EMOJI_NOT_BOUGHT, "❌ Недостаточно монет", "noop"))
+        kb.add(_btn(_E["cancel"], "Недостаточно монет", "noop"))
     kb.add(_back_btn("shop_cases", "Назад"))
     return kb
 
@@ -615,24 +653,23 @@ def inventory_main_text(data: dict) -> str:
     if active:
         left = _fmt_time_left(active["ends_at"] - _now_ts())
         mult = _multiplier_label(active["multiplier"])
-        b_active_str = f"\n⚡ Активен: <b>{mult}</b> — ⏱ {left}"
+        b_active_str = f"\n{_pe('boost', '⚡')} <b>Активен: {mult} — ⏱ {left}</b>"
     if xp_act:
         left = _fmt_time_left(xp_act["ends_at"] - _now_ts())
         mult = _multiplier_label(xp_act["multiplier"])
-        xp_active_str = f"\n🔮 Активен: <b>×{mult} XP</b> — ⏱ {left}"
+        xp_active_str = f"\n{_pe('xp_boost', '🔮')} <b>Активен: ×{mult} XP — ⏱ {left}</b>"
 
     return (
-        f"<blockquote>{_tg(EMOJI_BTN_COLLECT, '🎒')} <b>ИНВЕНТАРЬ</b></blockquote>\n"
-        f"\n<blockquote>⚙️ <b>Ускорители кирки</b>  [{len(b_inv)}/{MAX_INVENTORY}]{b_active_str}</blockquote>\n"
-        f"\n<blockquote>🔮 <b>XP-предметы</b>  [{len(xp_inv)}/{MAX_XP_INVENTORY}]{xp_active_str}</blockquote>"
+        f"<blockquote>{_pe('inv', '🎒')} <b>ИНВЕНТАРЬ</b></blockquote>\n"
+        f"\n<blockquote>{_pe('boost', '⚡')} <b>Ускорители кирки</b>  <b>[{len(b_inv)}/{MAX_INVENTORY}]</b>{b_active_str}</blockquote>\n"
+        f"\n<blockquote>{_pe('xp_boost', '🔮')} <b>XP-предметы</b>  <b>[{len(xp_inv)}/{MAX_XP_INVENTORY}]</b>{xp_active_str}</blockquote>"
     )
 
 
 def inventory_main_keyboard() -> InlineKeyboardMarkup:
     kb = InlineKeyboardMarkup(row_width=1)
-    kb.add(_btn(EMOJI_BTN_DURATION, "⚙️ Ускорители кирки", "inv_boosters"))
-    kb.add(_btn(EMOJI_BTN_DURATION, "🔮 XP-предметы",       "inv_xp"))
-    kb.add(_btn(EMOJI_BTN_INV,      "📦 Открыть кейс",      "shop_cases"))
+    kb.add(_btn(_E["boost"],    "Ускорители кирки", "inv_boosters"))
+    kb.add(_btn(_E["xp_boost"], "XP-предметы",      "inv_xp"))
     kb.add(_back_btn("profile", "Назад в профиль"))
     return kb
 
@@ -645,30 +682,28 @@ def boosters_inventory_text(data: dict) -> str:
     inv    = data.get("boosters_inventory", [])
     active = get_active_booster_info(data)
 
-    lines = [
-        f"<blockquote>⚙️ <b>УСКОРИТЕЛИ КИРКИ</b>\n"
-    ]
+    lines = [f"<blockquote>{_pe('boost', '⚡')} <b>УСКОРИТЕЛИ КИРКИ</b>\n"]
 
     if active:
         left = _fmt_time_left(active["ends_at"] - _now_ts())
         mult = _multiplier_label(active["multiplier"])
         dur  = _DUR_LABELS[active["dur_key"]]
         lines.append(
-            f"{_tg(EMOJI_SELECTED, '✅')} <b>Активен:</b> {mult} на {dur}\n"
-            f"⏱ Осталось: <b>{left}</b>"
+            f"{_pe('ok', '✅')} <b>Активен: {mult} на {dur}</b>\n"
+            f"{_pe('timer', '⏱')} <b>Осталось: {left}</b>"
         )
     else:
-        lines.append(f"{_tg(EMOJI_NOT_BOUGHT, '🚫')} Нет активного ускорителя.")
+        lines.append(f"{_pe('cancel', '❌')} <b>Нет активного ускорителя.</b>")
 
     lines.append("</blockquote>")
 
     if not inv:
-        lines.append("\n<blockquote>📭 Инвентарь пуст. Открой Обычный кейс!</blockquote>")
+        lines.append(f"\n<blockquote>{_pe('case', '📦')} <b>Инвентарь пуст. Открой Обычный кейс!</b></blockquote>")
     else:
         inv_lines = [f"\n<blockquote><b>В инвентаре ({len(inv)}/{MAX_INVENTORY}):</b>"]
         for i, item in enumerate(inv, 1):
             price = get_sell_price(item)
-            inv_lines.append(f"\n{i}. {_booster_name(item)}\n💰 {_fmt_num(price)} {COIN}")
+            inv_lines.append(f"\n<b>{i}. {_booster_name(item)}</b>\n{_pe('coin', '💰')} <b>{_fmt_num(price)} {COIN}</b>")
         inv_lines.append("</blockquote>")
         lines.extend(inv_lines)
 
@@ -679,8 +714,8 @@ def boosters_inventory_keyboard(data: dict) -> InlineKeyboardMarkup:
     kb  = InlineKeyboardMarkup(row_width=1)
     inv = data.get("boosters_inventory", [])
     for item in inv[:MAX_INVENTORY]:
-        kb.add(_btn(EMOJI_BTN_DURATION, _booster_name(item), f'boost_info_{item["instance_id"]}'))
-    kb.add(_back_btn("profile_boosters", "← Инвентарь"))
+        kb.add(_btn(_E["boost"], _booster_name(item), f'boost_info_{item["instance_id"]}'))
+    kb.add(_back_btn("profile_boosters", "Инвентарь"))
     return kb
 
 
@@ -705,27 +740,27 @@ def booster_detail_text(data: dict, instance_id: str) -> str:
         act_mult = _multiplier_label(active["multiplier"])
         act_dur  = _DUR_LABELS[active["dur_key"]]
         warning  = (
-            f"\n\n<blockquote>⚠️ Активен: <b>{act_mult}</b> на {act_dur}\n"
-            f"⏱ Осталось: <b>{left}</b></blockquote>"
+            f"\n\n<blockquote>{_pe('warn', '⚠️')} <b>Активен: {act_mult} на {act_dur}</b>\n"
+            f"{_pe('timer', '⏱')} <b>Осталось: {left}</b></blockquote>"
         )
 
     return (
-        f"<blockquote>⚡ <b>{_booster_name(item)}</b>\n"
-        f"⏱ Длительность: <b>{dur}</b>\n"
-        f"🔢 Множитель: <b>{mult}</b></blockquote>\n"
+        f"<blockquote>{_pe('boost', '⚡')} <b>{_booster_name(item)}</b>\n"
+        f"{_pe('timer', '⏱')} <b>Длительность: {dur}</b>\n"
+        f"{_pe('mult', '🔢')} <b>Множитель: {mult}</b></blockquote>\n"
         f"\n<blockquote><b>Эффект (все показатели кирки):</b>\n"
-        f"• Ударов за кампанию: ×{mult}\n"
-        f"• Монет в час: ×{mult}\n"
-        f"• Скорость добычи: ×{mult}</blockquote>\n"
-        f"\n<blockquote>{COIN} Цена продажи: <b>{_fmt_num(price)}</b></blockquote>"
+        f"<b>• Ударов за кампанию: ×{mult}</b>\n"
+        f"<b>• Монет в час: ×{mult}</b>\n"
+        f"<b>• Скорость добычи: ×{mult}</b></blockquote>\n"
+        f"\n<blockquote>{_pe('coin', '💰')} <b>Цена продажи: {_fmt_num(price)}</b></blockquote>"
         f"{warning}"
     )
 
 
 def booster_detail_keyboard(data: dict, instance_id: str) -> InlineKeyboardMarkup:
     kb = InlineKeyboardMarkup(row_width=1)
-    kb.add(_btn(EMOJI_BTN_ACTIVE, "✅ Активировать", f"boost_activate_{instance_id}"))
-    kb.add(_btn(EMOJI_BTN_SELL,   "💰 Продать",      f"boost_sell_{instance_id}"))
+    kb.add(_btn(_E["activate"], "Активировать", f"boost_activate_{instance_id}"))
+    kb.add(_btn(_E["sell"],     "Продать",       f"boost_sell_{instance_id}"))
     kb.add(_back_btn("inv_boosters", "Назад"))
     return kb
 
@@ -744,19 +779,19 @@ def booster_confirm_replace_text(data: dict, instance_id: str) -> str:
     new_dur  = _DUR_LABELS[item["dur_key"]]
 
     return (
-        f"<blockquote>⚠️ <b>Замена ускорителя</b>\n"
-        f"Сейчас активен: <b>{act_mult} на {act_dur}</b>\n"
-        f"⏱ Осталось: <b>{left}</b></blockquote>\n"
-        f"\n<blockquote>Заменить на: <b>{new_mult} на {new_dur}</b>?\n"
-        f"⚠️ Старый ускоритель будет потерян!</blockquote>"
+        f"<blockquote>{_pe('warn', '⚠️')} <b>Замена ускорителя</b>\n"
+        f"<b>Сейчас активен: {act_mult} на {act_dur}</b>\n"
+        f"{_pe('timer', '⏱')} <b>Осталось: {left}</b></blockquote>\n"
+        f"\n<blockquote><b>Заменить на: {new_mult} на {new_dur}?</b>\n"
+        f"{_pe('warn', '⚠️')} <b>Старый ускоритель будет потерян!</b></blockquote>"
     )
 
 
 def booster_confirm_replace_keyboard(instance_id: str) -> InlineKeyboardMarkup:
     kb = InlineKeyboardMarkup(row_width=2)
     kb.add(
-        InlineKeyboardButton("✅ Да, заменить", callback_data=f"boost_replace_{instance_id}"),
-        InlineKeyboardButton("❌ Отмена",        callback_data=f"boost_info_{instance_id}"),
+        InlineKeyboardButton("Да, заменить", callback_data=f"boost_replace_{instance_id}", icon_custom_emoji_id=_E["ok"]),
+        InlineKeyboardButton("Отмена",       callback_data=f"boost_info_{instance_id}",    icon_custom_emoji_id=_E["cancel"]),
     )
     return kb
 
@@ -769,32 +804,30 @@ def xp_inventory_text(data: dict) -> str:
     inv    = data.setdefault("xp_inventory", [])
     xp_act = get_active_xp_booster_info(data)
 
-    lines = [
-        f"<blockquote>🔮 <b>XP-ПРЕДМЕТЫ</b>\n"
-    ]
+    lines = [f"<blockquote>{_pe('xp_boost', '🔮')} <b>XP-ПРЕДМЕТЫ</b>\n"]
 
     if xp_act:
         left = _fmt_time_left(xp_act["ends_at"] - _now_ts())
         mult = _multiplier_label(xp_act["multiplier"])
         dur  = _DUR_LABELS[xp_act["dur_key"]]
         lines.append(
-            f"🔮 <b>Активен XP-ускоритель:</b> ×{mult} на {dur}\n"
-            f"⏱ Осталось: <b>{left}</b>"
+            f"{_pe('ok', '✅')} <b>Активен XP-ускоритель: ×{mult} на {dur}</b>\n"
+            f"{_pe('timer', '⏱')} <b>Осталось: {left}</b>"
         )
     else:
-        lines.append(f"{_tg(EMOJI_NOT_BOUGHT, '🚫')} Нет активного XP-ускорителя.")
+        lines.append(f"{_pe('cancel', '❌')} <b>Нет активного XP-ускорителя.</b>")
 
     lines.append("</blockquote>")
 
     if not inv:
-        lines.append("\n<blockquote>📭 XP-инвентарь пуст. Открой XP-кейс!</blockquote>")
+        lines.append(f"\n<blockquote>{_pe('xp_case', '🔮')} <b>XP-инвентарь пуст. Открой XP-кейс!</b></blockquote>")
     else:
         inv_lines = [f"\n<blockquote><b>В инвентаре ({len(inv)}/{MAX_XP_INVENTORY}):</b>"]
         for i, item in enumerate(inv, 1):
             price = get_xp_sell_price(item)
             rar   = item.get("rarity", "")
-            rar_str = f"  {rar}" if rar else ""
-            inv_lines.append(f"\n{i}. {_xp_item_name(item)}{rar_str}\n💰 {_fmt_num(price)} {COIN}")
+            rar_str = f"  <b>{rar}</b>" if rar else ""
+            inv_lines.append(f"\n<b>{i}. {_xp_item_name(item)}</b>{rar_str}\n{_pe('coin', '💰')} <b>{_fmt_num(price)} {COIN}</b>")
         inv_lines.append("</blockquote>")
         lines.extend(inv_lines)
 
@@ -805,8 +838,8 @@ def xp_inventory_keyboard(data: dict) -> InlineKeyboardMarkup:
     kb  = InlineKeyboardMarkup(row_width=1)
     inv = data.get("xp_inventory", [])
     for item in inv[:MAX_XP_INVENTORY]:
-        kb.add(_btn(EMOJI_BTN_DURATION, _xp_item_name(item), f'xp_info_{item["instance_id"]}'))
-    kb.add(_back_btn("profile_boosters", "← Инвентарь"))
+        kb.add(_btn(_E["xp_boost"], _xp_item_name(item), f'xp_info_{item["instance_id"]}'))
+    kb.add(_back_btn("profile_boosters", "Инвентарь"))
     return kb
 
 
@@ -826,14 +859,14 @@ def xp_item_detail_text(data: dict, instance_id: str) -> str:
 
     if item["type"] == "xp_instant":
         desc = (
-            f"<blockquote>⚡ <b>Моментальный опыт</b>\n"
-            f"✨ Опыт: <b>+{_fmt_num(item['xp'])} XP</b>\n"
-            f"{rarity}</blockquote>\n"
-            f"\n<blockquote>Применить — сразу получишь опыт.\n"
-            f"Учитывает активный XP-ускоритель!</blockquote>\n"
-            f"\n<blockquote>{COIN} Цена продажи: <b>{_fmt_num(price)}</b></blockquote>"
+            f"<blockquote>{_pe('xp_instant', '✨')} <b>Моментальный опыт</b>\n"
+            f"{_pe('xp_instant', '✨')} <b>Опыт: +{_fmt_num(item['xp'])} XP</b>\n"
+            f"<b>{rarity}</b></blockquote>\n"
+            f"\n<blockquote><b>Применить — сразу получишь опыт.</b>\n"
+            f"<b>Учитывает активный XP-ускоритель!</b></blockquote>\n"
+            f"\n<blockquote>{_pe('coin', '💰')} <b>Цена продажи: {_fmt_num(price)}</b></blockquote>"
         )
-        btn_label = "⚡ Применить"
+        btn_label = "Применить"
     else:
         mult = _multiplier_label(item["multiplier"])
         dur  = _DUR_LABELS[item["dur_key"]]
@@ -843,28 +876,29 @@ def xp_item_detail_text(data: dict, instance_id: str) -> str:
             act_mult = _multiplier_label(xp_act["multiplier"])
             act_dur  = _DUR_LABELS[xp_act["dur_key"]]
             warning  = (
-                f"\n\n<blockquote>⚠️ Активен: <b>×{act_mult}</b> на {act_dur}\n"
-                f"⏱ Осталось: <b>{left}</b></blockquote>"
+                f"\n\n<blockquote>{_pe('warn', '⚠️')} <b>Активен: ×{act_mult} на {act_dur}</b>\n"
+                f"{_pe('timer', '⏱')} <b>Осталось: {left}</b></blockquote>"
             )
         desc = (
-            f"<blockquote>🔮 <b>XP-ускоритель {mult}</b>\n"
-            f"🔢 Множитель: <b>×{mult}</b>\n"
-            f"⏱ Длительность: <b>{dur}</b>\n"
-            f"{rarity}</blockquote>\n"
-            f"\n<blockquote>Умножает весь получаемый опыт на {mult} на {dur}.</blockquote>\n"
-            f"\n<blockquote>{COIN} Цена продажи: <b>{_fmt_num(price)}</b></blockquote>"
+            f"<blockquote>{_pe('xp_boost', '🔮')} <b>XP-ускоритель {mult}</b>\n"
+            f"{_pe('mult', '🔢')} <b>Множитель: ×{mult}</b>\n"
+            f"{_pe('timer', '⏱')} <b>Длительность: {dur}</b>\n"
+            f"<b>{rarity}</b></blockquote>\n"
+            f"\n<blockquote><b>Умножает весь получаемый опыт на {mult} на {dur}.</b></blockquote>\n"
+            f"\n<blockquote>{_pe('coin', '💰')} <b>Цена продажи: {_fmt_num(price)}</b></blockquote>"
             f"{warning}"
         )
-        btn_label = "🔮 Активировать"
+        btn_label = "Активировать"
 
     return desc
 
 
 def xp_item_detail_keyboard(instance_id: str, is_boost: bool) -> InlineKeyboardMarkup:
     kb = InlineKeyboardMarkup(row_width=1)
-    label = "🔮 Активировать" if is_boost else "⚡ Применить"
-    kb.add(_btn(EMOJI_BTN_ACTIVE, label,       f"xp_use_{instance_id}"))
-    kb.add(_btn(EMOJI_BTN_SELL,   "💰 Продать", f"xp_sell_{instance_id}"))
+    label    = "Активировать" if is_boost else "Применить"
+    e_key    = "xp_boost" if is_boost else "xp_instant"
+    kb.add(_btn(_E[e_key],  label,    f"xp_use_{instance_id}"))
+    kb.add(_btn(_E["sell"], "Продать", f"xp_sell_{instance_id}"))
     kb.add(_back_btn("inv_xp", "Назад"))
     return kb
 
@@ -883,18 +917,18 @@ def xp_confirm_replace_text(data: dict, instance_id: str) -> str:
     new_dur  = _DUR_LABELS[item["dur_key"]]
 
     return (
-        f"<blockquote>⚠️ <b>Замена XP-ускорителя</b>\n"
-        f"Сейчас активен: <b>×{act_mult} на {act_dur}</b>\n"
-        f"Осталось: <b>{left}</b></blockquote>\n"
-        f"\n<blockquote>Заменить на: <b>×{new_mult} на {new_dur}</b>?\n"
-        f"⚠️ Старый XP-ускоритель будет потерян!</blockquote>"
+        f"<blockquote>{_pe('warn', '⚠️')} <b>Замена XP-ускорителя</b>\n"
+        f"<b>Сейчас активен: ×{act_mult} на {act_dur}</b>\n"
+        f"{_pe('timer', '⏱')} <b>Осталось: {left}</b></blockquote>\n"
+        f"\n<blockquote><b>Заменить на: ×{new_mult} на {new_dur}?</b>\n"
+        f"{_pe('warn', '⚠️')} <b>Старый XP-ускоритель будет потерян!</b></blockquote>"
     )
 
 
 def xp_confirm_replace_keyboard(instance_id: str) -> InlineKeyboardMarkup:
     kb = InlineKeyboardMarkup(row_width=2)
     kb.add(
-        InlineKeyboardButton("✅ Да, заменить", callback_data=f"xp_replace_{instance_id}"),
-        InlineKeyboardButton("❌ Отмена",        callback_data=f"xp_info_{instance_id}"),
+        InlineKeyboardButton("Да, заменить", callback_data=f"xp_replace_{instance_id}", icon_custom_emoji_id=_E["ok"]),
+        InlineKeyboardButton("Отмена",       callback_data=f"xp_info_{instance_id}",    icon_custom_emoji_id=_E["cancel"]),
     )
     return kb
