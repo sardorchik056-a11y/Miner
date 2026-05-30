@@ -109,7 +109,7 @@ def back_button() -> InlineKeyboardMarkup:
     return kb
 
 
-SHOP_TEXT = "🛒 <b>МАГАЗИН</b>\n━━━━━━━━━━━━━━━━━━━━\n\nВыбери категорию:"
+SHOP_TEXT = "<blockquote>🛒 <b>МАГАЗИН</b>\n\nВыбери категорию:</blockquote>"
 
 
 def shop_main_keyboard() -> InlineKeyboardMarkup:
@@ -181,12 +181,11 @@ def cmd_add_balance(message):
     coin   = '<tg-emoji emoji-id="5199552030615558774">🪙</tg-emoji>'
 
     bot.reply_to(message,
-        f"✅ <b>Готово!</b>\n"
-        f"━━━━━━━━━━━━━━━━━━━━\n"
-        f"👤 Игрок: <b>{name}</b> (<code>{found['id']}</code>)\n"
+        f"✅ <b>Готово!</b>\n\n"
+        f"<blockquote>👤 Игрок: <b>{name}</b> (<code>{found['id']}</code>)\n"
         f"{action}: <b>{abs(amount):,}</b> {coin}\n"
         f"Было: <b>{old_balance:,}</b> {coin}\n"
-        f"Стало: <b>{new_balance:,}</b> {coin}",
+        f"Стало: <b>{new_balance:,}</b> {coin}</blockquote>",
         parse_mode="HTML")
 
 @bot.message_handler(commands=['start', 'menu'])
@@ -539,18 +538,18 @@ def handle_callback(call):
 
         # ===== ОСТАЛЬНЫЕ РАЗДЕЛЫ =====
         responses = {
-            "stats":    "📊 *СТАТИСТИКА*\n━━━━━━━━━━━━━━━━━━━━\n\n📝 Раздел в разработке...",
-            "hunt":     "🏹 *ОХОТА*\n━━━━━━━━━━━━━━━━━━━━\n\n📝 Раздел в разработке...",
-            "status":   "📌 *СТАТУС*\n━━━━━━━━━━━━━━━━━━━━\n\n📝 Раздел в разработке...",
-            "exchange": "💱 *БИРЖА*\n━━━━━━━━━━━━━━━━━━━━\n\n📝 Раздел в разработке...",
-            "leaders":  "🏆 *ЛИДЕРЫ*\n━━━━━━━━━━━━━━━━━━━━\n\n📝 Раздел в разработке...",
-            "settings": "⚙️ *НАСТРОЙКИ*\n━━━━━━━━━━━━━━━━━━━━\n\n📝 Раздел в разработке...",
+            "stats":    "📊 <b>СТАТИСТИКА</b>\n\n<blockquote>📝 Раздел в разработке...</blockquote>",
+            "hunt":     "🏹 <b>ОХОТА</b>\n\n<blockquote>📝 Раздел в разработке...</blockquote>",
+            "status":   "📌 <b>СТАТУС</b>\n\n<blockquote>📝 Раздел в разработке...</blockquote>",
+            "exchange": "💱 <b>БИРЖА</b>\n\n<blockquote>📝 Раздел в разработке...</blockquote>",
+            "leaders":  "🏆 <b>ЛИДЕРЫ</b>\n\n<blockquote>📝 Раздел в разработке...</blockquote>",
+            "settings": "⚙️ <b>НАСТРОЙКИ</b>\n\n<blockquote>📝 Раздел в разработке...</blockquote>",
         }
         text = responses.get(cd, "❓ Неизвестная команда")
         try:
             bot.edit_message_text(
                 text, chat_id, message_id,
-                parse_mode="Markdown", reply_markup=back_button()
+                parse_mode="HTML", reply_markup=back_button()
             )
         except Exception as e:
             if "message is not modified" not in str(e):
