@@ -488,15 +488,15 @@ def use_xp_item(data: dict, instance_id: str, force: bool = False) -> tuple[bool
     data["xp"]      = xp
     data["xp_max"]  = xp_max
 
-    lvl_msg = f"\n🎉 Уровень повышен до <b>{level}</b>!" * min(lvl_ups, 3)
+    lvl_msg = f"\n🎉 <b>Уровень повышен до {level}!</b>" * min(lvl_ups, 3)
     if lvl_ups > 3:
-        lvl_msg = f"\n🎉 Уровень повышен до <b>{level}</b> (+{lvl_ups} ур.)!"
+        lvl_msg = f"\n🎉 <b>Уровень повышен до {level} (+{lvl_ups} ур.)!</b>"
 
     return True, (
-        f"<blockquote>⚡ <b>Опыт получен!</b>\n"
-        f"✨ <b>+{_fmt_num(gained)} XP</b>{lvl_msg}</blockquote>\n"
-        f"\n<blockquote>Уровень: <b>{level}</b>\n"
-        f"Опыт: <b>{_fmt_num(xp)}/{_fmt_num(xp_max)}</b></blockquote>"
+        f"<blockquote>{_pe('xp_instant', '✨')} <b>Опыт получен!</b>\n"
+        f"{_pe('xp_instant', '✨')} <b>+{_fmt_num(gained)} XP</b>{lvl_msg}</blockquote>\n"
+        f"\n<blockquote><b>Уровень: {level}</b>\n"
+        f"<b>Опыт: {_fmt_num(xp)}/{_fmt_num(xp_max)}</b></blockquote>"
     )
 
 
@@ -511,10 +511,10 @@ def sell_xp_item(data: dict, instance_id: str) -> tuple[bool, str, int]:
     data["balance"] = data.get("balance", 0) + price
 
     return True, (
-        f"<blockquote>💰 <b>Продано!</b>\n"
-        f"🔮 {_xp_item_name(item)}\n"
-        f"{COIN} +<b>{_fmt_num(price)}</b> монет\n"
-        f"{COIN} Баланс: <b>{_fmt_num(data['balance'])}</b></blockquote>"
+        f"<blockquote>{_pe('sell', '💸')} <b>Продано!</b>\n"
+        f"{_pe('xp_boost', '🔮')} <b>{_xp_item_name(item)}</b>\n"
+        f"{COIN} <b>+{_fmt_num(price)} монет</b>\n"
+        f"{COIN} <b>Баланс: {_fmt_num(data['balance'])}</b></blockquote>"
     ), price
 
 
@@ -566,16 +566,16 @@ def get_active_xp_booster_info(data: dict) -> dict | None:
 #  UI: СПИСОК КЕЙСОВ
 # ============================================================
 
-def cases_shop_text(data: dict) -> str:
-    total_opened  = data.get("cases_total_opened", 0)
-    total_spent   = data.get("cases_total_spent",  0)
+def cases_shop_text(data: dict = None) -> str:
+    total_opened  = (data or {}).get("cases_total_opened", 0)
+    total_spent   = (data or {}).get("cases_total_spent",  0)
     return (
         f"<blockquote>{_pe('shop', '🛒')} <b>МАГАЗИН КЕЙСОВ</b>\n"
         f"<b>Открывай кейсы и получай бонусы!</b></blockquote>\n"
         f"\n<blockquote>{_pe('stats', '📊')} <b>Твоя статистика</b>\n"
-        f"<b>Открыто кейсов:</b> <b>{total_opened:,}</b>\n"
-        f"<b>Потрачено монет:</b> <b>{_fmt_num(total_spent)}</b> {COIN}</blockquote>\n"
-        f"\n<blockquote>{_pe('luck', '🍀')} <b>Удачи тебе!</b> <b>Пусть выпадет что-то крутое</b> {_pe('luck', '🍀')}</blockquote>"
+        f"<b>Открыто кейсов: {total_opened:,}</b>\n"
+        f"<b>Потрачено монет: {_fmt_num(total_spent)}</b> {COIN}</blockquote>\n"
+        f"\n<blockquote>{_pe('luck', '🍀')} <b>Удачи тебе! Пусть выпадет что-то крутое</b> {_pe('luck', '🍀')}</blockquote>"
     )
 
 
