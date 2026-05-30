@@ -109,7 +109,7 @@ def back_button() -> InlineKeyboardMarkup:
     return kb
 
 
-SHOP_TEXT = "<blockquote>🛒 <b>МАГАЗИН</b>\n\nВыбери категорию:</blockquote>"
+SHOP_TEXT = '<blockquote><tg-emoji emoji-id="5406683434124859552">🛒</tg-emoji> <b>МАГАЗИН</b>\n\n<b>Выбери категорию:</b></blockquote>'
 
 
 def shop_main_keyboard() -> InlineKeyboardMarkup:
@@ -494,8 +494,8 @@ def handle_callback(call):
                 f'<tg-emoji emoji-id="5206607081334906820">🎟</tg-emoji> <b>Успешно!</b>\n'
                 f"━━━━━━━━━━━━━━━━━━━━\n\n"
                 f"{report}\n\n"
-                f'<b><tg-emoji emoji-id="5429651785352501917">🎟</tg-emoji> Итого получено: <b>{total:,} <tg-emoji emoji-id="5199552030615558774">🎟</tg-emoji></b>\n'
-                f'<tg-emoji emoji-id="5278467510604160626">🎟</tg-emoji> Баланс: <b>{data['balance']:,} <tg-emoji emoji-id="5199552030615558774">🎟</tg-emoji></b></b>'
+                f'<tg-emoji emoji-id="5429651785352501917">🎟</tg-emoji> <b>Итого получено: {total:,}</b> <tg-emoji emoji-id="5199552030615558774">🎟</tg-emoji>\n'
+                f'<tg-emoji emoji-id="5278467510604160626">🎟</tg-emoji> <b>Баланс: {data["balance"]:,}</b> <tg-emoji emoji-id="5199552030615558774">🎟</tg-emoji>'
             )
             edit(sell_text, mine_keyboard(data))
             return
@@ -538,12 +538,12 @@ def handle_callback(call):
 
         # ===== ОСТАЛЬНЫЕ РАЗДЕЛЫ =====
         responses = {
-            "stats":    "📊 <b>СТАТИСТИКА</b>\n\n<blockquote>📝 Раздел в разработке...</blockquote>",
-            "hunt":     "🏹 <b>ОХОТА</b>\n\n<blockquote>📝 Раздел в разработке...</blockquote>",
-            "status":   "📌 <b>СТАТУС</b>\n\n<blockquote>📝 Раздел в разработке...</blockquote>",
-            "exchange": "💱 <b>БИРЖА</b>\n\n<blockquote>📝 Раздел в разработке...</blockquote>",
-            "leaders":  "🏆 <b>ЛИДЕРЫ</b>\n\n<blockquote>📝 Раздел в разработке...</blockquote>",
-            "settings": "⚙️ <b>НАСТРОЙКИ</b>\n\n<blockquote>📝 Раздел в разработке...</blockquote>",
+            "stats":    '<tg-emoji emoji-id="5231200819986047254">📊</tg-emoji> <b>СТАТИСТИКА</b>\n\n<blockquote><b>📝 Раздел в разработке...</b></blockquote>',
+            "hunt":     '<tg-emoji emoji-id="5424972470023104089">🏹</tg-emoji> <b>ОХОТА</b>\n\n<blockquote><b>📝 Раздел в разработке...</b></blockquote>',
+            "status":   '<tg-emoji emoji-id="5438496463044752972">📌</tg-emoji> <b>СТАТУС</b>\n\n<blockquote><b>📝 Раздел в разработке...</b></blockquote>',
+            "exchange": '<tg-emoji emoji-id="5402186569006210455">💱</tg-emoji> <b>БИРЖА</b>\n\n<blockquote><b>📝 Раздел в разработке...</b></blockquote>',
+            "leaders":  '<tg-emoji emoji-id="5440539497383087970">🏆</tg-emoji> <b>ЛИДЕРЫ</b>\n\n<blockquote><b>📝 Раздел в разработке...</b></blockquote>',
+            "settings": '<tg-emoji emoji-id="5341715473882955310">⚙️</tg-emoji> <b>НАСТРОЙКИ</b>\n\n<blockquote><b>📝 Раздел в разработке...</b></blockquote>',
         }
         text = responses.get(cd, "❓ Неизвестная команда")
         try:
