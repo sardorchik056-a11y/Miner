@@ -97,7 +97,7 @@ def main_menu_keyboard() -> InlineKeyboardMarkup:
 
 def profile_keyboard() -> InlineKeyboardMarkup:
     kb = InlineKeyboardMarkup(row_width=1)
-    kb.add(InlineKeyboardButton("🎒 Инвентарь ускорителей", callback_data="profile_boosters",
+    kb.add(InlineKeyboardButton("Инвентарь ускорителей", callback_data="profile_boosters",
                                 icon_custom_emoji_id="5445221832074483553"))
     kb.add(_back_btn("back_to_menu", "Назад"))
     return kb
