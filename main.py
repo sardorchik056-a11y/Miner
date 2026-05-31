@@ -109,11 +109,22 @@ def back_button() -> InlineKeyboardMarkup:
     return kb
 
 
-def stars_confirm_keyboard(pick_key: str, page: int) -> InlineKeyboardMarkup:
+def stars_confirm_keyboard(pick_key: str, page: int, invoice_url: str = None) -> InlineKeyboardMarkup:
     kb = InlineKeyboardMarkup(row_width=1)
+    if invoice_url:
+        kb.add(InlineKeyboardButton(
+            "⭐ Оплатить звёздами",
+            url=invoice_url
+        ))
+    else:
+        kb.add(InlineKeyboardButton(
+            "Оплатить звёздами",
+            callback_data=f"pick_pay_stars_{pick_key}",
+            icon_custom_emoji_id="5267500801240092311"
+        ))
     kb.add(InlineKeyboardButton(
-        "Оплатить звёздами",
-        callback_data=f"pick_pay_stars_{pick_key}",
+        "Мои звёзды",
+        url="https://t.me/stars",
         icon_custom_emoji_id="5267500801240092311"
     ))
     kb.add(_back_btn(f"pick_info_{pick_key}_{page}", "Назад"))
@@ -414,7 +425,7 @@ def handle_callback(call):
             edit(pickaxe_detail_text(data, pick_key), pickaxe_detail_keyboard(data, pick_key, page))
             return
 
-        # ===== КИРКИ: купить за звёзды (экран подтверждения) =====
+        # ===== КИРКИ: купить за звёзды (экран подтверждения + инвойс-кнопка) =====
         if cd.startswith("pick_buy_stars_"):
             pick_key = cd.removeprefix("pick_buy_stars_")
             p        = PICKAXES.get(pick_key)
@@ -422,20 +433,10 @@ def handle_callback(call):
                 bot.answer_callback_query(call.id, "❌ Неизвестная кирка.", show_alert=True)
                 return
             page = get_pickaxe_page(pick_key)
-            edit(stars_confirm_text(p), stars_confirm_keyboard(pick_key, page))
-            return
-
-        # ===== КИРКИ: оплатить за звёзды (инвойс) =====
-        if cd.startswith("pick_pay_stars_"):
-            pick_key = cd.removeprefix("pick_pay_stars_")
-            p        = PICKAXES.get(pick_key)
-            if not p:
-                bot.answer_callback_query(call.id, "❌ Неизвестная кирка.", show_alert=True)
-                return
+            # Создаём ссылку на инвойс и сразу вставляем в кнопку
+            invoice_url = None
             try:
-                bot.delete_message(chat_id, message_id)
-                bot.send_invoice(
-                    chat_id=chat_id,
+                invoice_url = bot.create_invoice_link(
                     title=p['name'],
                     description=f"{p['name']} — {p['dig_min']:,}–{p['dig_max']:,} ударов за кампанию",
                     invoice_payload=f"premium_pickaxe:{pick_key}",
@@ -444,8 +445,10 @@ def handle_callback(call):
                     prices=[telebot.types.LabeledPrice(label=p["name"], amount=p["cost_stars"])],
                 )
             except Exception as e:
-                print(f"Invoice error: {e}")
+                print(f"Invoice link error: {e}")
                 bot.answer_callback_query(call.id, "❌ Ошибка при создании инвойса.", show_alert=True)
+                return
+            edit(stars_confirm_text(p), stars_confirm_keyboard(pick_key, page, invoice_url=invoice_url))
             return
 
         # ===== КИРКИ: назад из экрана подтверждения =====
