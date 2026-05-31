@@ -242,38 +242,38 @@ PICKAXES = {
         "name": "Diamond-5lvl",
         "dig_min": 50,  "dig_max": 100,
         "cost": 74_000_000, "currency": "coins", "required_level": 1,
-        "tier": "diamond", "cost_stars": 1_100
+        "tier": "diamond", "cost_stars": 1100
     },
     # ── URANIUM ───────────────────────────────────────────────────────────────
     "uranium_1": {
         "name": "Uranium-1lvl",
         "dig_min": 57,  "dig_max": 115,
         "cost": 120_000_000, "currency": "coins", "required_level": 1,
-        "tier": "uranium", "cost_stars": 1_200
+        "tier": "uranium", "cost_stars": 1200
     },
     "uranium_2": {
         "name": "Uranium-2lvl",
         "dig_min": 66,  "dig_max": 132,
         "cost": 190_000_000, "currency": "coins", "required_level": 1,
-        "tier": "uranium", "cost_stars": 1_400
+        "tier": "uranium", "cost_stars": 1400
     },
     "uranium_3": {
         "name": "Uranium-3lvl",
         "dig_min": 76,  "dig_max": 151,
         "cost": 300_000_000, "currency": "coins", "required_level": 1,
-        "tier": "uranium", "cost_stars": 1_600
+        "tier": "uranium", "cost_stars": 1600
     },
     "uranium_4": {
         "name": "Uranium-4lvl",
         "dig_min": 87,  "dig_max": 174,
         "cost": 490_000_000, "currency": "coins", "required_level": 1,
-        "tier": "uranium", "cost_stars": 1_800
+        "tier": "uranium", "cost_stars": 1800
     },
     "uranium_5": {
         "name": "Uranium-5lvl",
         "dig_min": 100, "dig_max": 200,
         "cost": 780_000_000, "currency": "coins", "required_level": 1,
-        "tier": "uranium", "cost_stars": 2_100
+        "tier": "uranium", "cost_stars": 2100
     },
     # ══════════════════════════════ СТРАНИЦА 4 ══════════════════════════════
     # ── AMETHYST ──────────────────────────────────────────────────────────────
@@ -281,62 +281,62 @@ PICKAXES = {
         "name": "Amethyst-1lvl",
         "dig_min": 115, "dig_max": 230,
         "cost": 1_200_000_000, "currency": "coins", "required_level": 1,
-        "tier": "amethyst", "cost_stars": 2_400
+        "tier": "amethyst", "cost_stars": 2400
     },
     "amethyst_2": {
         "name": "Amethyst-2lvl",
         "dig_min": 132, "dig_max": 265,
         "cost": 2_000_000_000, "currency": "coins", "required_level": 1,
-        "tier": "amethyst", "cost_stars": 2_800
+        "tier": "amethyst", "cost_stars": 2800
     },
     "amethyst_3": {
         "name": "Amethyst-3lvl",
         "dig_min": 152, "dig_max": 305,
         "cost": 3_200_000_000, "currency": "coins", "required_level": 1,
-        "tier": "amethyst", "cost_stars": 3_200
+        "tier": "amethyst", "cost_stars": 3200
     },
     "amethyst_4": {
         "name": "Amethyst-4lvl",
         "dig_min": 175, "dig_max": 350,
         "cost": 5_100_000_000, "currency": "coins", "required_level": 1,
-        "tier": "amethyst", "cost_stars": 3_700
+        "tier": "amethyst", "cost_stars": 3700
     },
     "amethyst_5": {
         "name": "Amethyst-5lvl",
         "dig_min": 201, "dig_max": 403,
         "cost": 8_200_000_000, "currency": "coins", "required_level": 1,
-        "tier": "amethyst", "cost_stars": 4_300
+        "tier": "amethyst", "cost_stars": 4300
     },
     # ── VIP ────────────────────────────────────────────────────────────────────
     "vip_1": {
         "name": "VIP-1lvl",
         "dig_min": 232, "dig_max": 463,
         "cost": 13_000_000_000, "currency": "coins", "required_level": 1,
-        "tier": "vip", "cost_stars": 4_900
+        "tier": "vip", "cost_stars": 4900
     },
     "vip_2": {
         "name": "VIP-2lvl",
         "dig_min": 266, "dig_max": 533,
         "cost": 21_000_000_000, "currency": "coins", "required_level": 1,
-        "tier": "vip", "cost_stars": 5_600
+        "tier": "vip", "cost_stars": 5600
     },
     "vip_3": {
         "name": "VIP-3lvl",
         "dig_min": 306, "dig_max": 613,
         "cost": 33_000_000_000, "currency": "coins", "required_level": 1,
-        "tier": "vip", "cost_stars": 6_500
+        "tier": "vip", "cost_stars": 6500
     },
     "vip_4": {
         "name": "VIP-4lvl",
         "dig_min": 352, "dig_max": 704,
         "cost": 54_000_000_000, "currency": "coins", "required_level": 1,
-        "tier": "vip", "cost_stars": 7_500
+        "tier": "vip", "cost_stars": 7500
     },
     "vip_5": {
         "name": "VIP-5lvl",
         "dig_min": 405, "dig_max": 810,
         "cost": 86_000_000_000, "currency": "coins", "required_level": 1,
-        "tier": "vip", "cost_stars": 8_600
+        "tier": "vip", "cost_stars": 8600
     },
     # ══════════════════════════════ СТРАНИЦА 5 ══════════════════════════════
     # ── VIP+ ───────────────────────────────────────────────────────────────────
@@ -344,61 +344,61 @@ PICKAXES = {
         "name": "VIP+-1lvl",
         "dig_min": 466,   "dig_max": 932,
         "cost": 140_000_000_000, "currency": "coins", "required_level": 1,
-        "tier": "vip_plus", "cost_stars": 9_900
+        "tier": "vip_plus", "cost_stars": 9900
     },
     "vip_plus_2": {
         "name": "VIP+-2lvl",
         "dig_min": 536,   "dig_max": 1_071,
         "cost": 220_000_000_000, "currency": "coins", "required_level": 1,
-        "tier": "vip_plus", "cost_stars": 11_000
+        "tier": "vip_plus", "cost_stars": 11000
     },
     "vip_plus_3": {
         "name": "VIP+-3lvl",
         "dig_min": 616,   "dig_max": 1_232,
         "cost": 350_000_000_000, "currency": "coins", "required_level": 1,
-        "tier": "vip_plus", "cost_stars": 13_000
+        "tier": "vip_plus", "cost_stars": 13000
     },
     "vip_plus_4": {
         "name": "VIP+-4lvl",
         "dig_min": 708,   "dig_max": 1_417,
         "cost": 560_000_000_000, "currency": "coins", "required_level": 1,
-        "tier": "vip_plus", "cost_stars": 15_000
+        "tier": "vip_plus", "cost_stars": 15000
     },
     "vip_plus_5": {
         "name": "VIP+-5lvl",
         "dig_min": 815,   "dig_max": 1_630,
         "cost": 900_000_000_000, "currency": "coins", "required_level": 1,
-        "tier": "vip_plus", "cost_stars": 17_000
+        "tier": "vip_plus", "cost_stars": 17000
     },
     # ── PREMIUM ──────────────── ⭐ TELEGRAM STARS (донат) ──────────────────
     "premium_1": {
         "name": "Premium-1lvl",
         "dig_min": 937,   "dig_max": 1_874,
-        "cost": 0, "currency": "stars", "cost_stars": 20_000
+        "cost": 0, "currency": "stars", "cost_stars": 20000,
         "required_level": 1, "tier": "premium",
     },
     "premium_2": {
         "name": "Premium-2lvl",
         "dig_min": 1_078, "dig_max": 2_155,
-        "cost": 0, "currency": "stars", "cost_stars": 23_000
+        "cost": 0, "currency": "stars", "cost_stars": 23000,
         "required_level": 1, "tier": "premium",
     },
     "premium_3": {
         "name": "Premium-3lvl",
         "dig_min": 1_239, "dig_max": 2_478,
-        "cost": 0, "currency": "stars", "cost_stars": 26_000
+        "cost": 0, "currency": "stars", "cost_stars": 26000,
         "required_level": 1, "tier": "premium",
     },
     "premium_4": {
         "name": "Premium-4lvl",
         "dig_min": 1_425, "dig_max": 2_850,
-        "cost": 0, "currency": "stars", "cost_stars": 30_000
+        "cost": 0, "currency": "stars", "cost_stars": 30000,
         "required_level": 1, "tier": "premium",
     },
     "premium_5": {
         "name": "Premium-5lvl",
         "dig_min": 1_639, "dig_max": 3_278,
-        "cost": 0, "currency": "stars", "cost_stars": 35_000
+        "cost": 0, "currency": "stars", "cost_stars": 35000,
         "required_level": 1, "tier": "premium",
     },
 }
