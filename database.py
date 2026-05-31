@@ -156,10 +156,10 @@ def xp_bar(xp: int, xp_max: int, length: int = 10) -> str:
       50–74% → половина     5992488673759729434
       ≥ 75%  → полная       5992459287593489418
     """
-    _E_EMPTY    = "5992142065603974345"
-    _E_QUARTER  = "5992256170000127661"
-    _E_HALF     = "5992488673759729434"
-    _E_FULL     = "5992459287593489418"
+    _E_EMPTY   = "5992142065603974345"
+    _E_QUARTER = "5992256170000127661"
+    _E_HALF    = "5992488673759729434"
+    _E_FULL    = "5992459287593489418"
 
     percent = (xp / xp_max * 100) if xp_max > 0 else 100.0
     percent = max(0.0, min(percent, 100.0))
@@ -238,7 +238,7 @@ def profile_text(d: dict) -> str:
         f'<blockquote>'
         f'<tg-emoji emoji-id="5375338737028841420">🎟</tg-emoji> <b>Уровень —</b> {lvl_line}\n'
         f'<tg-emoji emoji-id="5341498088408234504">🎟</tg-emoji> <b>Опыт —</b> {xp_str}\n'
-        f'<b>{bar_str}</b></blockquote>'
+        f'{bar_str}</blockquote>'
         f'{booster_block}'
         f'<blockquote>{COIN} <b>Баланс — {d["balance"]:,}</b></blockquote>'
     )
