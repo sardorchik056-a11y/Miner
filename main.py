@@ -45,6 +45,9 @@ bot = telebot.TeleBot('8451911991:AAHUwC8f3SSNlx9QN8sx8HX0IVWLfZdC9HY')
 _user_locks: dict[int, threading.Lock] = {}
 _user_locks_mutex = threading.Lock()
 
+# Хранит message_id экрана кирки перед оплатой: uid -> (chat_id, message_id, pick_key)
+_pending_stars_msg: dict[int, tuple] = {}
+
 def _get_user_lock(uid: int) -> threading.Lock:
     """Возвращает персональный Lock для пользователя uid."""
     with _user_locks_mutex:
@@ -449,6 +452,12 @@ def handle_callback(call):
                 print(f"Invoice link error: {e}")
                 bot.answer_callback_query(call.id, "❌ Ошибка при создании инвойса.", show_alert=True)
                 return
+            # Сохраняем message_id чтобы обновить после оплаты
+            _pending_stars_msg[call.from_user.id] = (
+                call.message.chat.id,
+                call.message.message_id,
+                pick_key
+            )
             edit(stars_confirm_text(p), stars_confirm_keyboard(pick_key, page, invoice_url=invoice_url))
             return
 
@@ -610,7 +619,7 @@ def handle_successful_payment(message):
     if payload.startswith("premium_pickaxe:"):
         pick_key = payload.split(":", 1)[1]
         from miner import (
-            grant_premium_pickaxe, pickaxe_detail_keyboard,
+            grant_premium_pickaxe, pickaxe_detail_text, pickaxe_detail_keyboard,
             get_pickaxe_page, PICKAXES, TIER_LABELS, STAR
         )
         from database import get_user, save_user
@@ -625,7 +634,24 @@ def handle_successful_payment(message):
             p    = PICKAXES[pick_key]
             tier = TIER_LABELS.get(p.get("tier", ""), "")
             page = get_pickaxe_page(pick_key)
-            text = (
+
+            # 1) Обновляем старое сообщение (экран кирки) — теперь с кнопкой "Выбрать"
+            pending = _pending_stars_msg.pop(uid, None)
+            if pending:
+                old_chat_id, old_msg_id, _ = pending
+                try:
+                    bot.edit_message_text(
+                        pickaxe_detail_text(data, pick_key),
+                        chat_id=old_chat_id,
+                        message_id=old_msg_id,
+                        reply_markup=pickaxe_detail_keyboard(data, pick_key, page),
+                        parse_mode="HTML"
+                    )
+                except Exception:
+                    pass
+
+            # 2) Новое сообщение об успешной оплате
+            success_text = (
                 f'<tg-emoji emoji-id="5267500801240092311">⭐</tg-emoji> <b>Оплата прошла успешно!</b>\n'
                 f'━━━━━━━━━━━━━━━━━━━━\n\n'
                 f'<blockquote>'
@@ -638,8 +664,7 @@ def handle_successful_payment(message):
             )
             bot.send_message(
                 message.chat.id,
-                text,
-                reply_markup=pickaxe_detail_keyboard(data, pick_key, page),
+                success_text,
                 parse_mode="HTML"
             )
 
