@@ -409,8 +409,12 @@ def handle_callback(call):
 
         # ===== КИРКИ: просмотр карточки =====
         if cd.startswith("pick_info_"):
-            pick_key = cd.removeprefix("pick_info_")
-            page     = get_pickaxe_page(pick_key)
+            parts    = cd.removeprefix("pick_info_").rsplit("_", 1)
+            pick_key = parts[0]
+            try:
+                page = int(parts[1])
+            except (IndexError, ValueError):
+                page = get_pickaxe_page(pick_key)
             edit(pickaxe_detail_text(data, pick_key), pickaxe_detail_keyboard(data, pick_key, page))
             return
 
@@ -439,7 +443,7 @@ def handle_callback(call):
                 invoice_url = bot.create_invoice_link(
                     title=p['name'],
                     description=f"{p['name']} — {p['dig_min']:,}–{p['dig_max']:,} ударов за кампанию",
-                    invoice_payload=f"premium_pickaxe:{pick_key}",
+                    payload=f"premium_pickaxe:{pick_key}",
                     provider_token="",
                     currency="XTR",
                     prices=[telebot.types.LabeledPrice(label=p["name"], amount=p["cost_stars"])],
@@ -449,17 +453,6 @@ def handle_callback(call):
                 bot.answer_callback_query(call.id, "❌ Ошибка при создании инвойса.", show_alert=True)
                 return
             edit(stars_confirm_text(p), stars_confirm_keyboard(pick_key, page, invoice_url=invoice_url))
-            return
-
-        # ===== КИРКИ: назад из экрана подтверждения =====
-        if cd.startswith("pick_info_"):
-            parts    = cd.removeprefix("pick_info_").rsplit("_", 1)
-            pick_key = parts[0]
-            try:
-                page = int(parts[1])
-            except (IndexError, ValueError):
-                page = get_pickaxe_page(pick_key)
-            edit(pickaxe_detail_text(data, pick_key), pickaxe_detail_keyboard(data, pick_key, page))
             return
 
         # ===== КИРКИ: выбрать =====
