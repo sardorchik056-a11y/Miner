@@ -113,18 +113,19 @@ def stars_confirm_keyboard(pick_key: str, page: int, invoice_url: str = None) ->
     kb = InlineKeyboardMarkup(row_width=1)
     if invoice_url:
         kb.add(InlineKeyboardButton(
-            "⭐ Оплатить звёздами",
-            url=invoice_url
+            "Оплатить",
+            url=invoice_url,
+            icon_custom_emoji_id="5267500801240092311"
         ))
     else:
         kb.add(InlineKeyboardButton(
-            "Оплатить звёздами",
+            "Оплатить",
             callback_data=f"pick_pay_stars_{pick_key}",
             icon_custom_emoji_id="5267500801240092311"
         ))
     kb.add(InlineKeyboardButton(
         "Мои звёзды",
-        url="https://t.me/stars",
+        url="tg://stars/",
         icon_custom_emoji_id="5267500801240092311"
     ))
     kb.add(_back_btn(f"pick_info_{pick_key}", "Назад"))
