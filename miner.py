@@ -518,7 +518,7 @@ def progress_bar(percent: int, length: int = 10) -> str:
         else:
             eid = _E_EMPTY
 
-        cells.append(f'<tg-emoji emoji-id="{eid}">▓</tg-emoji>')
+        cells.append(f'<tg-emoji emoji-id="{eid}"> </tg-emoji>')
 
     return "".join(cells) + f" {percent}%"
 
