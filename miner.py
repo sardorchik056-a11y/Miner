@@ -498,15 +498,15 @@ def progress_bar(percent: int, length: int = 10) -> str:
       50–74% → половина     5992488673759729434
       ≥ 75%  → полная       5992459287593489418
     """
-    _E_EMPTY    = "5992142065603974345"
-    _E_QUARTER  = "5992256170000127661"
-    _E_HALF     = "5992488673759729434"
-    _E_FULL     = "5992459287593489418"
+    _E_EMPTY   = "5992142065603974345"
+    _E_QUARTER = "5992256170000127661"
+    _E_HALF    = "5992488673759729434"
+    _E_FULL    = "5992459287593489418"
 
     cells = []
     for i in range(length):
-        cell_start = i * (100 / length)          # начало ячейки в %
-        cell_fill  = percent - cell_start         # сколько % попало в ячейку
+        cell_start = i * (100 / length)
+        cell_fill  = percent - cell_start
         cell_pct   = max(0.0, min(cell_fill, (100 / length))) / (100 / length) * 100
 
         if cell_pct >= 75:
@@ -694,7 +694,7 @@ def mine_text(data: dict) -> str:
         "━━━━━━━━━━━━━━━━━━━━\n\n"
         f'<tg-emoji emoji-id="5397782960512444700">🎟</tg-emoji> <b>Выбрано: {pick["name"]}</b>\n'
         f'<tg-emoji emoji-id="5375338737028841420">🎟</tg-emoji> <b>Кампаний: {prog["campaigns_done"]}/{prog["total_campaigns"]}</b>\n\n'
-        f'<tg-emoji emoji-id="5231200819986047254">🎟</tg-emoji> <b>Прогресс:\n  {bar}</b>\n\n'
+        f'<tg-emoji emoji-id="5231200819986047254">🎟</tg-emoji> <b>Прогресс:</b>\n{bar}\n\n'
         f"{status}\n\n"
         f'<blockquote><tg-emoji emoji-id="5445221832074483553">🎟</tg-emoji> <b>Инвентарь:</b>\n{ore_inventory_text(data, short=True)}</blockquote>'
     )
@@ -1179,7 +1179,7 @@ def collect_mine(data: dict) -> tuple:
         f'<tg-emoji emoji-id="5197371802136892976">🎟</tg-emoji> <b>Результат добычи</b>\n'
         f"━━━━━━━━━━━━━━━━━━━━\n"
         f'<tg-emoji emoji-id="5375338737028841420">🎟</tg-emoji> <b>Кампаний: {new_campaigns}</b>\n'
-        f'<tg-emoji emoji-id="5231200819986047254">🎟</tg-emoji> <b>{bar}</b>\n'
+        f'<tg-emoji emoji-id="5231200819986047254">🎟</tg-emoji> {bar}\n'
         f"{booster_line}\n"
         f"{loot}\n\n"
     )
