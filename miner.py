@@ -490,9 +490,37 @@ def fmt_time(seconds: int) -> str:
     return f"{m}м {s}с"
 
 
-def progress_bar(percent: int, length: int = 12) -> str:
-    filled = int(percent / 100 * length)
-    return "[" + "█" * filled + "░" * (length - filled) + f"] {percent}%"
+def progress_bar(percent: int, length: int = 10) -> str:
+    """
+    10 ячеек × 10% каждая. Внутри ячейки:
+      < 25%  → пустая       5992142065603974345
+      25–49% → четверть     5992256170000127661
+      50–74% → половина     5992488673759729434
+      ≥ 75%  → полная       5992459287593489418
+    """
+    _E_EMPTY    = "5992142065603974345"
+    _E_QUARTER  = "5992256170000127661"
+    _E_HALF     = "5992488673759729434"
+    _E_FULL     = "5992459287593489418"
+
+    cells = []
+    for i in range(length):
+        cell_start = i * (100 / length)          # начало ячейки в %
+        cell_fill  = percent - cell_start         # сколько % попало в ячейку
+        cell_pct   = max(0.0, min(cell_fill, (100 / length))) / (100 / length) * 100
+
+        if cell_pct >= 75:
+            eid = _E_FULL
+        elif cell_pct >= 50:
+            eid = _E_HALF
+        elif cell_pct >= 25:
+            eid = _E_QUARTER
+        else:
+            eid = _E_EMPTY
+
+        cells.append(f'<tg-emoji emoji-id="{eid}">▓</tg-emoji>')
+
+    return "".join(cells) + f" {percent}%"
 
 
 def xp_for_level(level: int) -> int:
