@@ -127,7 +127,7 @@ def stars_confirm_keyboard(pick_key: str, page: int, invoice_url: str = None) ->
         url="https://t.me/stars",
         icon_custom_emoji_id="5267500801240092311"
     ))
-    kb.add(_back_btn(f"pick_info_{pick_key}_{page}", "Назад"))
+    kb.add(_back_btn(f"pick_info_{pick_key}", "Назад"))
     return kb
 
 
@@ -409,12 +409,8 @@ def handle_callback(call):
 
         # ===== КИРКИ: просмотр карточки =====
         if cd.startswith("pick_info_"):
-            parts    = cd.removeprefix("pick_info_").rsplit("_", 1)
-            pick_key = parts[0]
-            try:
-                page = int(parts[1])
-            except (IndexError, ValueError):
-                page = get_pickaxe_page(pick_key)
+            pick_key = cd.removeprefix("pick_info_")
+            page     = get_pickaxe_page(pick_key)
             edit(pickaxe_detail_text(data, pick_key), pickaxe_detail_keyboard(data, pick_key, page))
             return
 
