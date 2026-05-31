@@ -132,19 +132,19 @@ def days_on_project(joined_str: str) -> int:
 
 
 def level_to_rank(level: int) -> str:
-    if level < 10:  return "Новичок"
-    if level < 25:  return "Опытный"
-    if level < 50:  return "Профи"
-    if level < 75:  return "Мастер"
-    if level < 100: return "Эксперт"
-    if level < 125: return "Элита"
+    if level < 5:   return "Новичок"
+    if level < 10:  return "Опытный"
+    if level < 20:  return "Профи"
+    if level < 35:  return "Мастер"
+    if level < 50:  return "Эксперт"
+    if level < 75:  return "Элита"
     return "Легенда"
 
 
 def status_from_level(level: int) -> str:
-    if level < 25:  return "Standart"
-    if level < 75:  return "VIP"
-    if level < 125: return "VIP+"
+    if level < 10:  return "Standart"
+    if level < 25:  return "VIP"
+    if level < 50:  return "VIP+"
     return "Premium"
 
 
@@ -228,17 +228,21 @@ def profile_text(d: dict) -> str:
     )
 
     return (
-        f'<blockquote><tg-emoji emoji-id="5906581476639513176">🎟</tg-emoji> <b>{name}</b>\n'
+        f'<blockquote>'
+        f'<tg-emoji emoji-id="5906581476639513176">🎟</tg-emoji> <b>{name}</b>\n'
         f'<tg-emoji emoji-id="5282843764451195532">🎟</tg-emoji> <b><code>{uid}</code></b>\n'
-        f'<tg-emoji emoji-id="5323442290708985472">🎟</tg-emoji> <b>{uname}</b></blockquote>'
+        f'<tg-emoji emoji-id="5323442290708985472">🎟</tg-emoji> <b>{uname}</b>'
+        f'</blockquote>'
         f'<blockquote>'
         f'<tg-emoji emoji-id="5415655814079723871">🎟</tg-emoji> <b>Ранг — {level_to_rank(level)}</b>\n'
         f'<tg-emoji emoji-id="5438496463044752972">🎟</tg-emoji> <b>Статус — {status_from_level(level)}</b>\n'
-        f'<tg-emoji emoji-id="5274055917766202507">🎟</tg-emoji> <b>Дней в проекте — {days}</b></blockquote>'
+        f'<tg-emoji emoji-id="5274055917766202507">🎟</tg-emoji> <b>Дней в проекте — {days}</b>'
+        f'</blockquote>'
         f'<blockquote>'
         f'<tg-emoji emoji-id="5375338737028841420">🎟</tg-emoji> <b>Уровень —</b> {lvl_line}\n'
         f'<tg-emoji emoji-id="5341498088408234504">🎟</tg-emoji> <b>Опыт —</b> {xp_str}\n'
-        f'{bar_str}</blockquote>'
+        f'{bar_str}'
+        f'</blockquote>'
         f'{booster_block}'
         f'<blockquote>{COIN} <b>Баланс — {d["balance"]:,}</b></blockquote>'
     )
