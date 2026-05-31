@@ -39,7 +39,7 @@ from shop import (
     use_xp_item, sell_xp_item,
 )
 
-bot = telebot.TeleBot('8796618330:AAEx3qgVKofsK8ObQEM169AiRj7YWohZl_4')
+bot = telebot.TeleBot('8451911991:AAHUwC8f3SSNlx9QN8sx8HX0IVWLfZdC9HY')
 
 # ---------- БЛОКИРОВКИ ПО ПОЛЬЗОВАТЕЛЯМ (защита от race condition / дюпов) ----------
 _user_locks: dict[int, threading.Lock] = {}
