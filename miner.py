@@ -491,24 +491,15 @@ def fmt_time(seconds: int) -> str:
 
 
 def progress_bar(percent: int, length: int = 10) -> str:
-    """
-    10 ячеек × 10% каждая. Внутри ячейки:
-      < 25%  → пустая       5992142065603974345
-      25–49% → четверть     5992256170000127661
-      50–74% → половина     5992488673759729434
-      ≥ 75%  → полная       5992459287593489418
-    """
     _E_EMPTY   = "5992142065603974345"
     _E_QUARTER = "5992256170000127661"
     _E_HALF    = "5992488673759729434"
     _E_FULL    = "5992459287593489418"
-
     cells = []
     for i in range(length):
         cell_start = i * (100 / length)
         cell_fill  = percent - cell_start
         cell_pct   = max(0.0, min(cell_fill, (100 / length))) / (100 / length) * 100
-
         if cell_pct >= 75:
             eid = _E_FULL
         elif cell_pct >= 50:
@@ -517,9 +508,7 @@ def progress_bar(percent: int, length: int = 10) -> str:
             eid = _E_QUARTER
         else:
             eid = _E_EMPTY
-
-        cells.append(f'<tg-emoji emoji-id="{eid}"> </tg-emoji>')
-
+        cells.append(f'<tg-emoji emoji-id="{eid}">⬜</tg-emoji>')
     return "".join(cells) + f" {percent}%"
 
 
@@ -679,7 +668,7 @@ def mine_text(data: dict) -> str:
             f'<tg-emoji emoji-id="5397782960512444700">🎟</tg-emoji> <b>Выбрано: {pick["name"]}</b>\n'
             f'<tg-emoji emoji-id="5440621591387980068">🎟</tg-emoji> <b>Длительность: {dur["label"]}</b>\n\n'
             f'<blockquote><tg-emoji emoji-id="5445221832074483553">🎟</tg-emoji> <b>Инвентарь:</b>\n{ore_inventory_text(data, short=True)}</blockquote>\n\n'
-            '<b>Нажми <tg-emoji emoji-id="5906727823355156804">🎟</tg-emoji> Запустить чтобы начать добычу!</b>'
+            'Нажми <tg-emoji emoji-id="5906727823355156804">🎟</tg-emoji> <b>Запустить</b> чтобы начать добычу!'
         )
 
     prog   = calc_mine_progress(data)
@@ -687,7 +676,7 @@ def mine_text(data: dict) -> str:
     status = (
         '<tg-emoji emoji-id="5206607081334906820">🎟</tg-emoji> <b>Добыча завершена!</b>'
         if prog["finished"]
-        else f'<b><tg-emoji emoji-id="5341498088408234504">🎟</tg-emoji> Идёт добыча...</b>'
+        else f'<tg-emoji emoji-id="5341498088408234504">🎟</tg-emoji> <b>Идёт добыча...</b>'
     )
     return (
         '<tg-emoji emoji-id="5197371802136892976">🎟</tg-emoji> <b>Шахта</b>\n'
