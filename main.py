@@ -609,17 +609,39 @@ def handle_successful_payment(message):
     payload = message.successful_payment.invoice_payload
     if payload.startswith("premium_pickaxe:"):
         pick_key = payload.split(":", 1)[1]
-        from miner import grant_premium_pickaxe
+        from miner import (
+            grant_premium_pickaxe, pickaxe_detail_keyboard,
+            get_pickaxe_page, PICKAXES, TIER_LABELS, STAR
+        )
         from database import get_user, save_user
         uid = message.from_user.id
-        # Тоже берём Lock — защита от двойной выдачи через Stars
         with _get_user_lock(uid):
             data = get_user(uid)
-            if data:
-                ok, msg = grant_premium_pickaxe(data, pick_key)
-                if ok:
-                    save_user(data["id"], data)
-                bot.send_message(message.chat.id, msg, parse_mode="HTML")
+            if not data:
+                return
+            ok, _ = grant_premium_pickaxe(data, pick_key)
+            if ok:
+                save_user(data["id"], data)
+            p    = PICKAXES[pick_key]
+            tier = TIER_LABELS.get(p.get("tier", ""), "")
+            page = get_pickaxe_page(pick_key)
+            text = (
+                f'<tg-emoji emoji-id="5267500801240092311">⭐</tg-emoji> <b>Оплата прошла успешно!</b>\n'
+                f'━━━━━━━━━━━━━━━━━━━━\n\n'
+                f'<blockquote>'
+                f'<tg-emoji emoji-id="5397782960512444700">🎟</tg-emoji> <b>Кирка: {p["name"]}</b>\n'
+                f'<tg-emoji emoji-id="5444856076954520455">🎟</tg-emoji> <b>Тир: {tier}</b>\n'
+                f'<tg-emoji emoji-id="5375338737028841420">🎟</tg-emoji> <b>Ударов за кампанию: {p["dig_min"]:,}–{p["dig_max"]:,}</b>\n'
+                f'<tg-emoji emoji-id="5267500801240092311">🎟</tg-emoji> <b>Потрачено: {p["cost_stars"]:,} {STAR}</b>'
+                f'</blockquote>\n\n'
+                f'<tg-emoji emoji-id="5206607081334906820">🎟</tg-emoji> <b>Кирка добавлена в мастерскую!</b>'
+            )
+            bot.send_message(
+                message.chat.id,
+                text,
+                reply_markup=pickaxe_detail_keyboard(data, pick_key, page),
+                parse_mode="HTML"
+            )
 
 
 if __name__ == "__main__":
