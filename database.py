@@ -132,19 +132,19 @@ def days_on_project(joined_str: str) -> int:
 
 
 def level_to_rank(level: int) -> str:
-    if level < 5:   return "Новичок"
-    if level < 10:  return "Опытный"
-    if level < 20:  return "Профи"
-    if level < 35:  return "Мастер"
-    if level < 50:  return "Эксперт"
-    if level < 75:  return "Элита"
+    if level < 10:  return "Новичок"
+    if level < 25:  return "Опытный"
+    if level < 50:  return "Профи"
+    if level < 75:  return "Мастер"
+    if level < 100: return "Эксперт"
+    if level < 125: return "Элита"
     return "Легенда"
 
 
 def status_from_level(level: int) -> str:
-    if level < 10:  return "Standart"
-    if level < 25:  return "VIP"
-    if level < 50:  return "VIP+"
+    if level < 25:  return "Standart"
+    if level < 75:  return "VIP"
+    if level < 125: return "VIP+"
     return "Premium"
 
 
