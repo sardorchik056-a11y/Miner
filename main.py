@@ -433,6 +433,7 @@ def handle_callback(call):
                 bot.answer_callback_query(call.id, "❌ Неизвестная кирка.", show_alert=True)
                 return
             try:
+                bot.delete_message(chat_id, message_id)
                 bot.send_invoice(
                     chat_id=chat_id,
                     title=p['name'],
