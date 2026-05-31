@@ -97,7 +97,7 @@ def main_menu_keyboard() -> InlineKeyboardMarkup:
 
 def profile_keyboard() -> InlineKeyboardMarkup:
     kb = InlineKeyboardMarkup(row_width=1)
-    kb.add(InlineKeyboardButton("Инвентарь ускорителей", callback_data="profile_boosters",
+    kb.add(InlineKeyboardButton("Инвентарь", callback_data="profile_boosters",
                                 icon_custom_emoji_id="5445221832074483553"))
     kb.add(_back_btn("back_to_menu", "Назад"))
     return kb
@@ -107,6 +107,31 @@ def back_button() -> InlineKeyboardMarkup:
     kb = InlineKeyboardMarkup()
     kb.add(_back_btn("back_to_menu", "Назад"))
     return kb
+
+
+def stars_confirm_keyboard(pick_key: str, page: int) -> InlineKeyboardMarkup:
+    kb = InlineKeyboardMarkup(row_width=1)
+    kb.add(InlineKeyboardButton(
+        "Оплатить звёздами",
+        callback_data=f"pick_pay_stars_{pick_key}",
+        icon_custom_emoji_id="5267500801240092311"
+    ))
+    kb.add(_back_btn(f"pick_info_{pick_key}_{page}", "Назад"))
+    return kb
+
+
+def stars_confirm_text(p: dict) -> str:
+    from miner import STAR, COIN, TIER_LABELS
+    tier  = TIER_LABELS.get(p.get("tier", ""), "")
+    return (
+        f'<tg-emoji emoji-id="5267500801240092311">⭐</tg-emoji> <b>{p["name"]}</b>\n'
+        f"━━━━━━━━━━━━━━━━━━━━\n\n"
+        f'<blockquote>'
+        f'<b>Тир: {tier}</b>\n'
+        f'<b>Ударов за кампанию: {p["dig_min"]:,}–{p["dig_max"]:,}</b>\n'
+        f'<b>Стоимость: {p["cost_stars"]:,}</b> {STAR}'
+        f'</blockquote>'
+    )
 
 
 SHOP_TEXT = '<blockquote><tg-emoji emoji-id="5406683434124859552">🛒</tg-emoji> <b>МАГАЗИН</b>\n\n<b>Выбери категорию:</b></blockquote>'
@@ -389,9 +414,20 @@ def handle_callback(call):
             edit(pickaxe_detail_text(data, pick_key), pickaxe_detail_keyboard(data, pick_key, page))
             return
 
-        # ===== КИРКИ: купить за звёзды (инициирует инвойс) =====
+        # ===== КИРКИ: купить за звёзды (экран подтверждения) =====
         if cd.startswith("pick_buy_stars_"):
             pick_key = cd.removeprefix("pick_buy_stars_")
+            p        = PICKAXES.get(pick_key)
+            if not p:
+                bot.answer_callback_query(call.id, "❌ Неизвестная кирка.", show_alert=True)
+                return
+            page = get_pickaxe_page(pick_key)
+            edit(stars_confirm_text(p), stars_confirm_keyboard(pick_key, page))
+            return
+
+        # ===== КИРКИ: оплатить за звёзды (инвойс) =====
+        if cd.startswith("pick_pay_stars_"):
+            pick_key = cd.removeprefix("pick_pay_stars_")
             p        = PICKAXES.get(pick_key)
             if not p:
                 bot.answer_callback_query(call.id, "❌ Неизвестная кирка.", show_alert=True)
@@ -399,8 +435,8 @@ def handle_callback(call):
             try:
                 bot.send_invoice(
                     chat_id=chat_id,
-                    title=f"Кирка {p['name']}",
-                    description=f"Донатная кирка {p['name']} ({p['dig_min']:,}–{p['dig_max']:,} ударов за кампанию)",
+                    title=p['name'],
+                    description=f"{p['name']} — {p['dig_min']:,}–{p['dig_max']:,} ударов за кампанию",
                     invoice_payload=f"premium_pickaxe:{pick_key}",
                     provider_token="",
                     currency="XTR",
@@ -409,6 +445,17 @@ def handle_callback(call):
             except Exception as e:
                 print(f"Invoice error: {e}")
                 bot.answer_callback_query(call.id, "❌ Ошибка при создании инвойса.", show_alert=True)
+            return
+
+        # ===== КИРКИ: назад из экрана подтверждения =====
+        if cd.startswith("pick_info_"):
+            parts    = cd.removeprefix("pick_info_").rsplit("_", 1)
+            pick_key = parts[0]
+            try:
+                page = int(parts[1])
+            except (IndexError, ValueError):
+                page = get_pickaxe_page(pick_key)
+            edit(pickaxe_detail_text(data, pick_key), pickaxe_detail_keyboard(data, pick_key, page))
             return
 
         # ===== КИРКИ: выбрать =====
