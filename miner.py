@@ -388,9 +388,9 @@ def workshop_text(data: dict, page: int = 0) -> str:
     return (
         '<tg-emoji emoji-id="5278702045883292456">🎟</tg-emoji> <b>Мастерская</b>\n'
         "━━━━━━━━━━━━━━━━━━━━\n\n"
-        f'<tg-emoji emoji-id="5278467510604160626">🎟</tg-emoji> <b>Баланс: {_fmt_num(data["balance"])}</b>\n'
-        f'<tg-emoji emoji-id="5397782960512444700">🎟</tg-emoji> <b>Выбрано: {current}</b>\n'
-        f'<tg-emoji emoji-id="5444856076954520455">🎟</tg-emoji> <b>Страница: {page + 1}/{WORKSHOP_TOTAL_PAGES}</b>\n\n'
+        f'<blockquote><tg-emoji emoji-id="5278467510604160626">🎟</tg-emoji> <b>Баланс: {_fmt_num(data["balance"])}{COIN}</b>\n'
+        f'<tg-emoji emoji-id="5397782960512444700">🎟</tg-emoji> <b>Выбрано: {current}lvl</b>\n'
+        f'<tg-emoji emoji-id="5444856076954520455">🎟</tg-emoji> <b>Страница: {page + 1}/{WORKSHOP_TOTAL_PAGES}</b></blockquote>\n\n'
         "<b>Выберите товар ниже:</b>"
     )
 
