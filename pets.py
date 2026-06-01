@@ -270,42 +270,15 @@ def pets_main_text(data):
         f'</blockquote>\n\n'
     )
 
-    if owned:
-        lines = ['<blockquote><b>Активные питомцы:</b>\n\n']
-        show  = owned[:3]
-        rest  = len(owned) - 3
-        for pk in show:
-            pet = PETS_BY_KEY.get(pk)
-            if not pet:
-                continue
-            incomes  = data.get("pet_last_income", {})
-            diff     = now - incomes.get(pk, 0)
-            pet_eid  = _PET_EMOJI.get(pk, "")
-            pet_icon = _tg(pet_eid, pet["emoji"]) if pet_eid else pet["emoji"]
-            rar_icon = _tg("5222079954421818267", "⭐")
-            if diff >= PET_INCOME_INTERVAL:
-                timer_str = f'{_tg(_E["alert"], "💡")} <b>Готов к выплате!</b>'
-            else:
-                rem = PET_INCOME_INTERVAL - diff
-                h   = rem // 3600
-                m   = (rem % 3600) // 60
-                timer_str = f'{_tg(_E["timer"], "⏱")} <b>Выплата через {h}ч {m}м</b>'
-            lines.append(
-                f'<b>{pet_icon} {pet["name"]}</b>  {rar_icon} <b>{pet["rarity"]}</b>\n'
-                f'{timer_str}\n'
-                f'{_tg(_E["coin"], "💰")} <b>{_fmt(pet["income_min"])}–{_fmt(pet["income_max"])} {COIN} / 12ч</b>\n\n'
-            )
-        if rest > 0:
-            lines.append(f'{_tg(_E["chest"], "🎒")} <b>...и ещё {rest} питомца(ев) работают на тебя</b>\n')
-        lines.append('</blockquote>\n')
-        pets_block = "".join(lines)
-    else:
+    if not owned:
         pets_block = (
             f'<blockquote>'
             f'{_tg(_E["lock"], "🔒")} <b>У тебя пока нет питомцев.</b>\n'
             f'<b>Купи первого — и он начнёт приносить монеты!</b>'
             f'</blockquote>\n\n'
         )
+    else:
+        pets_block = ""
 
     footer = (
         f'<blockquote>'
@@ -323,10 +296,9 @@ def pets_main_keyboard(data, page=0):
     for pet in chunk:
         pet_eid = _PET_EMOJI.get(pet["key"], "")
         if has_pet(data, pet["key"]):
-            # Купленный: иконка = прем питомца, label = ✅ + имя
-            btn = InlineKeyboardButton(f'✅ {pet["name"]}', callback_data=f'pet_info_{pet["key"]}',
-                                       icon_custom_emoji_id=pet_eid) if pet_eid else \
-                  InlineKeyboardButton(f'✅ {pet["name"]}', callback_data=f'pet_info_{pet["key"]}')
+            # Купленный: зелёная кнопка через pay=True
+            btn = InlineKeyboardButton(f'⭐ {pet["name"]}', callback_data=f'pet_info_{pet["key"]}',
+                                       pay=True)
         elif pet_eid:
             # Не куплен: иконка = прем-питомца, label = только имя
             btn = InlineKeyboardButton(pet["name"], callback_data=f'pet_info_{pet["key"]}',
