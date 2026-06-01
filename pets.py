@@ -70,27 +70,27 @@ PETS = [
     {"key":"raccoon","name":"Енот Мародёр","emoji":"🦝",
      "desc":"<b>Найдёт что угодно где угодно.</b>\n<b>Но сначала сам решит — отдавать или нет.</b>",
      "price":65_000_000,"rarity":"Редкий","bonus":"<b>Шанс найти потерянные ресурсы</b>",
-     "income_min":350_000,"income_max":500_000},
+     "income_min":850_000,"income_max":1_500_000},
     {"key":"wolf","name":"Волк Бригадир","emoji":"🐺",
      "desc":"<b>Держит всю шахту в страхе.</b>\n<b>Без его команды никто не копает.</b>",
      "price":120_000_000,"rarity":"Эпический","bonus":"<b>Бонус к добыче железа и золота</b>",
-     "income_min":3_500_000,"income_max":7_000_000},
+     "income_min":2_500_000,"income_max":4_000_000},
     {"key":"lion","name":"Лев Колека","emoji":"🦁",
      "desc":"<b>Говорит что просто колека.</b>\n<b>Но все знают — он тут главный.</b>",
      "price":300_000_000,"rarity":"Эпический","bonus":"<b>Повышает шанс редких руд</b>",
-     "income_min":9_000_000,"income_max":18_000_000},
+     "income_min":7_000_000,"income_max":18_000_000},
     {"key":"bear","name":"Хромой Медведь","emoji":"🐻",
      "desc":"<b>Хромает, но не сдаётся.</b>\n<b>За смену выносит столько, сколько другие за неделю.</b>",
      "price":700_000_000,"rarity":"Легендарный","bonus":"<b>Удваивает добычу тяжёлых руд</b>",
-     "income_min":25_000_000,"income_max":50_000_000},
+     "income_min":24_000_000,"income_max":50_000_000},
     {"key":"croc","name":"Крокодил Гена","emoji":"🐊",
      "desc":"<b>Пришёл из подземной реки в 1987 году.</b>\n<b>Никто не сказал уходить. Он остался.</b>",
      "price":1_500_000_000,"rarity":"Легендарный","bonus":"<b>Зубами дробит породу — открывает скрытые жилы</b>",
-     "income_min":60_000_000,"income_max":120_000_000},
+     "income_min":60_000_000,"income_max":90_000_000},
     {"key":"gnome","name":"Кристальный Гном","emoji":"💎",
      "desc":"<b>Соткан из чистого кристалла.</b>\n<b>Видит сквозь породу. Находит то, чего не существует.</b>",
      "price":5_000_000_000,"rarity":"Мифический","bonus":"<b>Находит мифрил, уран и аметист</b>",
-     "income_min":200_000_000,"income_max":500_000_000},
+     "income_min":150_000_000,"income_max":300_000_000},
 ]
 
 PETS_BY_KEY = {p["key"]: p for p in PETS}
@@ -336,9 +336,9 @@ def pets_main_keyboard(data, page=0):
         kb.add(btn)
     nav = []
     if page > 0:
-        nav.append(InlineKeyboardButton("◀️", callback_data=f"pets_page_{page-1}", icon_custom_emoji_id="5255703720078879038"))
+        nav.append(InlineKeyboardButton("1", callback_data=f"pets_page_{page-1}", icon_custom_emoji_id="5255703720078879038"))
     if start + PAGE_SIZE < len(PETS):
-        nav.append(InlineKeyboardButton("▶️", callback_data=f"pets_page_{page+1}", icon_custom_emoji_id="5253767677670862169"))
+        nav.append(InlineKeyboardButton("2", callback_data=f"pets_page_{page+1}", icon_custom_emoji_id="5253767677670862169"))
     if nav:
         kb.add(*nav)
     kb.add(_back_btn("back_to_menu", "Назад"))
