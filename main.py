@@ -73,7 +73,7 @@ EMOJI_MINE     = "5197371802136892976"
 EMOJI_HUNT     = "5424972470023104089"
 EMOJI_STATUS   = "5438496463044752972"
 EMOJI_EXCHANGE = "5402186569006210455"
-EMOJI_PETS     = "5424972470023104089"
+EMOJI_PETS     = "5337047059180566409"
 EMOJI_LEADERS  = "5440539497383087970"
 EMOJI_SETTINGS = "5341715473882955310"
 
@@ -100,7 +100,7 @@ def main_menu_keyboard() -> InlineKeyboardMarkup:
         InlineKeyboardButton("Охота",  callback_data="hunt",   icon_custom_emoji_id=EMOJI_HUNT),
         InlineKeyboardButton("Статус", callback_data="status", icon_custom_emoji_id=EMOJI_STATUS),
     )
-    kb.add(InlineKeyboardButton("🐾 Питомцы", callback_data="pets", icon_custom_emoji_id=EMOJI_PETS))
+    kb.add(InlineKeyboardButton("Питомцы", callback_data="pets", icon_custom_emoji_id=EMOJI_PETS))
     kb.add(
         InlineKeyboardButton("Лидеры",    callback_data="leaders",  icon_custom_emoji_id=EMOJI_LEADERS),
         InlineKeyboardButton("Настройки", callback_data="settings", icon_custom_emoji_id=EMOJI_SETTINGS),
