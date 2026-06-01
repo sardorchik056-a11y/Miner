@@ -2,11 +2,13 @@
 #  pets.py  —  Питомцы TGStellar
 #  10 уникальных питомцев-шахтёров
 #  Каждые 12 часов питомец приносит монеты + шлёт уведомление
+#  Переписан для aiogram 3.x
 # ============================================================
 
 import random
 from datetime import datetime, timezone
-from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 from miner import COIN, EMOJI_BACK
 
 _E = {
@@ -40,8 +42,8 @@ _PET_EMOJI = {
 _E_OWNED = "5206607081334906820"
 
 def _tg(eid, fb): return f'<tg-emoji emoji-id="{eid}">{fb}</tg-emoji>'
-def _btn(eid, label, cb): return InlineKeyboardButton(label, callback_data=cb, icon_custom_emoji_id=eid)
-def _back_btn(cb, label="Назад"): return InlineKeyboardButton(label, callback_data=cb, icon_custom_emoji_id=_E["back"])
+def _btn(eid, label, cb): return InlineKeyboardButton(text=label, callback_data=cb, icon_custom_emoji_id=eid)
+def _back_btn(cb, label="Назад"): return InlineKeyboardButton(text=label, callback_data=cb, icon_custom_emoji_id=_E["back"])
 
 # Прем-эмодзи для кнопки питомцев в главном меню
 PET_MENU_EMOJI = "5337047059180566409"
@@ -288,33 +290,43 @@ def pets_main_text(data):
     )
     return header + pets_block + footer
 
-def pets_main_keyboard(data, page=0):
-    kb        = InlineKeyboardMarkup(row_width=1)
+def pets_main_keyboard(data, page=0) -> InlineKeyboardMarkup:
+    builder   = InlineKeyboardBuilder()
     PAGE_SIZE = 5
     start     = page * PAGE_SIZE
     chunk     = PETS[start:start + PAGE_SIZE]
+
     for pet in chunk:
         pet_eid = _PET_EMOJI.get(pet["key"], "")
         if has_pet(data, pet["key"]):
-            # Купленный: зелёная кнопка через pay=True
-            btn = InlineKeyboardButton(f'⭐ {pet["name"]}', callback_data=f'pet_info_{pet["key"]}',
-                                       pay=True)
+            # Купленный питомец — используем pay=True для зелёной кнопки
+            builder.button(text=f'⭐ {pet["name"]}', callback_data=f'pet_info_{pet["key"]}', pay=True)
         elif pet_eid:
-            # Не куплен: иконка = прем-питомца, label = только имя
-            btn = InlineKeyboardButton(pet["name"], callback_data=f'pet_info_{pet["key"]}',
-                                       icon_custom_emoji_id=pet_eid)
+            builder.button(text=pet["name"], callback_data=f'pet_info_{pet["key"]}', icon_custom_emoji_id=pet_eid)
         else:
-            btn = InlineKeyboardButton(pet["name"], callback_data=f'pet_info_{pet["key"]}')
-        kb.add(btn)
-    nav = []
+            builder.button(text=pet["name"], callback_data=f'pet_info_{pet["key"]}')
+        builder.adjust(1)
+
+    nav_btns = []
     if page > 0:
-        nav.append(InlineKeyboardButton("1", callback_data=f"pets_page_{page-1}", icon_custom_emoji_id="5255703720078879038"))
+        nav_btns.append(InlineKeyboardButton(
+            text="1", callback_data=f"pets_page_{page-1}",
+            icon_custom_emoji_id="5255703720078879038"
+        ))
     if start + PAGE_SIZE < len(PETS):
-        nav.append(InlineKeyboardButton("2", callback_data=f"pets_page_{page+1}", icon_custom_emoji_id="5253767677670862169"))
-    if nav:
-        kb.add(*nav)
-    kb.add(_back_btn("back_to_menu", "Назад"))
-    return kb
+        nav_btns.append(InlineKeyboardButton(
+            text="2", callback_data=f"pets_page_{page+1}",
+            icon_custom_emoji_id="5253767677670862169"
+        ))
+    if nav_btns:
+        builder.row(*nav_btns)
+
+    builder.row(InlineKeyboardButton(
+        text="Назад", callback_data="back_to_menu",
+        icon_custom_emoji_id=_E["back"]
+    ))
+
+    return builder.as_markup()
 
 def pet_detail_text(data, pet_key):
     pet = PETS_BY_KEY.get(pet_key)
@@ -354,9 +366,18 @@ def pet_detail_text(data, pet_key):
         f'{timing_block}'
     )
 
-def pet_detail_keyboard(data, pet_key, page=0):
-    kb = InlineKeyboardMarkup(row_width=1)
+def pet_detail_keyboard(data, pet_key, page=0) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
     if not has_pet(data, pet_key):
-        kb.add(_btn(_E["coin"], "Купить", f"pet_buy_{pet_key}"))
-    kb.add(_back_btn(f"pets_page_{page}", "Назад"))
-    return kb
+        builder.button(
+            text="Купить",
+            callback_data=f"pet_buy_{pet_key}",
+            icon_custom_emoji_id=_E["coin"]
+        )
+        builder.adjust(1)
+    builder.row(InlineKeyboardButton(
+        text="Назад",
+        callback_data=f"pets_page_{page}",
+        icon_custom_emoji_id=_E["back"]
+    ))
+    return builder.as_markup()
