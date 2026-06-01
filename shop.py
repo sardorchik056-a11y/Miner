@@ -292,9 +292,10 @@ def open_case(data: dict, case_key: str) -> tuple:
     data["cases_total_spent"]  = data.get("cases_total_spent",  0) + cost
     msg = (
         f"<blockquote>{_pe('case', '📦')} <b>Кейс открыт!</b>\n"
+        f'<tg-emoji emoji-id="5197288647275071607">🎟</tg-emoji><b>Выпало:</b>'
         f"{_pe('luck', '🍀')} <b>{name}</b></blockquote>\n"
         f"\n<blockquote>{COIN} <b>Потрачено: {_fmt_num(cost)}</b>\n"
-        f"{COIN} <b>Баланс: {_fmt_num(data['balance'])}</b>\n"
+        f'<tg-emoji emoji-id="5278467510604160626">🎟</tg-emoji> <b>Баланс: {_fmt_num(data['balance'])}{COIN}</b>\n'
         f"{_pe('inv', '🎒')} <b>{inv_line}</b></blockquote>"
     )
     return True, msg, instance
@@ -333,10 +334,10 @@ def sell_booster(data: dict, instance_id: str) -> tuple:
     data["boosters_inventory"] = [x for x in inv if x["instance_id"] != instance_id]
     data["balance"] = data.get("balance", 0) + price
     return True, (
-        f"<blockquote>{_pe('sell', '💸')} <b>Ускоритель продан!</b>\n"
+        f'<blockquote><tg-emoji emoji-id="5447183459602669338">🎟</tg-emoji> <b>Ускоритель продан!</b>\n'
         f"{_pe('boost', '⚡')} <b>{_booster_name(item)}</b>\n"
-        f"{COIN} <b>+{_fmt_num(price)} монет</b>\n"
-        f"{COIN} <b>Баланс: {_fmt_num(data['balance'])}</b></blockquote>"
+        f'<tg-emoji emoji-id="5397916757333654639">🎟</tg-emoji> <b>+{_fmt_num(price)} {COIN}</b>\n'
+        f'<tg-emoji emoji-id="5278467510604160626">🎟</tg-emoji> <b>Баланс: {_fmt_num(data['balance'])}{COIN}</b></blockquote>'
     ), price
 
 
@@ -401,8 +402,8 @@ def sell_xp_item(data: dict, instance_id: str) -> tuple:
     return True, (
         f"<blockquote>{_pe('sell', '💸')} <b>Продано!</b>\n"
         f"{_pe('xp_boost', '🔮')} <b>{_xp_item_name(item)}</b>\n"
-        f"{COIN} <b>+{_fmt_num(price)} монет</b>\n"
-        f"{COIN} <b>Баланс: {_fmt_num(data['balance'])}</b></blockquote>"
+        f'<tg-emoji emoji-id="5397916757333654639">🎟</tg-emoji> <b>+{_fmt_num(price)} {COIN}</b>\n'
+        f'<tg-emoji emoji-id="5278467510604160626">🎟</tg-emoji> <b>Баланс: {_fmt_num(data['balance'])}{COIN}</b></blockquote>'
     ), price
 
 
@@ -460,10 +461,10 @@ def cases_shop_text(data: dict = None) -> str:
     return (
         f"<blockquote>{_pe('shop', '🛒')} <b>МАГАЗИН КЕЙСОВ</b>\n"
         f"<b>Открывай кейсы и получай бонусы!</b></blockquote>\n"
-        f"\n<blockquote>{_pe('stats', '📊')} <b>Твоя статистика</b>\n"
+        f'\n<blockquote><tg-emoji emoji-id="5231200819986047254">🎟</tg-emoji> <b>Твоя статистика</b>\n'
         f"<b>Открыто кейсов: {total_opened:,}</b>\n"
-        f"<b>Потрачено монет: {_fmt_num(total_spent)}</b> {COIN}</blockquote>\n"
-        f"\n<blockquote>{_pe('luck', '🍀')} <b>Удачи тебе! Пусть выпадет что-то крутое</b> {_pe('luck', '🍀')}</blockquote>"
+        f"<b>Потрачено : {_fmt_num(total_spent)}</b> {COIN}</blockquote>\n"
+        f'\n<blockquote><tg-emoji emoji-id="5269531045165816230">🎟</tg-emoji> <b>Удачи тебе! Пусть выпадет что-то крутое</b> {_pe('luck', '🍀')}</blockquote>'
     )
 
 
