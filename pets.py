@@ -22,6 +22,9 @@ _E = {
     "timer": "5440621591387980068",
     "mine":  "5197371802136892976",
     "fire":  "5438571934210082705",
+    "arrow": "5427168083074628963",
+    "income":"5449683594425410231",
+    "price": "5397782960512444700",
 }
 
 # Прем-эмодзи для каждого питомца
@@ -41,16 +44,21 @@ _PET_EMOJI = {
 # Прем-эмодзи для купленных питомцев (светящийся)
 _E_OWNED = "5206607081334906820"
 
-def _tg(eid, fb): return f'<tg-emoji emoji-id="{eid}">{fb}</tg-emoji>'
-def _btn(eid, label, cb): return InlineKeyboardButton(text=label, callback_data=cb, icon_custom_emoji_id=eid)
-def _back_btn(cb, label="Назад"): return InlineKeyboardButton(text=label, callback_data=cb, icon_custom_emoji_id=_E["back"])
+def _tg(eid, fb): 
+    return f'<tg-emoji emoji-id="{eid}">{fb}</tg-emoji>'
+def _btn(eid, label, cb): 
+    return InlineKeyboardButton(text=label, callback_data=cb, icon_custom_emoji_id=eid)
+def _back_btn(cb, label="Назад"): 
+    return InlineKeyboardButton(text=label, callback_data=cb, icon_custom_emoji_id=_E["back"])
 
-# Прем-эмодзи для кнопки питомцев в главном меню
-PET_MENU_EMOJI = "5337047059180566409"
-def _fmt(n): return f"{n:,}".replace(",", " ")
-def _now_ts(): return int(datetime.now(timezone.utc).timestamp())
+def _fmt(n): 
+    return f"{int(n):,}".replace(",", " ")
+
+def _now_ts(): 
+    return int(datetime.now(timezone.utc).timestamp())
 
 PET_INCOME_INTERVAL = 12 * 3600
+PAGE_SIZE = 5
 
 PETS = [
     {"key":"hamster","name":"Шахтёр Хомяк","emoji":"🐹",
@@ -98,7 +106,7 @@ PETS = [
 PETS_BY_KEY = {p["key"]: p for p in PETS}
 
 def _n(eid, fb, name, text):
-    return f'{_tg(eid, fb)} <b>{name}</b> <b>{text}</b>'
+    return f'{_tg(eid, fb)} <b>{name}</b> {text}'
 
 _NOTIFICATIONS = {
     "hamster": [
@@ -138,7 +146,7 @@ _NOTIFICATIONS = {
         _n("5427397704911177177","🦔","Крот на Энергетиках","прошёл 10 км по тоннелям. «Разминка». Ты считаешь прибыль."),
     ],
     "raccoon": [
-        _n("5202166785230524217","🦝","Енот Мародёр","добил дорогой алмаз. Долго думал, отдавать ли — всё же принёс монеты."),
+        _n("5202166785230524217","🦝","Енот Мародёр","добыл дорогой алмаз. Долго думал, отдавать ли — всё же принёс монеты."),
         _n("5202166785230524217","🦝","Енот Мародёр","нашёл чужую кирку в тоннеле. Теперь у него две. Работает обеими."),
         _n("5202166785230524217","🦝","Енот Мародёр","провёл ревизию склада. Часть руды «перераспределилась» в твою копилку."),
         _n("5202166785230524217","🦝","Енот Мародёр","нашёл секретную жилу. Показывать не будет — но монеты принёс."),
@@ -207,7 +215,7 @@ def buy_pet(data, pet_key):
         return False, "<b>❌ Этот питомец уже у тебя есть!</b>"
     pet = PETS_BY_KEY[pet_key]
     if data.get("balance", 0) < pet["price"]:
-        return False, f'<b>❌ Недостаточно монет! Нужно: {_fmt(pet["price"])} {COIN}</b>'
+        return False, f'<b>❌ Недостаточно монет! Нужно: {_fmt(pet["price"])} {_tg(_E["coin"], "💰")}</b>'
     data["balance"] -= pet["price"]
     data.setdefault("owned_pets", []).append(pet_key)
     now = _now_ts()
@@ -249,9 +257,7 @@ def get_pending_notifications(data):
     return result
 
 def pet_income_text(pet_key, amount, notification):
-    return (
-        f'{notification}'
-    )
+    return notification
 
 # 10 уникальных случайных текстов для раздела питомцев
 _PETS_MENU_TEXTS = [
@@ -300,37 +306,35 @@ def pets_main_text(data):
 
 def pets_main_keyboard(data, page=0) -> InlineKeyboardMarkup:
     builder   = InlineKeyboardBuilder()
-    PAGE_SIZE = 5
     start     = page * PAGE_SIZE
     chunk     = PETS[start:start + PAGE_SIZE]
 
     for pet in chunk:
         pet_eid = _PET_EMOJI.get(pet["key"], "")
         if has_pet(data, pet["key"]):
-            # Купленный: зелёная кнопка style="success" + иконка питомца
             if pet_eid:
                 builder.row(InlineKeyboardButton(
                     text=pet["name"],
-                    callback_data=f'pet_info_{pet["key"]}',
+                    callback_data=f'pet_info_{pet["key"]}_{page}',
                     icon_custom_emoji_id=pet_eid,
                     style="success"
                 ))
             else:
                 builder.row(InlineKeyboardButton(
                     text=pet["name"],
-                    callback_data=f'pet_info_{pet["key"]}',
+                    callback_data=f'pet_info_{pet["key"]}_{page}',
                     style="success"
                 ))
         elif pet_eid:
             builder.row(InlineKeyboardButton(
                 text=pet["name"],
-                callback_data=f'pet_info_{pet["key"]}',
+                callback_data=f'pet_info_{pet["key"]}_{page}',
                 icon_custom_emoji_id=pet_eid
             ))
         else:
             builder.row(InlineKeyboardButton(
                 text=pet["name"],
-                callback_data=f'pet_info_{pet["key"]}'
+                callback_data=f'pet_info_{pet["key"]}_{page}'
             ))
 
     nav_btns = []
@@ -347,10 +351,7 @@ def pets_main_keyboard(data, page=0) -> InlineKeyboardMarkup:
     if nav_btns:
         builder.row(*nav_btns)
 
-    builder.row(InlineKeyboardButton(
-        text="Назад", callback_data="back_to_menu",
-        icon_custom_emoji_id=_E["back"]
-    ))
+    builder.row(_back_btn("back_to_menu", "Назад"))
 
     return builder.as_markup()
 
@@ -380,13 +381,13 @@ def pet_detail_text(data, pet_key):
         f'<b>{pet["rarity"]}</b>'
         f'</blockquote>\n\n'
         f'<blockquote>'
-        f'<tg-emoji emoji-id="5427168083074628963">🎟</tg-emoji> <b>Особенность:</b> {pet["bonus"]}\n\n'
+        f'{_tg(_E["arrow"], "➡️")} <b>Особенность:</b> {pet["bonus"]}\n\n'
         f'{pet["desc"]}'
         f'</blockquote>\n\n'
         f'<blockquote>'
-        f'<tg-emoji emoji-id="5449683594425410231">🎟</tg-emoji> <b>Доход каждые 12 часов:</b>\n'
-        f'<b>{_fmt(pet["income_min"])} — {_fmt(pet["income_max"])} {COIN}</b>\n\n'
-        f'<tg-emoji emoji-id="5397782960512444700">🎟</tg-emoji> <b>Цена: {_fmt(pet["price"])} {COIN}</b>\n'
+        f'{_tg(_E["income"], "💰")} <b>Доход каждые 12 часов:</b>\n'
+        f'<b>{_fmt(pet["income_min"])} — {_fmt(pet["income_max"])} {_tg(_E["coin"], "💰")}</b>\n\n'
+        f'{_tg(_E["price"], "🏷️")} <b>Цена: {_fmt(pet["price"])} {_tg(_E["coin"], "💰")}</b>\n'
         f'{status}'
         f'</blockquote>'
         f'{timing_block}'
@@ -397,13 +398,9 @@ def pet_detail_keyboard(data, pet_key, page=0) -> InlineKeyboardMarkup:
     if not has_pet(data, pet_key):
         builder.button(
             text="Купить",
-            callback_data=f"pet_buy_{pet_key}",
+            callback_data=f"pet_buy_{pet_key}_{page}",
             icon_custom_emoji_id=_E["coin"]
         )
         builder.adjust(1)
-    builder.row(InlineKeyboardButton(
-        text="Назад",
-        callback_data=f"pets_page_{page}",
-        icon_custom_emoji_id=_E["back"]
-    ))
+    builder.row(_back_btn(f"pets_page_{page}", "Назад"))
     return builder.as_markup()
