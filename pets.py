@@ -259,11 +259,24 @@ def pet_income_text(pet_key, amount, notification):
         f'</blockquote>'
     )
 
+# 10 уникальных случайных текстов для раздела питомцев
+_PETS_MENU_TEXTS = [
+    "Твои питомцы уже под землёй — копают, стараются, несут монеты.",
+    "Каждый питомец — это шахтёр со своим характером. Некоторые даже с претензиями.",
+    "Чем больше питомцев, тем больше шума в шахте. И монет тоже.",
+    "Питомцы не спят. Питомцы работают. Особенно крот — он вообще не понимает что такое ночь.",
+    "Говорят, хомяк нашёл золотую жилу и спрятал её за щекой. Проверить не удалось.",
+    "Бобёр уже нарисовал план на следующую неделю. Гном его не читал, но добыл больше.",
+    "Енот опять что-то нашёл. Откуда — молчит. Но монеты настоящие.",
+    "Волк провёл планёрку. Все были. Добровольно. Почти.",
+    "Крокодил Гена снова на смене. Он всегда на смене. Никто не проверял, уходил ли он вообще.",
+    "Кристальный Гном видит сквозь породу. Что именно — не рассказывает. Монеты приносит исправно.",
+]
+
 def pets_main_text(data):
     owned = get_owned_pets(data)
     count = len(owned)
     total = len(PETS)
-    now   = _now_ts()
 
     header = (
         f'<blockquote>'
@@ -282,9 +295,10 @@ def pets_main_text(data):
     else:
         pets_block = ""
 
+    random_quote = random.choice(_PETS_MENU_TEXTS)
     footer = (
         f'<blockquote>'
-        f'{_tg(_E["chest"], "🎒")} <b>Питомцы приносят монеты каждые 12 часов.</b>\n'
+        f'{_tg(_E["chest"], "🎒")} <b>{random_quote}</b>\n\n'
         f'{_tg(_E["alert"], "💡")} <b>Каждая выплата сопровождается сообщением от питомца.</b>'
         f'</blockquote>'
     )
@@ -299,13 +313,31 @@ def pets_main_keyboard(data, page=0) -> InlineKeyboardMarkup:
     for pet in chunk:
         pet_eid = _PET_EMOJI.get(pet["key"], "")
         if has_pet(data, pet["key"]):
-            # Купленный питомец — используем pay=True для зелёной кнопки
-            builder.button(text=f'⭐ {pet["name"]}', callback_data=f'pet_info_{pet["key"]}', pay=True)
+            # Купленный: зелёная кнопка (pay=True) + иконка самого питомца
+            if pet_eid:
+                builder.row(InlineKeyboardButton(
+                    text=pet["name"],
+                    callback_data=f'pet_info_{pet["key"]}',
+                    pay=True,
+                    icon_custom_emoji_id=pet_eid
+                ))
+            else:
+                builder.row(InlineKeyboardButton(
+                    text=pet["name"],
+                    callback_data=f'pet_info_{pet["key"]}',
+                    pay=True
+                ))
         elif pet_eid:
-            builder.button(text=pet["name"], callback_data=f'pet_info_{pet["key"]}', icon_custom_emoji_id=pet_eid)
+            builder.row(InlineKeyboardButton(
+                text=pet["name"],
+                callback_data=f'pet_info_{pet["key"]}',
+                icon_custom_emoji_id=pet_eid
+            ))
         else:
-            builder.button(text=pet["name"], callback_data=f'pet_info_{pet["key"]}')
-        builder.adjust(1)
+            builder.row(InlineKeyboardButton(
+                text=pet["name"],
+                callback_data=f'pet_info_{pet["key"]}'
+            ))
 
     nav_btns = []
     if page > 0:
