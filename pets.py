@@ -313,19 +313,19 @@ def pets_main_keyboard(data, page=0) -> InlineKeyboardMarkup:
     for pet in chunk:
         pet_eid = _PET_EMOJI.get(pet["key"], "")
         if has_pet(data, pet["key"]):
-            # Купленный: зелёная кнопка (pay=True) + иконка самого питомца
+            # Купленный: зелёная кнопка style="success" + иконка питомца
             if pet_eid:
                 builder.row(InlineKeyboardButton(
                     text=pet["name"],
                     callback_data=f'pet_info_{pet["key"]}',
-                    pay=True,
-                    icon_custom_emoji_id=pet_eid
+                    icon_custom_emoji_id=pet_eid,
+                    style="success"
                 ))
             else:
                 builder.row(InlineKeyboardButton(
                     text=pet["name"],
                     callback_data=f'pet_info_{pet["key"]}',
-                    pay=True
+                    style="success"
                 ))
         elif pet_eid:
             builder.row(InlineKeyboardButton(
