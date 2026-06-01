@@ -148,13 +148,15 @@ def stars_confirm_keyboard(pick_key: str, page: int, invoice_url: str = None) ->
         builder.row(InlineKeyboardButton(
             text="Оплатить",
             url=invoice_url,
-            icon_custom_emoji_id="5999336376342940892"
+            icon_custom_emoji_id="5999336376342940892",
+            style="success"
         ))
     else:
         builder.row(InlineKeyboardButton(
             text="Оплатить",
             callback_data=f"pick_pay_stars_{pick_key}",
-            icon_custom_emoji_id="5999336376342940892"
+            icon_custom_emoji_id="5999336376342940892",
+            style="success"
         ))
     builder.row(InlineKeyboardButton(
         text="Мои звёзды",
