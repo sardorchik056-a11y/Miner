@@ -10,7 +10,7 @@ from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from miner import COIN, EMOJI_BACK
 
 _E = {
-    "paw":   "5424972470023104089",
+    "paw":   "5337047059180566409",
     "coin":  "5199552030615558774",
     "lock":  "5240241223632954241",
     "ok":    "5206607081334906820",
@@ -42,6 +42,9 @@ _E_OWNED = "5206607081334906820"
 def _tg(eid, fb): return f'<tg-emoji emoji-id="{eid}">{fb}</tg-emoji>'
 def _btn(eid, label, cb): return InlineKeyboardButton(label, callback_data=cb, icon_custom_emoji_id=eid)
 def _back_btn(cb, label="Назад"): return InlineKeyboardButton(label, callback_data=cb, icon_custom_emoji_id=_E["back"])
+
+# Прем-эмодзи для кнопки питомцев в главном меню
+PET_MENU_EMOJI = "5337047059180566409"
 def _fmt(n): return f"{n:,}".replace(",", " ")
 def _now_ts(): return int(datetime.now(timezone.utc).timestamp())
 
@@ -208,7 +211,7 @@ def buy_pet(data, pet_key):
     now = _now_ts()
     data.setdefault("pet_last_notify", {})[pet_key] = now
     data.setdefault("pet_last_income", {})[pet_key] = now
-    return True, f'{_tg(_E_OWNED, "✅")} <b>Питомец {pet["emoji"]} {pet["name"]} теперь твой!</b>'
+    return True, f'{_tg(_E_OWNED, "✅")} <b>Питомец {pet["name"]} теперь твой!</b>'
 
 def get_pending_income(data):
     owned   = get_owned_pets(data)
@@ -310,13 +313,11 @@ def pets_main_keyboard(data, page=0):
     chunk     = PETS[start:start + PAGE_SIZE]
     for pet in chunk:
         pet_eid = _PET_EMOJI.get(pet["key"], "")
-        label   = f'{pet["emoji"]} {pet["name"]}'
+        label   = pet["name"]
         if has_pet(data, pet["key"]):
-            # Купленный — иконка светящегося ок
             btn = InlineKeyboardButton(label, callback_data=f'pet_info_{pet["key"]}',
                                        icon_custom_emoji_id=_E_OWNED)
         elif pet_eid:
-            # Не куплен — иконка питомца
             btn = InlineKeyboardButton(label, callback_data=f'pet_info_{pet["key"]}',
                                        icon_custom_emoji_id=pet_eid)
         else:
