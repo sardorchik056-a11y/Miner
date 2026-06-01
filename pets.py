@@ -298,7 +298,7 @@ def pets_main_text(data):
     random_quote = random.choice(_PETS_MENU_TEXTS)
     footer = (
         f'<blockquote>'
-        f'{_tg(_E["chest"], "🎒")} <b>{random_quote}</b>\n\n'
+        f'<tg-emoji emoji-id="5443038326535759644">🎟</tg-emoji> <b>{random_quote}</b>\n\n'
         f'{_tg(_E["alert"], "💡")} <b>Каждая выплата сопровождается сообщением от питомца.</b>'
         f'</blockquote>'
     )
@@ -386,13 +386,13 @@ def pet_detail_text(data, pet_key):
         f'<b>{pet["rarity"]}</b>'
         f'</blockquote>\n\n'
         f'<blockquote>'
-        f'{_tg(_E["mine"], "⛏")} <b>Особенность:</b> {pet["bonus"]}\n\n'
+        f'<tg-emoji emoji-id="5427168083074628963">🎟</tg-emoji> <b>Особенность:</b> {pet["bonus"]}\n\n'
         f'{pet["desc"]}'
         f'</blockquote>\n\n'
         f'<blockquote>'
-        f'{_tg(_E["coin"], "💰")} <b>Доход каждые 12 часов:</b>\n'
+        f'<tg-emoji emoji-id="5449683594425410231">🎟</tg-emoji> <b>Доход каждые 12 часов:</b>\n'
         f'<b>{_fmt(pet["income_min"])} — {_fmt(pet["income_max"])} {COIN}</b>\n\n'
-        f'{_tg(_E["fire"], "💸")} <b>Цена: {_fmt(pet["price"])} {COIN}</b>\n'
+        f'<tg-emoji emoji-id="5397782960512444700">🎟</tg-emoji> <b>Цена: {_fmt(pet["price"])} {COIN}</b>\n'
         f'{status}'
         f'</blockquote>'
         f'{timing_block}'
