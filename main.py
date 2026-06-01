@@ -128,18 +128,18 @@ def stars_confirm_keyboard(pick_key: str, page: int, invoice_url: str = None) ->
         kb.add(InlineKeyboardButton(
             "Оплатить",
             url=invoice_url,
-            icon_custom_emoji_id="5267500801240092311"
+            icon_custom_emoji_id="5999336376342940892"
         ))
     else:
         kb.add(InlineKeyboardButton(
             "Оплатить",
             callback_data=f"pick_pay_stars_{pick_key}",
-            icon_custom_emoji_id="5267500801240092311"
+            icon_custom_emoji_id="5999336376342940892"
         ))
     kb.add(InlineKeyboardButton(
         "Мои звёзды",
         url="tg://stars/",
-        icon_custom_emoji_id="5267500801240092311"
+        icon_custom_emoji_id="5348570868752595928"
     ))
     kb.add(_back_btn(f"pick_info_{pick_key}", "Назад"))
     return kb
@@ -149,12 +149,12 @@ def stars_confirm_text(p: dict) -> str:
     from miner import STAR, COIN, TIER_LABELS
     tier  = TIER_LABELS.get(p.get("tier", ""), "")
     return (
-        f'<tg-emoji emoji-id="5267500801240092311">⭐</tg-emoji> <b>{p["name"]}</b>\n'
+        f'<tg-emoji emoji-id="5197371802136892976">⭐</tg-emoji> <b>{p["name"]}</b>\n'
         f"━━━━━━━━━━━━━━━━━━━━\n\n"
         f'<blockquote>'
-        f'<b>Тир: {tier}</b>\n'
-        f'<b>Ударов за кампанию: {p["dig_min"]:,}–{p["dig_max"]:,}</b>\n'
-        f'<b>Стоимость: {p["cost_stars"]:,}</b> {STAR}'
+        f'<tg-emoji emoji-id="5197269100878907942">⭐</tg-emoji><b>Тир: {tier}</b>\n'
+        f'<tg-emoji emoji-id="5310278924616356636">⭐</tg-emoji><b>Ударов за кампанию: {p["dig_min"]:,}–{p["dig_max"]:,}</b>\n'
+        f'<tg-emoji emoji-id="5445353829304387411">⭐</tg-emoji><b>Стоимость: {p["cost_stars"]:,}</b> {STAR}'
         f'</blockquote>'
     )
 
@@ -365,7 +365,7 @@ def handle_callback(call):
         if cd.startswith("boost_sell_"):
             instance_id = cd.removeprefix("boost_sell_")
             ok, msg, price = sell_booster(data, instance_id)
-            bot.answer_callback_query(call.id, f"💰 Продано за {price:,} монет!" if ok else msg, show_alert=True)
+            bot.answer_callback_query(call.id, f" Продано за {price:,} монет!" if ok else msg, show_alert=True)
             if ok:
                 save_user(data["id"], data)
             edit(boosters_inventory_text(data), boosters_inventory_keyboard(data))
@@ -401,7 +401,7 @@ def handle_callback(call):
         if cd.startswith("xp_replace_"):
             instance_id = cd.removeprefix("xp_replace_")
             ok, msg = use_xp_item(data, instance_id, force=True)
-            bot.answer_callback_query(call.id, "🔮 XP-ускоритель заменён!" if ok else msg, show_alert=True)
+            bot.answer_callback_query(call.id, " XP-ускоритель заменён!" if ok else msg, show_alert=True)
             if ok:
                 save_user(data["id"], data)
             edit(xp_inventory_text(data), xp_inventory_keyboard(data))
@@ -411,7 +411,7 @@ def handle_callback(call):
         if cd.startswith("xp_sell_"):
             instance_id = cd.removeprefix("xp_sell_")
             ok, msg, price = sell_xp_item(data, instance_id)
-            bot.answer_callback_query(call.id, f"💰 Продано за {price:,} монет!" if ok else msg, show_alert=True)
+            bot.answer_callback_query(call.id, f" Продано за {price:,} монет!" if ok else msg, show_alert=True)
             if ok:
                 save_user(data["id"], data)
             edit(xp_inventory_text(data), xp_inventory_keyboard(data))
