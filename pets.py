@@ -211,7 +211,11 @@ def buy_pet(data, pet_key):
     now = _now_ts()
     data.setdefault("pet_last_notify", {})[pet_key] = now
     data.setdefault("pet_last_income", {})[pet_key] = now
-    return True, f'{_tg(_E_OWNED, "✅")} <b>Питомец {pet["name"]} теперь твой!</b>'
+    return True, (
+        f'{_tg(_E_OWNED, "✅")} <b>{pet["name"]} теперь твой питомец!</b>\n\n'
+        f'{_tg(_E["chest"], "🎒")} <b>Он уже отправился в шахту и скоро принесёт первые монеты.</b>\n'
+        f'{_tg(_E["timer"], "⏱")} <b>Первая выплата через 12 часов.</b>'
+    )
 
 def get_pending_income(data):
     owned   = get_owned_pets(data)
@@ -268,7 +272,9 @@ def pets_main_text(data):
 
     if owned:
         lines = ['<blockquote><b>Активные питомцы:</b>\n\n']
-        for pk in owned:
+        show  = owned[:3]
+        rest  = len(owned) - 3
+        for pk in show:
             pet = PETS_BY_KEY.get(pk)
             if not pet:
                 continue
@@ -276,6 +282,7 @@ def pets_main_text(data):
             diff     = now - incomes.get(pk, 0)
             pet_eid  = _PET_EMOJI.get(pk, "")
             pet_icon = _tg(pet_eid, pet["emoji"]) if pet_eid else pet["emoji"]
+            rar_icon = _tg("5222079954421818267", "⭐")
             if diff >= PET_INCOME_INTERVAL:
                 timer_str = f'{_tg(_E["alert"], "💡")} <b>Готов к выплате!</b>'
             else:
@@ -284,10 +291,12 @@ def pets_main_text(data):
                 m   = (rem % 3600) // 60
                 timer_str = f'{_tg(_E["timer"], "⏱")} <b>Выплата через {h}ч {m}м</b>'
             lines.append(
-                f'<b>{pet_icon} {pet["name"]}</b>  <b>{pet["rarity"]}</b>\n'
+                f'<b>{pet_icon} {pet["name"]}</b>  {rar_icon} <b>{pet["rarity"]}</b>\n'
                 f'{timer_str}\n'
                 f'{_tg(_E["coin"], "💰")} <b>{_fmt(pet["income_min"])}–{_fmt(pet["income_max"])} {COIN} / 12ч</b>\n\n'
             )
+        if rest > 0:
+            lines.append(f'{_tg(_E["chest"], "🎒")} <b>...и ещё {rest} питомца(ев) работают на тебя</b>\n')
         lines.append('</blockquote>\n')
         pets_block = "".join(lines)
     else:
@@ -313,15 +322,17 @@ def pets_main_keyboard(data, page=0):
     chunk     = PETS[start:start + PAGE_SIZE]
     for pet in chunk:
         pet_eid = _PET_EMOJI.get(pet["key"], "")
-        label   = pet["name"]
         if has_pet(data, pet["key"]):
+            # Купленный: иконка = прем-ок, в label = эмодзи питомца + имя
+            label = f'{pet["emoji"]} {pet["name"]}'
             btn = InlineKeyboardButton(label, callback_data=f'pet_info_{pet["key"]}',
                                        icon_custom_emoji_id=_E_OWNED)
         elif pet_eid:
-            btn = InlineKeyboardButton(label, callback_data=f'pet_info_{pet["key"]}',
+            # Не куплен: иконка = прем-питомца, label = только имя
+            btn = InlineKeyboardButton(pet["name"], callback_data=f'pet_info_{pet["key"]}',
                                        icon_custom_emoji_id=pet_eid)
         else:
-            btn = InlineKeyboardButton(label, callback_data=f'pet_info_{pet["key"]}')
+            btn = InlineKeyboardButton(pet["name"], callback_data=f'pet_info_{pet["key"]}')
         kb.add(btn)
     nav = []
     if page > 0:
