@@ -292,8 +292,8 @@ def open_case(data: dict, case_key: str) -> tuple:
     data["cases_total_spent"]  = data.get("cases_total_spent",  0) + cost
     msg = (
         f"<blockquote>{_pe('case', '📦')} <b>Кейс открыт!</b>\n"
-        f'<tg-emoji emoji-id="5197288647275071607">🎟</tg-emoji><b>Выпало:</b>'
-        f"{_pe('luck', '🍀')} <b>{name}</b></blockquote>\n"
+        f'<tg-emoji emoji-id="5427168083074628963">🎟</tg-emoji><b>Выпало:</b>'
+        f"<b>{name}</b></blockquote>\n"
         f"\n<blockquote>{COIN} <b>Потрачено: {_fmt_num(cost)}</b>\n"
         f'<tg-emoji emoji-id="5278467510604160626">🎟</tg-emoji> <b>Баланс: {_fmt_num(data['balance'])}{COIN}</b>\n'
         f"{_pe('inv', '🎒')} <b>{inv_line}</b></blockquote>"
