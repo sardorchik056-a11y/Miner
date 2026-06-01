@@ -8,7 +8,6 @@ from datetime import datetime, timezone
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from miner import (
-    COIN,
     EMOJI_BACK,
     EMOJI_BTN_BUY_COINS,
     EMOJI_BTN_SELL,
@@ -31,10 +30,6 @@ def _back_btn(cb: str, label: str = "Назад") -> InlineKeyboardButton:
     return InlineKeyboardButton(text=label, callback_data=cb, icon_custom_emoji_id=EMOJI_BACK)
 
 
-def _tg(emoji_id: str, fallback: str) -> str:
-    return f'<tg-emoji emoji-id="{emoji_id}">{fallback}</tg-emoji>'
-
-
 _E = {
     "case":       "5438571934210082705",
     "xp_case":    "5404843113652970870",
@@ -54,6 +49,9 @@ _E = {
     "back":       "6039539366177541657",
     "timer":      "5440621591387980068",
     "mult":       "5397916757333654639",
+    "spent":      "5447183459602669338",
+    "balance":    "5278467510604160626",
+    "arrow":      "5427168083074628963",
 }
 
 
@@ -142,7 +140,7 @@ def get_sell_price(item: dict) -> int:
 
 
 # ============================================================
-#  ПУЛ XP-КЕЙСА (без редкостей)
+#  ПУЛ XP-КЕЙСА
 # ============================================================
 
 _XP_POOL = [
@@ -211,10 +209,10 @@ def _booster_name(b: dict) -> str:
 
 def _xp_item_name(item: dict) -> str:
     if item["type"] == "xp_instant":
-        return f"⚡ {_fmt_num(item['xp'])} XP"
+        return f"{_pe('xp_instant', '✨')} {_fmt_num(item['xp'])} XP"
     mult = _multiplier_label(item["multiplier"])
     dur  = _DUR_LABELS[item["dur_key"]]
-    return f"🔮 XP-ускоритель {mult} на {dur}"
+    return f"{_pe('xp_boost', '🔮')} XP-ускоритель {mult} на {dur}"
 
 
 def _now_ts() -> float:
@@ -244,7 +242,7 @@ def open_case(data: dict, case_key: str) -> tuple:
         return False, "❌ Неизвестный кейс.", None
     cost = case["cost"]
     if data.get("balance", 0) < cost:
-        return False, f"❌ Недостаточно монет!\nНужно: {_fmt_num(cost)} {COIN}", None
+        return False, f"❌ Недостаточно монет!\nНужно: {_fmt_num(cost)} {_pe('coin', '💰')}", None
     if case["type"] == "booster":
         inv = data.setdefault("boosters_inventory", [])
         if len(inv) >= MAX_INVENTORY:
@@ -281,21 +279,21 @@ def open_case(data: dict, case_key: str) -> tuple:
         }
         if dropped["type"] == "xp_instant":
             instance["xp"] = dropped["xp"]
+            name = _xp_item_name(dropped)
         else:
             instance["multiplier"]   = dropped["multiplier"]
             instance["dur_key"]      = dropped["dur_key"]
             instance["duration_sec"] = _DUR[dropped["dur_key"]]
+            name = _xp_item_name(dropped)
         inv.append(instance)
-        name     = _xp_item_name(dropped)
         inv_line = f"В XP-инвентаре: {len(inv)}/{MAX_XP_INVENTORY}"
     data["cases_total_opened"] = data.get("cases_total_opened", 0) + 1
     data["cases_total_spent"]  = data.get("cases_total_spent",  0) + cost
     msg = (
         f"<blockquote>{_pe('case', '📦')} <b>Кейс открыт!</b>\n"
-        f'<tg-emoji emoji-id="5427168083074628963">🎟</tg-emoji><b>Выпало:</b>'
-        f"<b>{name}</b></blockquote>\n"
-        f"\n<blockquote>{COIN} <b>Потрачено: {_fmt_num(cost)}</b>\n"
-        f'<tg-emoji emoji-id="5278467510604160626">🎟</tg-emoji> <b>Баланс: {_fmt_num(data['balance'])}{COIN}</b>\n'
+        f"{_pe('arrow', '➡️')} <b>Выпало:</b> {name}</blockquote>\n"
+        f"\n<blockquote>{_pe('spent', '💸')} <b>Потрачено: {_fmt_num(cost)}</b> {_pe('coin', '💰')}\n"
+        f"{_pe('balance', '💰')} <b>Баланс: {_fmt_num(data['balance'])}</b> {_pe('coin', '💰')}\n"
         f"{_pe('inv', '🎒')} <b>{inv_line}</b></blockquote>"
     )
     return True, msg, instance
@@ -334,10 +332,10 @@ def sell_booster(data: dict, instance_id: str) -> tuple:
     data["boosters_inventory"] = [x for x in inv if x["instance_id"] != instance_id]
     data["balance"] = data.get("balance", 0) + price
     return True, (
-        f'<blockquote><tg-emoji emoji-id="5447183459602669338">🎟</tg-emoji> <b>Ускоритель продан!</b>\n'
+        f"<blockquote>{_pe('sell', '💸')} <b>Ускоритель продан!</b>\n"
         f"{_pe('boost', '⚡')} <b>{_booster_name(item)}</b>\n"
-        f'<tg-emoji emoji-id="5397916757333654639">🎟</tg-emoji> <b>+{_fmt_num(price)} {COIN}</b>\n'
-        f'<tg-emoji emoji-id="5278467510604160626">🎟</tg-emoji> <b>Баланс: {_fmt_num(data['balance'])}{COIN}</b></blockquote>'
+        f"{_pe('coin', '💰')} <b>+{_fmt_num(price)}</b>\n"
+        f"{_pe('balance', '💰')} <b>Баланс: {_fmt_num(data['balance'])}</b> {_pe('coin', '💰')}</blockquote>"
     ), price
 
 
@@ -401,9 +399,9 @@ def sell_xp_item(data: dict, instance_id: str) -> tuple:
     data["balance"] = data.get("balance", 0) + price
     return True, (
         f"<blockquote>{_pe('sell', '💸')} <b>Продано!</b>\n"
-        f"{_pe('xp_boost', '🔮')} <b>{_xp_item_name(item)}</b>\n"
-        f'<tg-emoji emoji-id="5397916757333654639">🎟</tg-emoji> <b>+{_fmt_num(price)} {COIN}</b>\n'
-        f'<tg-emoji emoji-id="5278467510604160626">🎟</tg-emoji> <b>Баланс: {_fmt_num(data['balance'])}{COIN}</b></blockquote>'
+        f"{_xp_item_name(item)}\n"
+        f"{_pe('coin', '💰')} <b>+{_fmt_num(price)}</b>\n"
+        f"{_pe('balance', '💰')} <b>Баланс: {_fmt_num(data['balance'])}</b> {_pe('coin', '💰')}</blockquote>"
     ), price
 
 
@@ -452,7 +450,7 @@ def get_active_xp_booster_info(data: dict) -> dict | None:
 
 
 # ============================================================
-#  UI — все клавиатуры переделаны под aiogram InlineKeyboardBuilder
+#  UI
 # ============================================================
 
 def cases_shop_text(data: dict = None) -> str:
@@ -461,10 +459,10 @@ def cases_shop_text(data: dict = None) -> str:
     return (
         f"<blockquote>{_pe('shop', '🛒')} <b>МАГАЗИН КЕЙСОВ</b>\n"
         f"<b>Открывай кейсы и получай бонусы!</b></blockquote>\n"
-        f'\n<blockquote><tg-emoji emoji-id="5231200819986047254">🎟</tg-emoji> <b>Твоя статистика</b>\n'
+        f"\n<blockquote>{_pe('stats', '📊')} <b>Твоя статистика</b>\n"
         f"<b>Открыто кейсов: {total_opened:,}</b>\n"
-        f"<b>Потрачено : {_fmt_num(total_spent)}</b> {COIN}</blockquote>\n"
-        f'\n<blockquote><tg-emoji emoji-id="5269531045165816230">🎟</tg-emoji> <b>Удачи тебе! Пусть выпадет что-то крутое</b> {_pe('luck', '🍀')}</blockquote>'
+        f"{_pe('spent', '💸')} <b>Потрачено: {_fmt_num(total_spent)}</b> {_pe('coin', '💰')}</blockquote>\n"
+        f"\n<blockquote>{_pe('luck', '🍀')} <b>Удачи тебе! Пусть выпадет что-то крутое</b> {_pe('luck', '🍀')}</blockquote>"
     )
 
 
@@ -481,7 +479,7 @@ def case_detail_text(data: dict, case_key: str) -> str:
     case    = CASES[case_key]
     balance = data.get("balance", 0)
     can_buy = balance >= case["cost"]
-    bal_str = f"{_fmt_num(balance)} {COIN}"
+    bal_str = f"{_fmt_num(balance)} {_pe('coin', '💰')}"
     if case["type"] == "booster":
         loot_lines = (
             f"{_pe('boost', '⚡')} <b>Ускоритель 1.2× — 10мин до 24ч</b>\n"
@@ -498,8 +496,8 @@ def case_detail_text(data: dict, case_key: str) -> str:
     status = f"{_pe('ok', '✅')} <b>Хватает монет</b>" if can_buy else f"{_pe('cancel', '❌')} <b>Недостаточно монет</b>"
     return (
         f"<blockquote>{_pe(e_key, '📦')} <b>{case['name']} кейс</b>\n"
-        f"{COIN} <b>Цена:</b> <b>{_fmt_num(case['cost'])}</b>\n"
-        f"{COIN} <b>Баланс:</b> <b>{bal_str}</b></blockquote>\n"
+        f"{_pe('coin', '💰')} <b>Цена:</b> <b>{_fmt_num(case['cost'])}</b>\n"
+        f"{_pe('balance', '💰')} <b>Баланс:</b> <b>{bal_str}</b></blockquote>\n"
         f"\n<blockquote><b>Возможный лут:</b>\n{loot_lines}</blockquote>\n"
         f"\n<blockquote>{status}</blockquote>"
     )
@@ -566,7 +564,7 @@ def boosters_inventory_text(data: dict) -> str:
         inv_lines = [f"\n<blockquote><b>В инвентаре ({len(inv)}/{MAX_INVENTORY}):</b>"]
         for i, item in enumerate(inv, 1):
             price = get_sell_price(item)
-            inv_lines.append(f"\n<b>{i}. {_booster_name(item)}</b>\n{_pe('coin', '💰')} <b>{_fmt_num(price)} {COIN}</b>")
+            inv_lines.append(f"\n<b>{i}. {_booster_name(item)}</b>\n{_pe('coin', '💰')} <b>{_fmt_num(price)}</b>")
         inv_lines.append("</blockquote>")
         lines.extend(inv_lines)
     return "".join(lines)
@@ -670,7 +668,7 @@ def xp_inventory_text(data: dict) -> str:
         inv_lines = [f"\n<blockquote><b>В инвентаре ({len(inv)}/{MAX_XP_INVENTORY}):</b>"]
         for i, item in enumerate(inv, 1):
             price = get_xp_sell_price(item)
-            inv_lines.append(f"\n<b>{i}. {_xp_item_name(item)}</b>\n{_pe('coin', '💰')} <b>{_fmt_num(price)} {COIN}</b>")
+            inv_lines.append(f"\n<b>{i}. {_xp_item_name(item)}</b>\n{_pe('coin', '💰')} <b>{_fmt_num(price)}</b>")
         inv_lines.append("</blockquote>")
         lines.extend(inv_lines)
     return "".join(lines)
