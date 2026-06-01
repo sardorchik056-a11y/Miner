@@ -250,13 +250,7 @@ def get_pending_notifications(data):
 
 def pet_income_text(pet_key, amount, notification):
     return (
-        f'<blockquote>'
-        f'{_tg(_E["chest"], "🎒")} <b>Питомец принёс доход!</b>'
-        f'</blockquote>\n\n'
-        f'{notification}\n\n'
-        f'<blockquote>'
-        f'{_tg(_E["coin"], "💰")} <b>Заработано: +{_fmt(amount)} {COIN}</b>'
-        f'</blockquote>'
+        f'{notification}'
     )
 
 # 10 уникальных случайных текстов для раздела питомцев
