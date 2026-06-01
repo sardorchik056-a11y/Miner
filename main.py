@@ -58,6 +58,12 @@ from shop import (
 BOT_TOKEN = '8796618330:AAEx3qgVKofsK8ObQEM169AiRj7YWohZl_4'
 
 bot = Bot(token=BOT_TOKEN)
+
+import re as _re
+
+def _plain(text: str) -> str:
+    """Убирает HTML-теги и обрезает до 200 символов для call.answer()."""
+    return _re.sub(r'<[^>]+>', '', text).strip()[:200]
 dp  = Dispatcher()
 
 # ---------- БЛОКИРОВКИ ПО ПОЛЬЗОВАТЕЛЯМ (защита от race condition / дюпов) ----------
@@ -335,7 +341,7 @@ async def handle_callback(call: CallbackQuery):
                 save_user(data["id"], data)
                 await edit(msg, cases_shop_keyboard())
             else:
-                await call.answer(msg, show_alert=True)
+                await call.answer(_plain(msg), show_alert=True)
             return
 
         # ===== ИНВЕНТАРЬ — главная страница выбора раздела =====
