@@ -105,6 +105,13 @@ PETS = [
 
 PETS_BY_KEY = {p["key"]: p for p in PETS}
 
+def _get_pet_page(pet_key):
+    """Возвращает номер страницы для питомца (начиная с 0)."""
+    for i, pet in enumerate(PETS):
+        if pet["key"] == pet_key:
+            return i // PAGE_SIZE
+    return 0
+
 def _n(eid, fb, name, text):
     return f'{_tg(eid, fb)} <b>{name}</b> {text}'
 
@@ -315,37 +322,37 @@ def pets_main_keyboard(data, page=0) -> InlineKeyboardMarkup:
             if pet_eid:
                 builder.row(InlineKeyboardButton(
                     text=pet["name"],
-                    callback_data=f'pet_info_{pet["key"]}_{page}',
+                    callback_data=f'pet_info_{pet["key"]}',
                     icon_custom_emoji_id=pet_eid,
                     style="success"
                 ))
             else:
                 builder.row(InlineKeyboardButton(
                     text=pet["name"],
-                    callback_data=f'pet_info_{pet["key"]}_{page}',
+                    callback_data=f'pet_info_{pet["key"]}',
                     style="success"
                 ))
         elif pet_eid:
             builder.row(InlineKeyboardButton(
                 text=pet["name"],
-                callback_data=f'pet_info_{pet["key"]}_{page}',
+                callback_data=f'pet_info_{pet["key"]}',
                 icon_custom_emoji_id=pet_eid
             ))
         else:
             builder.row(InlineKeyboardButton(
                 text=pet["name"],
-                callback_data=f'pet_info_{pet["key"]}_{page}'
+                callback_data=f'pet_info_{pet["key"]}'
             ))
 
     nav_btns = []
     if page > 0:
         nav_btns.append(InlineKeyboardButton(
-            text="1", callback_data=f"pets_page_{page-1}",
+            text="◀️", callback_data=f"pets_page_{page-1}",
             icon_custom_emoji_id="5255703720078879038"
         ))
     if start + PAGE_SIZE < len(PETS):
         nav_btns.append(InlineKeyboardButton(
-            text="2", callback_data=f"pets_page_{page+1}",
+            text="▶️", callback_data=f"pets_page_{page+1}",
             icon_custom_emoji_id="5253767677670862169"
         ))
     if nav_btns:
@@ -393,12 +400,16 @@ def pet_detail_text(data, pet_key):
         f'{timing_block}'
     )
 
-def pet_detail_keyboard(data, pet_key, page=0) -> InlineKeyboardMarkup:
+def pet_detail_keyboard(data, pet_key, page=None) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
+    # Если страница не передана, вычисляем её автоматически
+    if page is None:
+        page = _get_pet_page(pet_key)
+    
     if not has_pet(data, pet_key):
         builder.button(
             text="Купить",
-            callback_data=f"pet_buy_{pet_key}_{page}",
+            callback_data=f"pet_buy_{pet_key}",
             icon_custom_emoji_id=_E["coin"]
         )
         builder.adjust(1)
