@@ -641,11 +641,16 @@ async def handle_callback(call: CallbackQuery):
 
         # ===== ПИТОМЦЫ: покупка =====
         if cd.startswith("pet_buy_"):
-            pk       = cd.removeprefix("pet_buy_")
-            ok, msg  = buy_pet(data, pk)
-            await call.answer(msg, show_alert=True)
+            pk      = cd.removeprefix("pet_buy_")
+            ok, msg = buy_pet(data, pk)
             if ok:
                 save_user(data["id"], data)
+                await call.answer("✅ Питомец куплен!", show_alert=False)
+            else:
+                # Ошибки короткие — strip HTML-тегов для alert
+                import re
+                plain = re.sub(r'<[^>]+>', '', msg)
+                await call.answer(plain[:200], show_alert=True)
             idx  = next((i for i, p in enumerate(PETS) if p["key"] == pk), 0)
             page = idx // 4
             await edit(pet_detail_text(data, pk), pet_detail_keyboard(data, pk, page))
