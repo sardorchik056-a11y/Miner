@@ -1,64 +1,48 @@
 # ============================================================
 #  miner.py  —  Модуль шахты для TGStellar бота
-#  50 кирок: Wood×5, Rock×5, Iron×5, Gold×5, Diamond×5,
-#             Uranium×5, Amethyst×5, VIP×5, VIP+×5, Premium×5
-#  Мастерская: 5 страниц по 10 кирок, 2 кнопки в ряд
-#  Premium кирки — за звёзды Telegram (донат), не за монеты
-#
-#  Прогрессия от wood_2 (шаг 0):
-#    монеты  ×1.60 каждый шаг, округление до 100
-#    звёзды  ×1.16 каждый шаг, округление до целого
-#    подкопы ×1.15 каждый шаг, округление до целого
-#    базовые значения: coins=1500, stars=5, digs=2–4
-#    wood_1 — бесплатный старт (1–2 удара)
+#  Переписан для aiogram 3.x
 # ============================================================
 
 import random
 from datetime import datetime, timezone
-from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 # ============================================================
-#  PREMIUM EMOJI IDs — замени на свои
+#  PREMIUM EMOJI IDs
 # ============================================================
 
-# Статусы кирок / длительностей
-EMOJI_NOT_BOUGHT  = "5240241223632954241"   # не куплено
-EMOJI_SELECTED    = "5206607081334906820"   # выбрано / активно
-EMOJI_BACK        = "6039539366177541657"   # назад
+EMOJI_NOT_BOUGHT  = "5240241223632954241"
+EMOJI_SELECTED    = "5206607081334906820"
+EMOJI_BACK        = "6039539366177541657"
 
-# Валюты
-EMOJI_COIN        = "5199552030615558774"   # монета (в тексте сообщений)
-EMOJI_STAR        = "5267500801240092311"   # звезда Telegram (в тексте сообщений)
+EMOJI_COIN        = "5199552030615558774"
+EMOJI_STAR        = "5267500801240092311"
 
-# Кнопки шахты
-EMOJI_BTN_START        = "5906891238270834298"   # ▶️ Запустить
-EMOJI_BTN_COLLECT      = "5310278924616356636"   # 🎒 Забрать добычу
-EMOJI_BTN_COLLECT_PART = "5310278924616356636"   # 🎒 Забрать (частично)
-EMOJI_BTN_REFRESH      = "5386367538735104399"   # 🔄 Обновить
-EMOJI_BTN_SELL         = "5429518319243775957"   # 💰 Продать
-EMOJI_BTN_INV          = "5445221832074483553"   # 📦 Инвентарь
-EMOJI_BTN_WORKSHOP     = "5278702045883292456"   # 🔨 Мастерская
-EMOJI_BTN_DURATION     = "5440621591387980068"   # ⏱ Длительность
+EMOJI_BTN_START        = "5906891238270834298"
+EMOJI_BTN_COLLECT      = "5310278924616356636"
+EMOJI_BTN_COLLECT_PART = "5310278924616356636"
+EMOJI_BTN_REFRESH      = "5386367538735104399"
+EMOJI_BTN_SELL         = "5429518319243775957"
+EMOJI_BTN_INV          = "5445221832074483553"
+EMOJI_BTN_WORKSHOP     = "5278702045883292456"
+EMOJI_BTN_DURATION     = "5440621591387980068"
 
-# Кнопки покупки / действий с кирками
-EMOJI_BTN_BUY_COINS  = "5199552030615558774"  # 💰 Купить за монеты
-EMOJI_BTN_BUY_STARS  = "5267500801240092311"  # ⭐ Купить за звёзды
-EMOJI_BTN_FREE       = "5199552030615558774"  # 🆓 Бесплатно
-EMOJI_BTN_SELECT     = "5397916757333654639"  # 🔘 Выбрать
-EMOJI_BTN_ACTIVE     = "5206607081334906820"  # ✅ Активна
-EMOJI_BTN_NO_COINS   = "5240241223632954241"  # 🚫 Монеты недоступны
+EMOJI_BTN_BUY_COINS  = "5199552030615558774"
+EMOJI_BTN_BUY_STARS  = "5267500801240092311"
+EMOJI_BTN_FREE       = "5199552030615558774"
+EMOJI_BTN_SELECT     = "5397916757333654639"
+EMOJI_BTN_ACTIVE     = "5206607081334906820"
+EMOJI_BTN_NO_COINS   = "5240241223632954241"
 
-# Кнопки покупки / действий с длительностью
-EMOJI_BTN_DUR_BUY    = "5199552030615558774"  # 🛒 Купить длительность
-EMOJI_BTN_SELL_ALL   = "5429518319243775957"  # ✅ Продать всё
+EMOJI_BTN_DUR_BUY    = "5199552030615558774"
+EMOJI_BTN_SELL_ALL   = "5429518319243775957"
 
-# Навигация по страницам мастерской — замени ID на свои
-EMOJI_BTN_PAGE_PREV  = "5255703720078879038"  # ◀️ Предыдущая страница
-EMOJI_BTN_PAGE_NEXT  = "5253767677670862169"  # ▶️ Следующая страница
+EMOJI_BTN_PAGE_PREV  = "5255703720078879038"
+EMOJI_BTN_PAGE_NEXT  = "5253767677670862169"
 
 
 def _emoji_btn(emoji_id: str, fallback: str) -> str:
-    """Формирует tg-emoji тег для кнопок."""
     return f'<tg-emoji emoji-id="{emoji_id}">{fallback}</tg-emoji>'
 
 
@@ -82,355 +66,79 @@ ORES = [
 ORES_BY_KEY = {o["key"]: o for o in ORES}
 
 # ============================================================
-#  КИРКИ — 10 тиров × 5 уровней = 50 позиций
+#  КИРКИ
 # ============================================================
 
 PICKAXES = {
-    # ══════════════════════════════ СТРАНИЦА 1 ══════════════════════════════
-    # ── WOOD ─────────────────────────────────────────────────────────────────
-    "wood_1": {
-        "name": "Wood-1lvl",
-        "dig_min": 1,   "dig_max": 2,
-        "cost": 0,       "currency": "coins", "required_level": 1,
-        "tier": "wood",  "cost_stars": 0
-    },
-    "wood_2": {
-        "name": "Wood-2lvl",
-        "dig_min": 2,   "dig_max": 4,
-        "cost": 1_500,   "currency": "coins", "required_level": 1,
-        "tier": "wood",  "cost_stars": 10
-    },
-    "wood_3": {
-        "name": "Wood-3lvl",
-        "dig_min": 2,   "dig_max": 5,
-        "cost": 2_500,   "currency": "coins", "required_level": 1,
-        "tier": "wood",  "cost_stars": 15
-    },
-    "wood_4": {
-        "name": "Wood-4lvl",
-        "dig_min": 3,   "dig_max": 5,
-        "cost": 4_000,   "currency": "coins", "required_level": 1,
-        "tier": "wood",  "cost_stars": 20
-    },
-    "wood_5": {
-        "name": "Wood-5lvl",
-        "dig_min": 3,   "dig_max": 6,
-        "cost": 6_000,   "currency": "coins", "required_level": 1,
-        "tier": "wood",  "cost_stars": 25
-    },
-    # ── ROCK ─────────────────────────────────────────────────────────────────
-    "rock_1": {
-        "name": "Rock-1lvl",
-        "dig_min": 3,   "dig_max": 7,
-        "cost": 10_000,  "currency": "coins", "required_level": 1,
-        "tier": "rock",  "cost_stars": 35
-    },
-    "rock_2": {
-        "name": "Rock-2lvl",
-        "dig_min": 4,   "dig_max": 8,
-        "cost": 16_000,  "currency": "coins", "required_level": 1,
-        "tier": "rock",  "cost_stars": 45
-    },
-    "rock_3": {
-        "name": "Rock-3lvl",
-        "dig_min": 5,   "dig_max": 9,
-        "cost": 25_000,  "currency": "coins", "required_level": 1,
-        "tier": "rock",  "cost_stars": 60
-    },
-    "rock_4": {
-        "name": "Rock-4lvl",
-        "dig_min": 5,   "dig_max": 11,
-        "cost": 40_000,  "currency": "coins", "required_level": 1,
-        "tier": "rock",  "cost_stars": 80
-    },
-    "rock_5": {
-        "name": "Rock-5lvl",
-        "dig_min": 6,   "dig_max": 12,
-        "cost": 64_000,  "currency": "coins", "required_level": 1,
-        "tier": "rock",  "cost_stars": 100
-    },
-    # ══════════════════════════════ СТРАНИЦА 2 ══════════════════════════════
-    # ── IRON ─────────────────────────────────────────────────────────────────
-    "iron_1": {
-        "name": "Iron-1lvl",
-        "dig_min": 7,   "dig_max": 14,
-        "cost": 100_000, "currency": "coins", "required_level": 1,
-        "tier": "iron",  "cost_stars": 150
-    },
-    "iron_2": {
-        "name": "Iron-2lvl",
-        "dig_min": 8,   "dig_max": 16,
-        "cost": 160_000, "currency": "coins", "required_level": 1,
-        "tier": "iron",  "cost_stars": 200
-    },
-    "iron_3": {
-        "name": "Iron-3lvl",
-        "dig_min": 9,   "dig_max": 19,
-        "cost": 260_000, "currency": "coins", "required_level": 1,
-        "tier": "iron",  "cost_stars": 250
-    },
-    "iron_4": {
-        "name": "Iron-4lvl",
-        "dig_min": 11,  "dig_max": 21,
-        "cost": 420_000, "currency": "coins", "required_level": 1,
-        "tier": "iron",  "cost_stars": 300
-    },
-    "iron_5": {
-        "name": "Iron-5lvl",
-        "dig_min": 12,  "dig_max": 25,
-        "cost": 680_000, "currency": "coins", "required_level": 1,
-        "tier": "iron",  "cost_stars": 350
-    },
-    # ── GOLD ─────────────────────────────────────────────────────────────────
-    "gold_1": {
-        "name": "Gold-1lvl",
-        "dig_min": 14,  "dig_max": 28,
-        "cost": 1_100_000, "currency": "coins", "required_level": 1,
-        "tier": "gold",  "cost_stars": 400
-    },
-    "gold_2": {
-        "name": "Gold-2lvl",
-        "dig_min": 16,  "dig_max": 33,
-        "cost": 1_700_000, "currency": "coins", "required_level": 1,
-        "tier": "gold",  "cost_stars": 450
-    },
-    "gold_3": {
-        "name": "Gold-3lvl",
-        "dig_min": 19,  "dig_max": 37,
-        "cost": 2_800_000, "currency": "coins", "required_level": 1,
-        "tier": "gold",  "cost_stars": 500
-    },
-    "gold_4": {
-        "name": "Gold-4lvl",
-        "dig_min": 22,  "dig_max": 43,
-        "cost": 4_400_000, "currency": "coins", "required_level": 1,
-        "tier": "gold",  "cost_stars": 550
-    },
-    "gold_5": {
-        "name": "Gold-5lvl",
-        "dig_min": 25,  "dig_max": 50,
-        "cost": 7_100_000, "currency": "coins", "required_level": 1,
-        "tier": "gold",  "cost_stars": 600
-    },
-    # ══════════════════════════════ СТРАНИЦА 3 ══════════════════════════════
-    # ── DIAMOND ──────────────────────────────────────────────────────────────
-    "diamond_1": {
-        "name": "Diamond-1lvl",
-        "dig_min": 28,  "dig_max": 57,
-        "cost": 11_000_000, "currency": "coins", "required_level": 1,
-        "tier": "diamond", "cost_stars": 650
-    },
-    "diamond_2": {
-        "name": "Diamond-2lvl",
-        "dig_min": 33,  "dig_max": 65,
-        "cost": 18_000_000, "currency": "coins", "required_level": 1,
-        "tier": "diamond", "cost_stars": 700
-    },
-    "diamond_3": {
-        "name": "Diamond-3lvl",
-        "dig_min": 38,  "dig_max": 75,
-        "cost": 29_000_000, "currency": "coins", "required_level": 1,
-        "tier": "diamond", "cost_stars": 800
-    },
-    "diamond_4": {
-        "name": "Diamond-4lvl",
-        "dig_min": 43,  "dig_max": 87,
-        "cost": 46_000_000, "currency": "coins", "required_level": 1,
-        "tier": "diamond", "cost_stars": 900
-    },
-    "diamond_5": {
-        "name": "Diamond-5lvl",
-        "dig_min": 50,  "dig_max": 100,
-        "cost": 74_000_000, "currency": "coins", "required_level": 1,
-        "tier": "diamond", "cost_stars": 1100
-    },
-    # ── URANIUM ───────────────────────────────────────────────────────────────
-    "uranium_1": {
-        "name": "Uranium-1lvl",
-        "dig_min": 57,  "dig_max": 115,
-        "cost": 120_000_000, "currency": "coins", "required_level": 1,
-        "tier": "uranium", "cost_stars": 1200
-    },
-    "uranium_2": {
-        "name": "Uranium-2lvl",
-        "dig_min": 66,  "dig_max": 132,
-        "cost": 190_000_000, "currency": "coins", "required_level": 1,
-        "tier": "uranium", "cost_stars": 1400
-    },
-    "uranium_3": {
-        "name": "Uranium-3lvl",
-        "dig_min": 76,  "dig_max": 151,
-        "cost": 300_000_000, "currency": "coins", "required_level": 1,
-        "tier": "uranium", "cost_stars": 1600
-    },
-    "uranium_4": {
-        "name": "Uranium-4lvl",
-        "dig_min": 87,  "dig_max": 174,
-        "cost": 490_000_000, "currency": "coins", "required_level": 1,
-        "tier": "uranium", "cost_stars": 1800
-    },
-    "uranium_5": {
-        "name": "Uranium-5lvl",
-        "dig_min": 100, "dig_max": 200,
-        "cost": 780_000_000, "currency": "coins", "required_level": 1,
-        "tier": "uranium", "cost_stars": 2100
-    },
-    # ══════════════════════════════ СТРАНИЦА 4 ══════════════════════════════
-    # ── AMETHYST ──────────────────────────────────────────────────────────────
-    "amethyst_1": {
-        "name": "Amethyst-1lvl",
-        "dig_min": 115, "dig_max": 230,
-        "cost": 1_200_000_000, "currency": "coins", "required_level": 1,
-        "tier": "amethyst", "cost_stars": 2400
-    },
-    "amethyst_2": {
-        "name": "Amethyst-2lvl",
-        "dig_min": 132, "dig_max": 265,
-        "cost": 2_000_000_000, "currency": "coins", "required_level": 1,
-        "tier": "amethyst", "cost_stars": 2800
-    },
-    "amethyst_3": {
-        "name": "Amethyst-3lvl",
-        "dig_min": 152, "dig_max": 305,
-        "cost": 3_200_000_000, "currency": "coins", "required_level": 1,
-        "tier": "amethyst", "cost_stars": 3200
-    },
-    "amethyst_4": {
-        "name": "Amethyst-4lvl",
-        "dig_min": 175, "dig_max": 350,
-        "cost": 5_100_000_000, "currency": "coins", "required_level": 1,
-        "tier": "amethyst", "cost_stars": 3700
-    },
-    "amethyst_5": {
-        "name": "Amethyst-5lvl",
-        "dig_min": 201, "dig_max": 403,
-        "cost": 8_200_000_000, "currency": "coins", "required_level": 1,
-        "tier": "amethyst", "cost_stars": 4300
-    },
-    # ── VIP ────────────────────────────────────────────────────────────────────
-    "vip_1": {
-        "name": "VIP-1lvl",
-        "dig_min": 232, "dig_max": 463,
-        "cost": 13_000_000_000, "currency": "coins", "required_level": 1,
-        "tier": "vip", "cost_stars": 4900
-    },
-    "vip_2": {
-        "name": "VIP-2lvl",
-        "dig_min": 266, "dig_max": 533,
-        "cost": 21_000_000_000, "currency": "coins", "required_level": 1,
-        "tier": "vip", "cost_stars": 5600
-    },
-    "vip_3": {
-        "name": "VIP-3lvl",
-        "dig_min": 306, "dig_max": 613,
-        "cost": 33_000_000_000, "currency": "coins", "required_level": 1,
-        "tier": "vip", "cost_stars": 6500
-    },
-    "vip_4": {
-        "name": "VIP-4lvl",
-        "dig_min": 352, "dig_max": 704,
-        "cost": 54_000_000_000, "currency": "coins", "required_level": 1,
-        "tier": "vip", "cost_stars": 7500
-    },
-    "vip_5": {
-        "name": "VIP-5lvl",
-        "dig_min": 405, "dig_max": 810,
-        "cost": 86_000_000_000, "currency": "coins", "required_level": 1,
-        "tier": "vip", "cost_stars": 8600
-    },
-    # ══════════════════════════════ СТРАНИЦА 5 ══════════════════════════════
-    # ── VIP+ ───────────────────────────────────────────────────────────────────
-    "vip_plus_1": {
-        "name": "VIP+-1lvl",
-        "dig_min": 466,   "dig_max": 932,
-        "cost": 140_000_000_000, "currency": "coins", "required_level": 1,
-        "tier": "vip_plus", "cost_stars": 9900
-    },
-    "vip_plus_2": {
-        "name": "VIP+-2lvl",
-        "dig_min": 536,   "dig_max": 1_071,
-        "cost": 220_000_000_000, "currency": "coins", "required_level": 1,
-        "tier": "vip_plus", "cost_stars": 11000
-    },
-    "vip_plus_3": {
-        "name": "VIP+-3lvl",
-        "dig_min": 616,   "dig_max": 1_232,
-        "cost": 350_000_000_000, "currency": "coins", "required_level": 1,
-        "tier": "vip_plus", "cost_stars": 13000
-    },
-    "vip_plus_4": {
-        "name": "VIP+-4lvl",
-        "dig_min": 708,   "dig_max": 1_417,
-        "cost": 560_000_000_000, "currency": "coins", "required_level": 1,
-        "tier": "vip_plus", "cost_stars": 15000
-    },
-    "vip_plus_5": {
-        "name": "VIP+-5lvl",
-        "dig_min": 815,   "dig_max": 1_630,
-        "cost": 900_000_000_000, "currency": "coins", "required_level": 1,
-        "tier": "vip_plus", "cost_stars": 17000
-    },
-    # ── PREMIUM ──────────────── ⭐ TELEGRAM STARS (донат) ──────────────────
-    "premium_1": {
-        "name": "Premium-1lvl",
-        "dig_min": 937,   "dig_max": 1_874,
-        "cost": 0, "currency": "stars", "cost_stars": 20000,
-        "required_level": 1, "tier": "premium",
-    },
-    "premium_2": {
-        "name": "Premium-2lvl",
-        "dig_min": 1_078, "dig_max": 2_155,
-        "cost": 0, "currency": "stars", "cost_stars": 23000,
-        "required_level": 1, "tier": "premium",
-    },
-    "premium_3": {
-        "name": "Premium-3lvl",
-        "dig_min": 1_239, "dig_max": 2_478,
-        "cost": 0, "currency": "stars", "cost_stars": 26000,
-        "required_level": 1, "tier": "premium",
-    },
-    "premium_4": {
-        "name": "Premium-4lvl",
-        "dig_min": 1_425, "dig_max": 2_850,
-        "cost": 0, "currency": "stars", "cost_stars": 30000,
-        "required_level": 1, "tier": "premium",
-    },
-    "premium_5": {
-        "name": "Premium-5lvl",
-        "dig_min": 1_639, "dig_max": 3_278,
-        "cost": 0, "currency": "stars", "cost_stars": 35000,
-        "required_level": 1, "tier": "premium",
-    },
+    "wood_1": {"name": "Wood-1lvl", "dig_min": 1, "dig_max": 2, "cost": 0, "currency": "coins", "required_level": 1, "tier": "wood", "cost_stars": 0},
+    "wood_2": {"name": "Wood-2lvl", "dig_min": 2, "dig_max": 4, "cost": 1_500, "currency": "coins", "required_level": 1, "tier": "wood", "cost_stars": 10},
+    "wood_3": {"name": "Wood-3lvl", "dig_min": 2, "dig_max": 5, "cost": 2_500, "currency": "coins", "required_level": 1, "tier": "wood", "cost_stars": 15},
+    "wood_4": {"name": "Wood-4lvl", "dig_min": 3, "dig_max": 5, "cost": 4_000, "currency": "coins", "required_level": 1, "tier": "wood", "cost_stars": 20},
+    "wood_5": {"name": "Wood-5lvl", "dig_min": 3, "dig_max": 6, "cost": 6_000, "currency": "coins", "required_level": 1, "tier": "wood", "cost_stars": 25},
+    "rock_1": {"name": "Rock-1lvl", "dig_min": 3, "dig_max": 7, "cost": 10_000, "currency": "coins", "required_level": 1, "tier": "rock", "cost_stars": 35},
+    "rock_2": {"name": "Rock-2lvl", "dig_min": 4, "dig_max": 8, "cost": 16_000, "currency": "coins", "required_level": 1, "tier": "rock", "cost_stars": 45},
+    "rock_3": {"name": "Rock-3lvl", "dig_min": 5, "dig_max": 9, "cost": 25_000, "currency": "coins", "required_level": 1, "tier": "rock", "cost_stars": 60},
+    "rock_4": {"name": "Rock-4lvl", "dig_min": 5, "dig_max": 11, "cost": 40_000, "currency": "coins", "required_level": 1, "tier": "rock", "cost_stars": 80},
+    "rock_5": {"name": "Rock-5lvl", "dig_min": 6, "dig_max": 12, "cost": 64_000, "currency": "coins", "required_level": 1, "tier": "rock", "cost_stars": 100},
+    "iron_1": {"name": "Iron-1lvl", "dig_min": 7, "dig_max": 14, "cost": 100_000, "currency": "coins", "required_level": 1, "tier": "iron", "cost_stars": 150},
+    "iron_2": {"name": "Iron-2lvl", "dig_min": 8, "dig_max": 16, "cost": 160_000, "currency": "coins", "required_level": 1, "tier": "iron", "cost_stars": 200},
+    "iron_3": {"name": "Iron-3lvl", "dig_min": 9, "dig_max": 19, "cost": 260_000, "currency": "coins", "required_level": 1, "tier": "iron", "cost_stars": 250},
+    "iron_4": {"name": "Iron-4lvl", "dig_min": 11, "dig_max": 21, "cost": 420_000, "currency": "coins", "required_level": 1, "tier": "iron", "cost_stars": 300},
+    "iron_5": {"name": "Iron-5lvl", "dig_min": 12, "dig_max": 25, "cost": 680_000, "currency": "coins", "required_level": 1, "tier": "iron", "cost_stars": 350},
+    "gold_1": {"name": "Gold-1lvl", "dig_min": 14, "dig_max": 28, "cost": 1_100_000, "currency": "coins", "required_level": 1, "tier": "gold", "cost_stars": 400},
+    "gold_2": {"name": "Gold-2lvl", "dig_min": 16, "dig_max": 33, "cost": 1_700_000, "currency": "coins", "required_level": 1, "tier": "gold", "cost_stars": 450},
+    "gold_3": {"name": "Gold-3lvl", "dig_min": 19, "dig_max": 37, "cost": 2_800_000, "currency": "coins", "required_level": 1, "tier": "gold", "cost_stars": 500},
+    "gold_4": {"name": "Gold-4lvl", "dig_min": 22, "dig_max": 43, "cost": 4_400_000, "currency": "coins", "required_level": 1, "tier": "gold", "cost_stars": 550},
+    "gold_5": {"name": "Gold-5lvl", "dig_min": 25, "dig_max": 50, "cost": 7_100_000, "currency": "coins", "required_level": 1, "tier": "gold", "cost_stars": 600},
+    "diamond_1": {"name": "Diamond-1lvl", "dig_min": 28, "dig_max": 57, "cost": 11_000_000, "currency": "coins", "required_level": 1, "tier": "diamond", "cost_stars": 650},
+    "diamond_2": {"name": "Diamond-2lvl", "dig_min": 33, "dig_max": 65, "cost": 18_000_000, "currency": "coins", "required_level": 1, "tier": "diamond", "cost_stars": 700},
+    "diamond_3": {"name": "Diamond-3lvl", "dig_min": 38, "dig_max": 75, "cost": 29_000_000, "currency": "coins", "required_level": 1, "tier": "diamond", "cost_stars": 800},
+    "diamond_4": {"name": "Diamond-4lvl", "dig_min": 43, "dig_max": 87, "cost": 46_000_000, "currency": "coins", "required_level": 1, "tier": "diamond", "cost_stars": 900},
+    "diamond_5": {"name": "Diamond-5lvl", "dig_min": 50, "dig_max": 100, "cost": 74_000_000, "currency": "coins", "required_level": 1, "tier": "diamond", "cost_stars": 1100},
+    "uranium_1": {"name": "Uranium-1lvl", "dig_min": 57, "dig_max": 115, "cost": 120_000_000, "currency": "coins", "required_level": 1, "tier": "uranium", "cost_stars": 1200},
+    "uranium_2": {"name": "Uranium-2lvl", "dig_min": 66, "dig_max": 132, "cost": 190_000_000, "currency": "coins", "required_level": 1, "tier": "uranium", "cost_stars": 1400},
+    "uranium_3": {"name": "Uranium-3lvl", "dig_min": 76, "dig_max": 151, "cost": 300_000_000, "currency": "coins", "required_level": 1, "tier": "uranium", "cost_stars": 1600},
+    "uranium_4": {"name": "Uranium-4lvl", "dig_min": 87, "dig_max": 174, "cost": 490_000_000, "currency": "coins", "required_level": 1, "tier": "uranium", "cost_stars": 1800},
+    "uranium_5": {"name": "Uranium-5lvl", "dig_min": 100, "dig_max": 200, "cost": 780_000_000, "currency": "coins", "required_level": 1, "tier": "uranium", "cost_stars": 2100},
+    "amethyst_1": {"name": "Amethyst-1lvl", "dig_min": 115, "dig_max": 230, "cost": 1_200_000_000, "currency": "coins", "required_level": 1, "tier": "amethyst", "cost_stars": 2400},
+    "amethyst_2": {"name": "Amethyst-2lvl", "dig_min": 132, "dig_max": 265, "cost": 2_000_000_000, "currency": "coins", "required_level": 1, "tier": "amethyst", "cost_stars": 2800},
+    "amethyst_3": {"name": "Amethyst-3lvl", "dig_min": 152, "dig_max": 305, "cost": 3_200_000_000, "currency": "coins", "required_level": 1, "tier": "amethyst", "cost_stars": 3200},
+    "amethyst_4": {"name": "Amethyst-4lvl", "dig_min": 175, "dig_max": 350, "cost": 5_100_000_000, "currency": "coins", "required_level": 1, "tier": "amethyst", "cost_stars": 3700},
+    "amethyst_5": {"name": "Amethyst-5lvl", "dig_min": 201, "dig_max": 403, "cost": 8_200_000_000, "currency": "coins", "required_level": 1, "tier": "amethyst", "cost_stars": 4300},
+    "vip_1": {"name": "VIP-1lvl", "dig_min": 232, "dig_max": 463, "cost": 13_000_000_000, "currency": "coins", "required_level": 1, "tier": "vip", "cost_stars": 4900},
+    "vip_2": {"name": "VIP-2lvl", "dig_min": 266, "dig_max": 533, "cost": 21_000_000_000, "currency": "coins", "required_level": 1, "tier": "vip", "cost_stars": 5600},
+    "vip_3": {"name": "VIP-3lvl", "dig_min": 306, "dig_max": 613, "cost": 33_000_000_000, "currency": "coins", "required_level": 1, "tier": "vip", "cost_stars": 6500},
+    "vip_4": {"name": "VIP-4lvl", "dig_min": 352, "dig_max": 704, "cost": 54_000_000_000, "currency": "coins", "required_level": 1, "tier": "vip", "cost_stars": 7500},
+    "vip_5": {"name": "VIP-5lvl", "dig_min": 405, "dig_max": 810, "cost": 86_000_000_000, "currency": "coins", "required_level": 1, "tier": "vip", "cost_stars": 8600},
+    "vip_plus_1": {"name": "VIP+-1lvl", "dig_min": 466, "dig_max": 932, "cost": 140_000_000_000, "currency": "coins", "required_level": 1, "tier": "vip_plus", "cost_stars": 9900},
+    "vip_plus_2": {"name": "VIP+-2lvl", "dig_min": 536, "dig_max": 1_071, "cost": 220_000_000_000, "currency": "coins", "required_level": 1, "tier": "vip_plus", "cost_stars": 11000},
+    "vip_plus_3": {"name": "VIP+-3lvl", "dig_min": 616, "dig_max": 1_232, "cost": 350_000_000_000, "currency": "coins", "required_level": 1, "tier": "vip_plus", "cost_stars": 13000},
+    "vip_plus_4": {"name": "VIP+-4lvl", "dig_min": 708, "dig_max": 1_417, "cost": 560_000_000_000, "currency": "coins", "required_level": 1, "tier": "vip_plus", "cost_stars": 15000},
+    "vip_plus_5": {"name": "VIP+-5lvl", "dig_min": 815, "dig_max": 1_630, "cost": 900_000_000_000, "currency": "coins", "required_level": 1, "tier": "vip_plus", "cost_stars": 17000},
+    "premium_1": {"name": "Premium-1lvl", "dig_min": 937, "dig_max": 1_874, "cost": 0, "currency": "stars", "cost_stars": 20000, "required_level": 1, "tier": "premium"},
+    "premium_2": {"name": "Premium-2lvl", "dig_min": 1_078, "dig_max": 2_155, "cost": 0, "currency": "stars", "cost_stars": 23000, "required_level": 1, "tier": "premium"},
+    "premium_3": {"name": "Premium-3lvl", "dig_min": 1_239, "dig_max": 2_478, "cost": 0, "currency": "stars", "cost_stars": 26000, "required_level": 1, "tier": "premium"},
+    "premium_4": {"name": "Premium-4lvl", "dig_min": 1_425, "dig_max": 2_850, "cost": 0, "currency": "stars", "cost_stars": 30000, "required_level": 1, "tier": "premium"},
+    "premium_5": {"name": "Premium-5lvl", "dig_min": 1_639, "dig_max": 3_278, "cost": 0, "currency": "stars", "cost_stars": 35000, "required_level": 1, "tier": "premium"},
 }
 
-# ── Полный порядок (50 кирок: 10 тиров × 5 уровней) ────────────────────────
 PICKAXES_ORDER = [
-    # Страница 1
-    "wood_1",     "wood_2",     "wood_3",     "wood_4",     "wood_5",
-    "rock_1",     "rock_2",     "rock_3",     "rock_4",     "rock_5",
-    # Страница 2
-    "iron_1",     "iron_2",     "iron_3",     "iron_4",     "iron_5",
-    "gold_1",     "gold_2",     "gold_3",     "gold_4",     "gold_5",
-    # Страница 3
-    "diamond_1",  "diamond_2",  "diamond_3",  "diamond_4",  "diamond_5",
-    "uranium_1",  "uranium_2",  "uranium_3",  "uranium_4",  "uranium_5",
-    # Страница 4
+    "wood_1", "wood_2", "wood_3", "wood_4", "wood_5",
+    "rock_1", "rock_2", "rock_3", "rock_4", "rock_5",
+    "iron_1", "iron_2", "iron_3", "iron_4", "iron_5",
+    "gold_1", "gold_2", "gold_3", "gold_4", "gold_5",
+    "diamond_1", "diamond_2", "diamond_3", "diamond_4", "diamond_5",
+    "uranium_1", "uranium_2", "uranium_3", "uranium_4", "uranium_5",
     "amethyst_1", "amethyst_2", "amethyst_3", "amethyst_4", "amethyst_5",
-    "vip_1",      "vip_2",      "vip_3",      "vip_4",      "vip_5",
-    # Страница 5
+    "vip_1", "vip_2", "vip_3", "vip_4", "vip_5",
     "vip_plus_1", "vip_plus_2", "vip_plus_3", "vip_plus_4", "vip_plus_5",
-    "premium_1",  "premium_2",  "premium_3",  "premium_4",  "premium_5",
+    "premium_1", "premium_2", "premium_3", "premium_4", "premium_5",
 ]
 
-# Страницы мастерской: 5 страниц × 10 кирок, 2 кнопки в ряд
 WORKSHOP_PAGE_SIZE   = 10
-WORKSHOP_PAGES       = [
-    PICKAXES_ORDER[i : i + WORKSHOP_PAGE_SIZE]
-    for i in range(0, len(PICKAXES_ORDER), WORKSHOP_PAGE_SIZE)
-]
-WORKSHOP_TOTAL_PAGES = len(WORKSHOP_PAGES)  # 5
+WORKSHOP_PAGES       = [PICKAXES_ORDER[i:i + WORKSHOP_PAGE_SIZE] for i in range(0, len(PICKAXES_ORDER), WORKSHOP_PAGE_SIZE)]
+WORKSHOP_TOTAL_PAGES = len(WORKSHOP_PAGES)
 
-# Заголовки страниц для навигации
 WORKSHOP_PAGE_LABELS = [
     "🪓 Wood / ⛏️ Rock",
     "🔩 Iron / 🌕 Gold",
@@ -439,21 +147,12 @@ WORKSHOP_PAGE_LABELS = [
     "💠 VIP+ / 💫 Premium",
 ]
 
-# Названия тиров для красивого отображения
 TIER_LABELS = {
-    "wood":     "Wood",
-    "rock":     "Rock",
-    "iron":     "Iron",
-    "gold":     "Gold",
-    "diamond":  "Diamond",
-    "uranium":  "Uranium",
-    "amethyst": "Amethyst",
-    "vip":      "VIP",
-    "vip_plus": "VIP+",
-    "premium":  "Premium",
+    "wood": "Wood", "rock": "Rock", "iron": "Iron", "gold": "Gold",
+    "diamond": "Diamond", "uranium": "Uranium", "amethyst": "Amethyst",
+    "vip": "VIP", "vip_plus": "VIP+", "premium": "Premium",
 }
 
-# ---------- ДЛИТЕЛЬНОСТИ ----------
 DURATIONS = {
     "5min":  {"label": "5 мин",    "campaigns": 1,   "cost": 0},
     "10min": {"label": "10 мин",   "campaigns": 2,   "cost": 25_000},
@@ -468,8 +167,8 @@ DURATIONS = {
 }
 DURATIONS_ORDER = ["5min", "10min", "15min", "30min", "45min", "1h", "2h", "4h", "12h", "24h"]
 
-CAMPAIGN_SECONDS = 5 * 60  # 5 минут = одна кампания
-XP_PER_ORE      = 20       # XP за каждую единицу руды
+CAMPAIGN_SECONDS = 5 * 60
+XP_PER_ORE      = 20
 
 
 # ============================================================
@@ -513,12 +212,7 @@ def progress_bar(percent: int, length: int = 10) -> str:
 
 
 def xp_for_level(level: int) -> int:
-    """XP для перехода level → level+1.
-    1-10: ручные значения. Далее ×1.07 каждый уровень, округление до красивых чисел."""
-    _manual = {
-        1: 100, 2: 150, 3: 300, 4: 500, 5: 750,
-        6: 1250, 7: 1600, 8: 2200, 9: 3000, 10: 4500
-    }
+    _manual = {1: 100, 2: 150, 3: 300, 4: 500, 5: 750, 6: 1250, 7: 1600, 8: 2200, 9: 3000, 10: 4500}
     if level in _manual:
         return _manual[level]
     raw = 4500 * (1.07 ** (level - 10))
@@ -530,14 +224,11 @@ def xp_for_level(level: int) -> int:
 
 
 def add_xp(data: dict, amount: int):
-    """Начислить XP. Тихо обновляет level/xp/xp_max. Макс уровень — MAX_LEVEL."""
     if data.get("level", 1) >= MAX_LEVEL:
         data["xp"]     = data.get("xp_max", xp_for_level(MAX_LEVEL))
         data["xp_max"] = data.get("xp_max", xp_for_level(MAX_LEVEL))
         return
-
     data["xp"] = data.get("xp", 0) + amount
-
     while True:
         current_level = data.get("level", 1)
         if current_level >= MAX_LEVEL:
@@ -555,7 +246,6 @@ def add_xp(data: dict, amount: int):
 
 
 def _fmt_cost(pick_key: str) -> str:
-    """Форматирует стоимость кирки с учётом валюты."""
     p = PICKAXES[pick_key]
     if p["currency"] == "stars":
         return f"{p['cost_stars']} {STAR} звёзд"
@@ -565,7 +255,6 @@ def _fmt_cost(pick_key: str) -> str:
 
 
 def _fmt_num(n: int) -> str:
-    """Форматирует большое число: 1_500_000 → '1.5M', и т.д."""
     if n == 0:
         return "0"
     for div, suffix in [
@@ -632,21 +321,17 @@ def ore_inventory_text(data: dict, short: bool = False) -> str:
         if qty > 0:
             worth = qty * ore["price"]
             lines.append(f"<b>{ore['name']}: {qty}</b> <b>(≈ {_fmt_num(worth)} {COIN})</b>")
-
     if not lines:
         return "<b>Инвентарь пуст</b>"
-
     if short and len(lines) > 3:
         return "\n".join(lines[:3]) + "\n<b><i>...и ещё</i></b>"
     return "\n".join(lines)
 
 
 def inventory_screen_text(data: dict) -> str:
-    """Полный экран инвентаря с итоговой стоимостью."""
     lines = [f'<tg-emoji emoji-id="5445221832074483553">🎟</tg-emoji> <b>Инвентарь</b>\n━━━━━━━━━━━━━━━━━━━━\n']
     has_ores = False
     total_value = 0
-
     for ore in ORES:
         qty = data["ores"].get(ore["key"], 0)
         if qty > 0:
@@ -654,12 +339,10 @@ def inventory_screen_text(data: dict) -> str:
             worth = qty * ore["price"]
             total_value += worth
             lines.append(f"<blockquote><b>{ore['name']}: {qty} (≈ {_fmt_num(worth)} {COIN})</b></blockquote>")
-
     if not has_ores:
         lines.append("<b>Инвентарь пуст</b>")
     else:
         lines.append(f'\n<tg-emoji emoji-id="5303214794336125778">🎟</tg-emoji> <b>Итого: {_fmt_num(total_value)} {COIN}</b>')
-
     return "\n".join(lines)
 
 
@@ -672,7 +355,6 @@ def mine_text(data: dict) -> str:
     pick     = PICKAXES[pick_key]
     dur_key  = data.get("mine_duration_key", "5min")
     dur      = DURATIONS[dur_key]
-
     if data["mine_start"] is None or data["mine_collected"]:
         return (
             '<tg-emoji emoji-id="5197371802136892976">🎟</tg-emoji> <b>Шахта</b>\n'
@@ -682,13 +364,12 @@ def mine_text(data: dict) -> str:
             f'<blockquote><tg-emoji emoji-id="5445221832074483553">🎟</tg-emoji> <b>Инвентарь:</b>\n{ore_inventory_text(data, short=True)}</blockquote>\n\n'
             'Нажми <tg-emoji emoji-id="5906727823355156804">🎟</tg-emoji> <b>Запустить</b> чтобы начать добычу!'
         )
-
     prog   = calc_mine_progress(data)
     bar    = progress_bar(prog["percent"])
     status = (
         '<tg-emoji emoji-id="5206607081334906820">🎟</tg-emoji> <b>Добыча завершена!</b>'
         if prog["finished"]
-        else f'<tg-emoji emoji-id="5341498088408234504">🎟</tg-emoji> <b>Идёт добыча...</b>'
+        else '<tg-emoji emoji-id="5341498088408234504">🎟</tg-emoji> <b>Идёт добыча...</b>'
     )
     return (
         '<tg-emoji emoji-id="5197371802136892976">🎟</tg-emoji> <b>Шахта</b>\n'
@@ -718,7 +399,6 @@ def pickaxe_detail_text(data: dict, pick_key: str) -> str:
     p     = PICKAXES[pick_key]
     owned = data.get("owned_pickaxes", ["wood_1"])
     tier  = TIER_LABELS.get(p.get("tier", ""), "")
-
     if pick_key == data.get("pickaxe", "wood_1"):
         status = "✅Выбрано"
     elif pick_key in owned:
@@ -727,8 +407,6 @@ def pickaxe_detail_text(data: dict, pick_key: str) -> str:
         status = f"⭐за звёзды — {p['cost_stars']} {STAR}"
     else:
         status = "❌Не куплена"
-
-    # Блок цен
     if p["currency"] == "stars":
         coins_line = f"  {COIN} За монеты: <b>недоступно</b>\n"
         stars_line = f"  {STAR} За звёзды: <b>{p['cost_stars']:,} звёзд</b>\n"
@@ -739,7 +417,6 @@ def pickaxe_detail_text(data: dict, pick_key: str) -> str:
         stars = p.get("cost_stars", 0)
         coins_line = f"  {COIN} За монеты: <b>{_fmt_num(p['cost'])}</b>\n"
         stars_line = f"  {STAR} За звёзды: <b>{stars:,} звёзд</b>\n"
-
     return (
         f"<b>{p['name']}</b>\n"
         "━━━━━━━━━━━━━━━━━━━━\n\n"
@@ -762,7 +439,7 @@ def duration_shop_text(data: dict) -> str:
     return (
         '<tg-emoji emoji-id="5440621591387980068">🎟</tg-emoji> <b>Длительность сессии</b>\n'
         "━━━━━━━━━━━━━━━━━━━━\n\n"
-        f'<blockquote><tg-emoji emoji-id="5278467510604160626">🎟</tg-emoji> <b>Баланс: {_fmt_num(data['balance'])}{COIN}</b>\n'
+        f'<blockquote><tg-emoji emoji-id="5278467510604160626">🎟</tg-emoji> <b>Баланс: {_fmt_num(data["balance"])}{COIN}</b>\n'
         f'<tg-emoji emoji-id="5456140674028019486">🎟</tg-emoji> <b>Активна: {cur_label}</b>\n'
         f'<tg-emoji emoji-id="5296369303661067030">🎟</tg-emoji> <b>Открыто: {owned_cnt}/{len(DURATIONS_ORDER)}</b></blockquote>\n\n'
         "<b>Выберите для подробностей:</b>"
@@ -772,20 +449,18 @@ def duration_shop_text(data: dict) -> str:
 def duration_detail_text(data: dict, dur_key: str) -> str:
     d          = DURATIONS[dur_key]
     owned_durs = data.get("owned_durations", ["5min"])
-
     if dur_key == data.get("mine_duration_key", "5min"):
         status = "✅ Активна"
     elif dur_key in owned_durs:
         status = "🔘(не активна)"
     else:
         status = "❌Не куплена"
-
     return (
-        f'<tg-emoji emoji-id="5440621591387980068">🎟</tg-emoji> <b>Длительность — {d['label']}</b>\n'
+        f'<tg-emoji emoji-id="5440621591387980068">🎟</tg-emoji> <b>Длительность — {d["label"]}</b>\n'
         "━━━━━━━━━━━━━━━━━━━━\n\n"
-        f'<tg-emoji emoji-id="5278467510604160626">🎟</tg-emoji> <b>Баланс: {_fmt_num(data['balance'])}{COIN}</b>\n\n'
-        f'<tg-emoji emoji-id="5382194935057372936">🎟</tg-emoji> <b>Время сессии: {d['label']}</b>\n'
-        f'<tg-emoji emoji-id="5330320040883411678">🎟</tg-emoji> <b>Цена: {_fmt_num(d['cost']) if d['cost'] else 'Бесплатно'}{COIN}</b>\n'
+        f'<tg-emoji emoji-id="5278467510604160626">🎟</tg-emoji> <b>Баланс: {_fmt_num(data["balance"])}{COIN}</b>\n\n'
+        f'<tg-emoji emoji-id="5382194935057372936">🎟</tg-emoji> <b>Время сессии: {d["label"]}</b>\n'
+        f'<tg-emoji emoji-id="5330320040883411678">🎟</tg-emoji> <b>Цена: {_fmt_num(d["cost"]) if d["cost"] else "Бесплатно"}{COIN}</b>\n'
         f'<tg-emoji emoji-id="5438496463044752972">🎟</tg-emoji> <b>Статус: {status}</b>'
     )
 
@@ -807,238 +482,154 @@ def sell_screen_text(data: dict) -> str:
             worth = qty * ore["price"]
             total_value += worth
             lines.append(f"<blockquote><b>{ore['name']}: {qty} (≈ {_fmt_num(worth)} {COIN})</b></blockquote>")
-    lines.append(f'\n<tg-emoji emoji-id="5278467510604160626">🎟</tg-emoji> <b>Баланс: {_fmt_num(data['balance'])}</b>')
-    lines.append(f'<tg-emoji emoji-id="5429651785352501917">🎟</tg-emoji> <b>К получению: +{_fmt_num(total_value)} {COIN}</b>')
+    lines.append(f'\n<tg-emoji emoji-id="5278467510604160626">🎟</tg-emoji> <b>Баланс: {_fmt_num(data["balance"])}</b>')
+    lines.append(f'\n<b>Итого к продаже: {_fmt_num(total_value)} {COIN}</b>')
     return "\n".join(lines)
 
 
 # ============================================================
-#  КЛАВИАТУРЫ
+#  КЛАВИАТУРЫ — aiogram 3.x стиль
 # ============================================================
 
-def _prem_btn(emoji_id: str, label: str, callback: str) -> InlineKeyboardButton:
-    """Кнопка с premium emoji."""
-    return InlineKeyboardButton(
-        label,
-        callback_data=callback,
-        icon_custom_emoji_id=emoji_id
-    )
+def _prem_btn(emoji_id: str, text: str, callback: str) -> InlineKeyboardButton:
+    return InlineKeyboardButton(text=text, callback_data=callback, icon_custom_emoji_id=emoji_id)
 
 
 def _back_btn(callback: str, label: str = "Назад") -> InlineKeyboardButton:
-    return InlineKeyboardButton(
-        label,
-        callback_data=callback,
-        icon_custom_emoji_id=EMOJI_BACK
-    )
+    return InlineKeyboardButton(text=label, callback_data=callback, icon_custom_emoji_id=EMOJI_BACK)
 
 
 def mine_keyboard(data: dict) -> InlineKeyboardMarkup:
-    kb = InlineKeyboardMarkup(row_width=2)
+    builder = InlineKeyboardBuilder()
     is_running  = data["mine_start"] is not None and not data["mine_collected"]
     is_finished = False
     if is_running:
         prog        = calc_mine_progress(data)
         is_finished = prog["finished"]
-
     if not is_running:
-        kb.add(_prem_btn(EMOJI_BTN_START, "Запустить", "mine_start"))
+        builder.row(_prem_btn(EMOJI_BTN_START, "Запустить", "mine_start"))
     elif is_finished:
-        kb.add(_prem_btn(EMOJI_BTN_COLLECT, "Забрать добычу", "mine_collect"))
+        builder.row(_prem_btn(EMOJI_BTN_COLLECT, "Забрать добычу", "mine_collect"))
     else:
-        kb.add(
+        builder.row(
             _prem_btn(EMOJI_BTN_REFRESH, "Обновить", "mine_refresh"),
             _prem_btn(EMOJI_BTN_COLLECT_PART, "Забрать", "mine_collect"),
         )
-
     has_ores = any(data["ores"].get(o["key"], 0) > 0 for o in ORES)
     if has_ores:
-        kb.add(
+        builder.row(
             _prem_btn(EMOJI_BTN_SELL, "Продать",   "mine_sell_screen"),
             _prem_btn(EMOJI_BTN_INV,  "Инвентарь", "mine_inventory"),
         )
     else:
-        kb.add(_prem_btn(EMOJI_BTN_INV, "Инвентарь", "mine_inventory"))
-
-    kb.add(
+        builder.row(_prem_btn(EMOJI_BTN_INV, "Инвентарь", "mine_inventory"))
+    builder.row(
         _prem_btn(EMOJI_BTN_WORKSHOP, "Мастерская",   "mine_workshop_0"),
         _prem_btn(EMOJI_BTN_DURATION, "Длительность", "mine_duration_shop"),
     )
-    kb.add(_back_btn("back_to_menu", "Назад"))
-    return kb
+    builder.row(_back_btn("back_to_menu", "Назад"))
+    return builder.as_markup()
 
 
 def inventory_keyboard() -> InlineKeyboardMarkup:
-    kb = InlineKeyboardMarkup(row_width=1)
-    kb.add(_back_btn("mine", "Назад"))
-    return kb
+    builder = InlineKeyboardBuilder()
+    builder.row(_back_btn("mine", "Назад"))
+    return builder.as_markup()
 
 
 def sell_keyboard() -> InlineKeyboardMarkup:
-    kb = InlineKeyboardMarkup(row_width=1)
-    kb.add(_prem_btn(EMOJI_BTN_SELL_ALL, "Продать всё", "mine_sell_all"))
-    kb.add(_back_btn("mine", "Назад"))
-    return kb
+    builder = InlineKeyboardBuilder()
+    builder.row(_prem_btn(EMOJI_BTN_SELL_ALL, "Продать всё", "mine_sell_all"))
+    builder.row(_back_btn("mine", "Назад"))
+    return builder.as_markup()
 
 
 def workshop_keyboard(data: dict, page: int = 0) -> InlineKeyboardMarkup:
-    kb      = InlineKeyboardMarkup(row_width=2)
+    builder = InlineKeyboardBuilder()
     current = data.get("pickaxe", "wood_1")
     owned   = data.get("owned_pickaxes", ["wood_1"])
-
-    page      = max(0, min(page, WORKSHOP_TOTAL_PAGES - 1))
+    page    = max(0, min(page, WORKSHOP_TOTAL_PAGES - 1))
     page_keys = WORKSHOP_PAGES[page]
-
     buttons = []
     for key in page_keys:
         p     = PICKAXES[key]
         label = p["name"]
-
         if key == current:
-            btn = InlineKeyboardButton(
-                label,
-                callback_data=f"pick_info_{key}",
-                icon_custom_emoji_id=EMOJI_SELECTED
-            )
+            btn = InlineKeyboardButton(text=label, callback_data=f"pick_info_{key}", icon_custom_emoji_id=EMOJI_SELECTED)
         elif key in owned:
-            btn = InlineKeyboardButton(
-                label,
-                callback_data=f"pick_info_{key}"
-            )
+            btn = InlineKeyboardButton(text=label, callback_data=f"pick_info_{key}")
         else:
-            btn = InlineKeyboardButton(
-                label,
-                callback_data=f"pick_info_{key}",
-                icon_custom_emoji_id=EMOJI_NOT_BOUGHT
-            )
+            btn = InlineKeyboardButton(text=label, callback_data=f"pick_info_{key}", icon_custom_emoji_id=EMOJI_NOT_BOUGHT)
         buttons.append(btn)
-
-    # Добавляем кнопки по 2 в ряд
     for i in range(0, len(buttons), 2):
-        row = buttons[i : i + 2]
-        kb.add(*row)
-
-    # Навигация между страницами — с premium emoji
+        row = buttons[i:i + 2]
+        builder.row(*row)
     nav_row = []
     if page > 0:
-        nav_row.append(_prem_btn(
-            EMOJI_BTN_PAGE_PREV,
-            f"{page}",
-            f"mine_workshop_{page - 1}"
-        ))
+        nav_row.append(_prem_btn(EMOJI_BTN_PAGE_PREV, f"{page}", f"mine_workshop_{page - 1}"))
     if page < WORKSHOP_TOTAL_PAGES - 1:
-        nav_row.append(_prem_btn(
-            EMOJI_BTN_PAGE_NEXT,
-            f"{page + 2}",
-            f"mine_workshop_{page + 1}"
-        ))
+        nav_row.append(_prem_btn(EMOJI_BTN_PAGE_NEXT, f"{page + 2}", f"mine_workshop_{page + 1}"))
     if nav_row:
-        kb.add(*nav_row)
-
-    kb.add(_back_btn("mine", "Назад"))
-    return kb
+        builder.row(*nav_row)
+    builder.row(_back_btn("mine", "Назад"))
+    return builder.as_markup()
 
 
 def pickaxe_detail_keyboard(data: dict, pick_key: str, page: int = -1) -> InlineKeyboardMarkup:
-    kb    = InlineKeyboardMarkup(row_width=1)
+    builder = InlineKeyboardBuilder()
     p     = PICKAXES[pick_key]
     owned = data.get("owned_pickaxes", ["wood_1"])
-
     if page < 0:
         page = get_pickaxe_page(pick_key)
-
     if pick_key == data.get("pickaxe", "wood_1"):
-        # Уже активна — одна кнопка-заглушка
-        kb.add(_prem_btn(EMOJI_BTN_ACTIVE, "Уже активна", "noop"))
-
+        builder.row(_prem_btn(EMOJI_BTN_ACTIVE, "Уже активна", "noop"))
     elif pick_key in owned:
-        # Куплена, но не выбрана — только «Выбрать»
-        kb.add(_prem_btn(EMOJI_BTN_SELECT, "Выбрать", f"pick_select_{pick_key}"))
-
+        builder.row(_prem_btn(EMOJI_BTN_SELECT, "Выбрать", f"pick_select_{pick_key}"))
     elif p["currency"] == "stars":
-        # Только за звёзды
-        kb.add(_prem_btn(EMOJI_BTN_NO_COINS, "Монеты недоступны", "noop"))
-        kb.add(_prem_btn(
-            EMOJI_BTN_BUY_STARS,
-            f"{p['cost_stars']:,} ",
-            f"pick_buy_stars_{pick_key}"
-        ))
-
+        builder.row(_prem_btn(EMOJI_BTN_NO_COINS, "Монеты недоступны", "noop"))
+        builder.row(_prem_btn(EMOJI_BTN_BUY_STARS, f"{p['cost_stars']:,} ", f"pick_buy_stars_{pick_key}"))
     elif p["cost"] == 0:
-        # Бесплатная
-        kb.add(_prem_btn(EMOJI_BTN_FREE, "Бесплатно", f"pick_buy_{pick_key}"))
-        kb.add(_prem_btn(EMOJI_BTN_FREE, "Бесплатно", f"pick_buy_stars_{pick_key}"))
-
+        builder.row(_prem_btn(EMOJI_BTN_FREE, "Бесплатно", f"pick_buy_{pick_key}"))
+        builder.row(_prem_btn(EMOJI_BTN_FREE, "Бесплатно", f"pick_buy_stars_{pick_key}"))
     else:
-        # Платная — монеты + звёзды, только цифры без лишнего текста
         cost_stars = p.get("cost_stars", 0)
-        kb.add(_prem_btn(
-            EMOJI_BTN_BUY_COINS,
-            f"{_fmt_num(p['cost'])} ",
-            f"pick_buy_{pick_key}"
-        ))
-        kb.add(_prem_btn(
-            EMOJI_BTN_BUY_STARS,
-            f"{cost_stars:,} ",
-            f"pick_buy_stars_{pick_key}"
-        ))
-
-    kb.add(_back_btn(f"mine_workshop_{page}", " Назад"))
-    return kb
+        builder.row(_prem_btn(EMOJI_BTN_BUY_COINS, f"{_fmt_num(p['cost'])} ", f"pick_buy_{pick_key}"))
+        builder.row(_prem_btn(EMOJI_BTN_BUY_STARS, f"{cost_stars:,} ", f"pick_buy_stars_{pick_key}"))
+    builder.row(_back_btn(f"mine_workshop_{page}", " Назад"))
+    return builder.as_markup()
 
 
 def duration_shop_keyboard(data: dict) -> InlineKeyboardMarkup:
-    kb         = InlineKeyboardMarkup(row_width=3)
+    builder    = InlineKeyboardBuilder()
     current    = data.get("mine_duration_key", "5min")
     owned_durs = data.get("owned_durations", ["5min"])
     buttons    = []
     for key in DURATIONS_ORDER:
         d = DURATIONS[key]
         if key == current:
-            buttons.append(InlineKeyboardButton(
-                d["label"],
-                callback_data=f"dur_info_{key}",
-                icon_custom_emoji_id=EMOJI_SELECTED
-            ))
+            buttons.append(InlineKeyboardButton(text=d["label"], callback_data=f"dur_info_{key}", icon_custom_emoji_id=EMOJI_SELECTED))
         elif key in owned_durs:
-            buttons.append(InlineKeyboardButton(
-                d["label"],
-                callback_data=f"dur_info_{key}"
-            ))
+            buttons.append(InlineKeyboardButton(text=d["label"], callback_data=f"dur_info_{key}"))
         else:
-            buttons.append(InlineKeyboardButton(
-                d["label"],
-                callback_data=f"dur_info_{key}",
-                icon_custom_emoji_id=EMOJI_NOT_BOUGHT
-            ))
-    kb.add(*buttons)
-    kb.add(_back_btn("mine", "Назад"))
-    return kb
+            buttons.append(InlineKeyboardButton(text=d["label"], callback_data=f"dur_info_{key}", icon_custom_emoji_id=EMOJI_NOT_BOUGHT))
+    builder.add(*buttons)
+    builder.adjust(3)
+    builder.row(_back_btn("mine", "Назад"))
+    return builder.as_markup()
 
 
 def duration_detail_keyboard(data: dict, dur_key: str) -> InlineKeyboardMarkup:
-    kb         = InlineKeyboardMarkup(row_width=1)
+    builder    = InlineKeyboardBuilder()
     d          = DURATIONS[dur_key]
     owned_durs = data.get("owned_durations", ["5min"])
-
     if dur_key == data.get("mine_duration_key", "5min"):
-        # Уже активна
-        kb.add(_prem_btn(EMOJI_BTN_ACTIVE, "Уже активна", "noop"))
-
+        builder.row(_prem_btn(EMOJI_BTN_ACTIVE, "Уже активна", "noop"))
     elif dur_key in owned_durs:
-        # Куплена, но не активна
-        kb.add(_prem_btn(EMOJI_BTN_SELECT, "Выбрать", f"dur_select_{dur_key}"))
-
+        builder.row(_prem_btn(EMOJI_BTN_SELECT, "Выбрать", f"dur_select_{dur_key}"))
     else:
-        # Купить — только цена
-        kb.add(_prem_btn(
-            EMOJI_BTN_DUR_BUY,
-            f"{_fmt_num(d['cost'])} ",
-            f"dur_buy_{dur_key}"
-        ))
-
-    kb.add(_back_btn("mine_duration_shop", "Назад"))
-    return kb
+        builder.row(_prem_btn(EMOJI_BTN_DUR_BUY, f"{_fmt_num(d['cost'])} ", f"dur_buy_{dur_key}"))
+    builder.row(_back_btn("mine_duration_shop", "Назад"))
+    return builder.as_markup()
 
 
 # ============================================================
@@ -1080,10 +671,6 @@ def buy_pickaxe(data: dict, pick_key: str) -> tuple:
 
 
 def grant_premium_pickaxe(data: dict, pick_key: str) -> tuple:
-    """
-    Вызывается ПОСЛЕ успешного получения оплаты через Telegram Stars.
-    Работает для всех кирок (не только premium тира).
-    """
     if pick_key not in PICKAXES:
         return False, "❌ Неизвестная кирка."
     p     = PICKAXES[pick_key]
@@ -1136,27 +723,21 @@ def select_duration(data: dict, dur_key: str) -> tuple:
 def collect_mine(data: dict) -> tuple:
     prog          = calc_mine_progress(data)
     new_campaigns = prog["new_campaigns"]
-
     if new_campaigns == 0:
         return prog, ""
-
     from shop import get_active_booster_multiplier, get_active_booster_info, _multiplier_label
     multiplier = get_active_booster_multiplier(data)
-
     pick_key = data.get("pickaxe", "wood_1")
     results  = {}
     for _ in range(new_campaigns):
         for ore, qty in roll_ore(pick_key, multiplier):
             results[ore["key"]] = results.get(ore["key"], 0) + qty
             data["ores"][ore["key"]] = data["ores"].get(ore["key"], 0) + qty
-
     data["mine_campaigns_done"] = prog["campaigns_done"]
     if prog["finished"]:
         data["mine_collected"] = True
-
     total_ore_count = sum(results.values())
     add_xp(data, total_ore_count * XP_PER_ORE)
-
     if results:
         loot_lines = []
         for key, qty in results.items():
@@ -1166,16 +747,12 @@ def collect_mine(data: dict) -> tuple:
         loot = "\n".join(loot_lines)
     else:
         loot = "<b>Ничего не нашли 😔</b>"
-
     bar = progress_bar(prog["percent"])
-
-    # Строка об активном ускорителе
     booster_line = ""
     active = get_active_booster_info(data)
     if active:
         mult_label = _multiplier_label(active["multiplier"])
         booster_line = f'<tg-emoji emoji-id="5438571934210082705">⚡</tg-emoji> <b>Ускоритель {mult_label} активен</b>\n'
-
     result_text = (
         f'<tg-emoji emoji-id="5197371802136892976">🎟</tg-emoji> <b>Результат добычи</b>\n'
         f"━━━━━━━━━━━━━━━━━━━━\n"
@@ -1188,25 +765,15 @@ def collect_mine(data: dict) -> tuple:
         result_text += "<b>✅ Сессия завершена!</b>"
     else:
         result_text += f"<b>⏳ Шахта работает. Осталось: {fmt_time(prog['time_left'])}</b>"
-
     return prog, result_text
 
 
-# ============================================================
-#  ВСПОМОГАТЕЛЬНАЯ: найти страницу кирки для кнопки «Назад»
-# ============================================================
-
 def get_pickaxe_page(pick_key: str) -> int:
-    """Возвращает номер страницы (0-based), на которой находится кирка."""
     if pick_key not in PICKAXES_ORDER:
         return 0
     idx = PICKAXES_ORDER.index(pick_key)
     return idx // WORKSHOP_PAGE_SIZE
 
-
-# ============================================================
-#  ИНИЦИАЛИЗАЦИЯ
-# ============================================================
 
 def init_mine_data() -> dict:
     return {
@@ -1220,10 +787,6 @@ def init_mine_data() -> dict:
         "mine_collected":      False,
     }
 
-
-# ============================================================
-#  СОВМЕСТИМОСТЬ / УДОБНЫЕ АЛИАСЫ
-# ============================================================
 
 def shop_pickaxes_text() -> str:
     lines = [f"🛒 <b>МАГАЗИН — КИРКИ</b>\n━━━━━━━━━━━━━━━━━━━━\n"]
