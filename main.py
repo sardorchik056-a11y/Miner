@@ -26,6 +26,15 @@ from miner import (
     get_pickaxe_page,
     EMOJI_BACK,
 )
+from pets import (
+    PETS,
+    pets_main_text, pets_main_keyboard,
+    pet_detail_text, pet_detail_keyboard,
+    buy_pet,
+    get_pending_income, get_pending_notifications,
+    pet_income_text,
+)
+
 from shop import (
     cases_shop_text, cases_shop_keyboard,
     inventory_main_text, inventory_main_keyboard,
@@ -64,6 +73,7 @@ EMOJI_MINE     = "5197371802136892976"
 EMOJI_HUNT     = "5424972470023104089"
 EMOJI_STATUS   = "5438496463044752972"
 EMOJI_EXCHANGE = "5402186569006210455"
+EMOJI_PETS     = "5424972470023104089"
 EMOJI_LEADERS  = "5440539497383087970"
 EMOJI_SETTINGS = "5341715473882955310"
 
@@ -90,7 +100,7 @@ def main_menu_keyboard() -> InlineKeyboardMarkup:
         InlineKeyboardButton("Охота",  callback_data="hunt",   icon_custom_emoji_id=EMOJI_HUNT),
         InlineKeyboardButton("Статус", callback_data="status", icon_custom_emoji_id=EMOJI_STATUS),
     )
-    kb.add(InlineKeyboardButton(" Биржа ", callback_data="exchange", icon_custom_emoji_id=EMOJI_EXCHANGE))
+    kb.add(InlineKeyboardButton("🐾 Питомцы", callback_data="pets", icon_custom_emoji_id=EMOJI_PETS))
     kb.add(
         InlineKeyboardButton("Лидеры",    callback_data="leaders",  icon_custom_emoji_id=EMOJI_LEADERS),
         InlineKeyboardButton("Настройки", callback_data="settings", icon_custom_emoji_id=EMOJI_SETTINGS),
@@ -586,6 +596,39 @@ def handle_callback(call):
                     print(e)
             return
 
+        # ===== ПИТОМЦЫ: главный экран =====
+        if cd == "pets" or cd == "pets_page_0":
+            edit(pets_main_text(data), pets_main_keyboard(data, 0))
+            return
+
+        if cd.startswith("pets_page_"):
+            try:
+                page = int(cd.removeprefix("pets_page_"))
+            except ValueError:
+                page = 0
+            edit(pets_main_text(data), pets_main_keyboard(data, page))
+            return
+
+        # ===== ПИТОМЦЫ: карточка =====
+        if cd.startswith("pet_info_"):
+            pk   = cd.removeprefix("pet_info_")
+            idx  = next((i for i, p in enumerate(PETS) if p["key"] == pk), 0)
+            page = idx // 4
+            edit(pet_detail_text(data, pk), pet_detail_keyboard(data, pk, page))
+            return
+
+        # ===== ПИТОМЦЫ: покупка =====
+        if cd.startswith("pet_buy_"):
+            pk       = cd.removeprefix("pet_buy_")
+            ok, msg  = buy_pet(data, pk)
+            bot.answer_callback_query(call.id, msg, show_alert=True)
+            if ok:
+                save_user(data["id"], data)
+            idx  = next((i for i, p in enumerate(PETS) if p["key"] == pk), 0)
+            page = idx // 4
+            edit(pet_detail_text(data, pk), pet_detail_keyboard(data, pk, page))
+            return
+
         # ===== ОСТАЛЬНЫЕ РАЗДЕЛЫ =====
         responses = {
             "stats":    '<tg-emoji emoji-id="5231200819986047254">📊</tg-emoji> <b>СТАТИСТИКА</b>\n\n<blockquote><b>📝 Раздел в разработке...</b></blockquote>',
@@ -671,5 +714,50 @@ def handle_successful_payment(message):
 
 if __name__ == "__main__":
     init_db()   # создаёт таблицу при первом запуске
+
+    # ── Миграция: добавляем поля питомцев для старых пользователей ──
+    from database import get_all_users, save_user as _save_mig
+    for _u in get_all_users():
+        _changed = False
+        if "owned_pets" not in _u:
+            _u["owned_pets"] = []
+            _changed = True
+        if "pet_last_notify" not in _u:
+            _u["pet_last_notify"] = {}
+            _changed = True
+        if "pet_last_income" not in _u:
+            _u["pet_last_income"] = {}
+            _changed = True
+        if _changed:
+            _save_mig(_u["id"], _u)
+
+    # ── Фоновый поток: выплаты питомцев каждые 15 минут ──
+    import time
+
+    def _pets_loop():
+        from database import get_all_users, save_user as _sv
+        while True:
+            try:
+                for _d in get_all_users():
+                    pending_income = get_pending_income(_d)
+                    if pending_income:
+                        total_added = 0
+                        notifs      = get_pending_notifications(_d)
+                        notif_map   = {pk: txt for pk, txt in notifs}
+                        for pk, amount in pending_income:
+                            _d["balance"] = _d.get("balance", 0) + amount
+                            total_added  += amount
+                            msg_text      = pet_income_text(pk, amount, notif_map.get(pk, ""))
+                            try:
+                                bot.send_message(_d["id"], msg_text, parse_mode="HTML")
+                            except Exception:
+                                pass
+                        _sv(_d["id"], _d)
+            except Exception as _e:
+                print(f"[pets_loop] {_e}")
+            time.sleep(15 * 60)
+
+    threading.Thread(target=_pets_loop, daemon=True).start()
+
     print("🤖 Бот запущен! БД: tgstellar.db")
     bot.infinity_polling()
