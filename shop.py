@@ -142,29 +142,29 @@ def get_sell_price(item: dict) -> int:
 
 
 # ============================================================
-#  ПУЛ XP-КЕЙСА
+#  ПУЛ XP-КЕЙСА (без редкостей)
 # ============================================================
 
 _XP_POOL = [
-    {"key": "xp_100",  "type": "xp_instant", "xp": 100,  "chance": 90,  "rarity": "⬜ Обычный"},
-    {"key": "xp_225",  "type": "xp_instant", "xp": 225,  "chance": 70,  "rarity": "🟩 Необычный"},
-    {"key": "xp_750",  "type": "xp_instant", "xp": 750,  "chance": 35,  "rarity": "🟦 Редкий"},
-    {"key": "xp_2000", "type": "xp_instant", "xp": 2000, "chance": 12,  "rarity": "🟪 Эпический"},
-    {"key": "xp_5000", "type": "xp_instant", "xp": 5000, "chance":  3,  "rarity": "🟧 Легендарный"},
-    {"key": "xpboost_1.4x_30min", "type": "xp_boost", "multiplier": 1.4, "dur_key": "30min", "chance": 60, "rarity": "🟩 Необычный"},
-    {"key": "xpboost_1.4x_1h",   "type": "xp_boost", "multiplier": 1.4, "dur_key": "1h",    "chance": 45, "rarity": "🟩 Необычный"},
-    {"key": "xpboost_1.4x_2h",   "type": "xp_boost", "multiplier": 1.4, "dur_key": "2h",    "chance": 30, "rarity": "🟦 Редкий"},
-    {"key": "xpboost_1.4x_4h",   "type": "xp_boost", "multiplier": 1.4, "dur_key": "4h",    "chance": 20, "rarity": "🟦 Редкий"},
-    {"key": "xpboost_1.4x_6h",   "type": "xp_boost", "multiplier": 1.4, "dur_key": "6h",    "chance": 12, "rarity": "🟪 Эпический"},
-    {"key": "xpboost_1.4x_24h",  "type": "xp_boost", "multiplier": 1.4, "dur_key": "24h",   "chance":  5, "rarity": "🟪 Эпический"},
-    {"key": "xpboost_1.4x_48h",  "type": "xp_boost", "multiplier": 1.4, "dur_key": "48h",   "chance":  2, "rarity": "🟧 Легендарный"},
-    {"key": "xpboost_1.8x_30min", "type": "xp_boost", "multiplier": 1.8, "dur_key": "30min", "chance": 35, "rarity": "🟦 Редкий"},
-    {"key": "xpboost_1.8x_1h",   "type": "xp_boost", "multiplier": 1.8, "dur_key": "1h",    "chance": 22, "rarity": "🟦 Редкий"},
-    {"key": "xpboost_1.8x_2h",   "type": "xp_boost", "multiplier": 1.8, "dur_key": "2h",    "chance": 14, "rarity": "🟪 Эпический"},
-    {"key": "xpboost_1.8x_4h",   "type": "xp_boost", "multiplier": 1.8, "dur_key": "4h",    "chance":  8, "rarity": "🟪 Эпический"},
-    {"key": "xpboost_1.8x_6h",   "type": "xp_boost", "multiplier": 1.8, "dur_key": "6h",    "chance":  4, "rarity": "🟧 Легендарный"},
-    {"key": "xpboost_1.8x_24h",  "type": "xp_boost", "multiplier": 1.8, "dur_key": "24h",   "chance":  2, "rarity": "🟧 Легендарный"},
-    {"key": "xpboost_1.8x_48h",  "type": "xp_boost", "multiplier": 1.8, "dur_key": "48h",   "chance":  1, "rarity": "🔶 Мифический"},
+    {"key": "xp_100",  "type": "xp_instant", "xp": 100,  "chance": 90},
+    {"key": "xp_225",  "type": "xp_instant", "xp": 225,  "chance": 70},
+    {"key": "xp_750",  "type": "xp_instant", "xp": 750,  "chance": 35},
+    {"key": "xp_2000", "type": "xp_instant", "xp": 2000, "chance": 12},
+    {"key": "xp_5000", "type": "xp_instant", "xp": 5000, "chance":  3},
+    {"key": "xpboost_1.4x_30min", "type": "xp_boost", "multiplier": 1.4, "dur_key": "30min", "chance": 60},
+    {"key": "xpboost_1.4x_1h",   "type": "xp_boost", "multiplier": 1.4, "dur_key": "1h",    "chance": 45},
+    {"key": "xpboost_1.4x_2h",   "type": "xp_boost", "multiplier": 1.4, "dur_key": "2h",    "chance": 30},
+    {"key": "xpboost_1.4x_4h",   "type": "xp_boost", "multiplier": 1.4, "dur_key": "4h",    "chance": 20},
+    {"key": "xpboost_1.4x_6h",   "type": "xp_boost", "multiplier": 1.4, "dur_key": "6h",    "chance": 12},
+    {"key": "xpboost_1.4x_24h",  "type": "xp_boost", "multiplier": 1.4, "dur_key": "24h",   "chance":  5},
+    {"key": "xpboost_1.4x_48h",  "type": "xp_boost", "multiplier": 1.4, "dur_key": "48h",   "chance":  2},
+    {"key": "xpboost_1.8x_30min", "type": "xp_boost", "multiplier": 1.8, "dur_key": "30min", "chance": 35},
+    {"key": "xpboost_1.8x_1h",   "type": "xp_boost", "multiplier": 1.8, "dur_key": "1h",    "chance": 22},
+    {"key": "xpboost_1.8x_2h",   "type": "xp_boost", "multiplier": 1.8, "dur_key": "2h",    "chance": 14},
+    {"key": "xpboost_1.8x_4h",   "type": "xp_boost", "multiplier": 1.8, "dur_key": "4h",    "chance":  8},
+    {"key": "xpboost_1.8x_6h",   "type": "xp_boost", "multiplier": 1.8, "dur_key": "6h",    "chance":  4},
+    {"key": "xpboost_1.8x_24h",  "type": "xp_boost", "multiplier": 1.8, "dur_key": "24h",   "chance":  2},
+    {"key": "xpboost_1.8x_48h",  "type": "xp_boost", "multiplier": 1.8, "dur_key": "48h",   "chance":  1},
 ]
 
 XP_POOL_BY_KEY = {x["key"]: x for x in _XP_POOL}
@@ -277,7 +277,6 @@ def open_case(data: dict, case_key: str) -> tuple:
             "instance_id": instance_id,
             "key":         dropped["key"],
             "type":        dropped["type"],
-            "rarity":      dropped.get("rarity", ""),
             "chance":      dropped["chance"],
         }
         if dropped["type"] == "xp_instant":
@@ -289,13 +288,11 @@ def open_case(data: dict, case_key: str) -> tuple:
         inv.append(instance)
         name     = _xp_item_name(dropped)
         inv_line = f"В XP-инвентаре: {len(inv)}/{MAX_XP_INVENTORY}"
-    rarity   = dropped.get("rarity", "")
-    rar_line = f"\n<b>{rarity}</b>" if rarity else ""
     data["cases_total_opened"] = data.get("cases_total_opened", 0) + 1
     data["cases_total_spent"]  = data.get("cases_total_spent",  0) + cost
     msg = (
         f"<blockquote>{_pe('case', '📦')} <b>Кейс открыт!</b>\n"
-        f"{_pe('luck', '🍀')} <b>{name}</b>{rar_line}</blockquote>\n"
+        f"{_pe('luck', '🍀')} <b>{name}</b></blockquote>\n"
         f"\n<blockquote>{COIN} <b>Потрачено: {_fmt_num(cost)}</b>\n"
         f"{COIN} <b>Баланс: {_fmt_num(data['balance'])}</b>\n"
         f"{_pe('inv', '🎒')} <b>{inv_line}</b></blockquote>"
@@ -672,9 +669,7 @@ def xp_inventory_text(data: dict) -> str:
         inv_lines = [f"\n<blockquote><b>В инвентаре ({len(inv)}/{MAX_XP_INVENTORY}):</b>"]
         for i, item in enumerate(inv, 1):
             price = get_xp_sell_price(item)
-            rar   = item.get("rarity", "")
-            rar_str = f"  <b>{rar}</b>" if rar else ""
-            inv_lines.append(f"\n<b>{i}. {_xp_item_name(item)}</b>{rar_str}\n{_pe('coin', '💰')} <b>{_fmt_num(price)} {COIN}</b>")
+            inv_lines.append(f"\n<b>{i}. {_xp_item_name(item)}</b>\n{_pe('coin', '💰')} <b>{_fmt_num(price)} {COIN}</b>")
         inv_lines.append("</blockquote>")
         lines.extend(inv_lines)
     return "".join(lines)
@@ -695,13 +690,11 @@ def xp_item_detail_text(data: dict, instance_id: str) -> str:
     if not item:
         return "❌ Предмет не найден."
     price  = get_xp_sell_price(item)
-    rarity = item.get("rarity", "")
     xp_act = get_active_xp_booster_info(data)
     if item["type"] == "xp_instant":
         return (
             f"<blockquote>{_pe('xp_instant', '✨')} <b>Моментальный опыт</b>\n"
-            f"{_pe('xp_instant', '✨')} <b>Опыт: +{_fmt_num(item['xp'])} XP</b>\n"
-            f"<b>{rarity}</b></blockquote>\n"
+            f"{_pe('xp_instant', '✨')} <b>Опыт: +{_fmt_num(item['xp'])} XP</b></blockquote>\n"
             f"\n<blockquote><b>Применить — сразу получишь опыт.</b>\n"
             f"<b>Учитывает активный XP-ускоритель!</b></blockquote>\n"
             f"\n<blockquote>{_pe('coin', '💰')} <b>Цена продажи: {_fmt_num(price)}</b></blockquote>"
@@ -720,8 +713,7 @@ def xp_item_detail_text(data: dict, instance_id: str) -> str:
     return (
         f"<blockquote>{_pe('xp_boost', '🔮')} <b>XP-ускоритель {mult}</b>\n"
         f"{_pe('mult', '🔢')} <b>Множитель: ×{mult}</b>\n"
-        f"{_pe('timer', '⏱')} <b>Длительность: {dur}</b>\n"
-        f"<b>{rarity}</b></blockquote>\n"
+        f"{_pe('timer', '⏱')} <b>Длительность: {dur}</b></blockquote>\n"
         f"\n<blockquote><b>Умножает весь получаемый опыт на {mult} на {dur}.</b></blockquote>\n"
         f"\n<blockquote>{_pe('coin', '💰')} <b>Цена продажи: {_fmt_num(price)}</b></blockquote>"
         f"{warning}"
