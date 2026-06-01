@@ -148,15 +148,13 @@ def stars_confirm_keyboard(pick_key: str, page: int, invoice_url: str = None) ->
         builder.row(InlineKeyboardButton(
             text="Оплатить",
             url=invoice_url,
-            icon_custom_emoji_id="5999336376342940892",
-            style="success"
+            icon_custom_emoji_id="5999336376342940892"
         ))
     else:
         builder.row(InlineKeyboardButton(
             text="Оплатить",
             callback_data=f"pick_pay_stars_{pick_key}",
-            icon_custom_emoji_id="5999336376342940892",
-            style="success"
+            icon_custom_emoji_id="5999336376342940892"
         ))
     builder.row(InlineKeyboardButton(
         text="Мои звёзды",
@@ -752,25 +750,49 @@ async def handle_successful_payment(message: Message):
 # ===== ФОНОВЫЕ ЗАДАЧИ =====
 
 async def _pets_loop():
-    """Фоновая задача: выплаты питомцев каждые 15 минут."""
+    """Фоновая задача: уведомления и доход питомцев.
+    1 питомец  → сообщение каждые 12 ч от него.
+    2+ питомца → каждые 6 ч случайный питомец шлёт сообщение + начисляет доход.
+    """
     from database import get_all_users, save_user as _sv
+    import random as _rnd
+
+    INTERVAL_ONE  = 12 * 3600
+    INTERVAL_MANY =  6 * 3600
+
     while True:
         try:
             for _d in get_all_users():
-                pending_income = get_pending_income(_d)
-                if pending_income:
-                    total_added = 0
-                    notifs      = get_pending_notifications(_d)
-                    notif_map   = {pk: txt for pk, txt in notifs}
-                    for pk, amount in pending_income:
-                        _d["balance"] = _d.get("balance", 0) + amount
-                        total_added  += amount
-                        msg_text      = pet_income_text(pk, amount, notif_map.get(pk, ""))
-                        try:
-                            await bot.send_message(_d["id"], msg_text, parse_mode="HTML")
-                        except Exception:
-                            pass
-                    _sv(_d["id"], _d)
+                owned = _d.get("owned_pets", [])
+                if not owned:
+                    continue
+
+                now      = int(__import__("datetime").datetime.now(
+                               __import__("datetime").timezone.utc).timestamp())
+                last_all = _d.get("pet_last_group_notify", 0)
+                interval = INTERVAL_ONE if len(owned) == 1 else INTERVAL_MANY
+
+                if now - last_all < interval:
+                    continue
+
+                # Выбираем рандомного питомца
+                pk  = _rnd.choice(owned)
+                pet = __import__("pets").PETS_BY_KEY.get(pk)
+                if not pet:
+                    continue
+
+                amount        = _rnd.randint(pet["income_min"], pet["income_max"])
+                _d["balance"] = _d.get("balance", 0) + amount
+                _d["pet_last_group_notify"] = now
+
+                msgs       = __import__("pets")._NOTIFICATIONS.get(pk, [])
+                notif_text = _rnd.choice(msgs) if msgs else ""
+                msg_text   = pet_income_text(pk, amount, notif_text)
+                try:
+                    await bot.send_message(_d["id"], msg_text, parse_mode="HTML")
+                except Exception:
+                    pass
+                _sv(_d["id"], _d)
         except Exception as _e:
             print(f"[pets_loop] {_e}")
         await asyncio.sleep(15 * 60)
@@ -793,6 +815,12 @@ async def main():
             _changed = True
         if "pet_last_income" not in _u:
             _u["pet_last_income"] = {}
+            _changed = True
+        if "pet_income_offset" not in _u:
+            _u["pet_income_offset"] = {}
+            _changed = True
+        if "pet_last_group_notify" not in _u:
+            _u["pet_last_group_notify"] = 0
             _changed = True
         if _changed:
             _save_mig(_u["id"], _u)
