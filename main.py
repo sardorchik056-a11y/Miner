@@ -726,14 +726,18 @@ async def handle_callback(call: CallbackQuery):
         # ===== ОХОТА: удар по боссу =====
         if cd == "hunt_strike":
             result = attack_boss(data)
+            # Кулдаун — тихий игнор, просто отвечаем на callback без действий
+            if result.get("error") == "cooldown":
+                await call.answer()
+                return
             if result.get("boss_killed") or result.get("hit"):
                 save_user(data["id"], data)
             txt = boss_strike_result_text(data, result)
             kb  = boss_strike_keyboard(data)
             if result.get("crit"):
                 await call.answer("⭐ КРИТИЧЕСКИЙ УДАР!", show_alert=False)
-            elif result.get("error"):
-                await call.answer("❌ Ошибка атаки", show_alert=True)
+            else:
+                await call.answer()
             await edit(txt, kb)
             return
 
@@ -903,6 +907,9 @@ async def main():
             _changed = True
         if "equipped_sword" not in _u:
             _u["equipped_sword"] = None
+            _changed = True
+        if "last_boss_hit" not in _u:
+            _u["last_boss_hit"] = 0
             _changed = True
         if _changed:
             _save_mig(_u["id"], _u)
