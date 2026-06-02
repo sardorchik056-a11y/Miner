@@ -79,7 +79,7 @@ SWORD_EMOJIS = {
     "star_devourer":       "5440621591387980068",  # 🗡 Пожиратель Звёзд      — TODO: заменить
 }
 
-def _tg(eid, fb=""):
+def _tg(eid, fb="⭐"):
     return f'<tg-emoji emoji-id="{eid}">{fb}</tg-emoji>'
 
 def _fmt(n):
