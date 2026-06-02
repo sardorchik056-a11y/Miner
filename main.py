@@ -42,6 +42,17 @@ from pets import (
     pet_income_text,
 )
 
+from hunt import (
+    init_hunt_db,
+    hunt_main_text, hunt_main_keyboard,
+    sword_shop_text, sword_shop_keyboard,
+    sword_detail_text, sword_detail_keyboard,
+    my_swords_text, my_swords_keyboard,
+    boss_attack_text, boss_attack_keyboard,
+    boss_strike_result_text, boss_strike_keyboard,
+    buy_sword, equip_sword, attack_boss,
+)
+
 from shop import (
     cases_shop_text, cases_shop_keyboard,
     inventory_main_text, inventory_main_keyboard,
@@ -662,10 +673,73 @@ async def handle_callback(call: CallbackQuery):
             await edit(pet_detail_text(data, pk), pet_detail_keyboard(data, pk, page))
             return
 
+        # ===== ОХОТА: главный экран =====
+        if cd == "hunt":
+            await edit(hunt_main_text(data), hunt_main_keyboard(data))
+            return
+
+        # ===== ОХОТА: магазин мечей =====
+        if cd == "hunt_shop_swords":
+            await edit(sword_shop_text(data), sword_shop_keyboard(data))
+            return
+
+        # ===== ОХОТА: мои мечи =====
+        if cd == "hunt_my_swords":
+            await edit(my_swords_text(data), my_swords_keyboard(data))
+            return
+
+        # ===== ОХОТА: карточка меча =====
+        if cd.startswith("sword_info_"):
+            sk = cd.removeprefix("sword_info_")
+            await edit(sword_detail_text(data, sk), sword_detail_keyboard(data, sk))
+            return
+
+        # ===== ОХОТА: купить меч =====
+        if cd.startswith("sword_buy_"):
+            sk = cd.removeprefix("sword_buy_")
+            ok, msg = buy_sword(data, sk)
+            if ok:
+                save_user(data["id"], data)
+                await call.answer("✅ Меч куплен!", show_alert=False)
+            else:
+                import re as _re2
+                plain = _re2.sub(r'<[^>]+>', '', msg)
+                await call.answer(plain[:200], show_alert=True)
+            await edit(sword_detail_text(data, sk), sword_detail_keyboard(data, sk))
+            return
+
+        # ===== ОХОТА: экипировать меч =====
+        if cd.startswith("sword_equip_"):
+            sk = cd.removeprefix("sword_equip_")
+            ok, msg = equip_sword(data, sk)
+            if ok:
+                save_user(data["id"], data)
+                await call.answer("✅ Экипировано!", show_alert=False)
+            await edit(my_swords_text(data), my_swords_keyboard(data))
+            return
+
+        # ===== ОХОТА: экран атаки босса =====
+        if cd == "hunt_boss":
+            await edit(boss_attack_text(data), boss_attack_keyboard(data))
+            return
+
+        # ===== ОХОТА: удар по боссу =====
+        if cd == "hunt_strike":
+            result = attack_boss(data)
+            if result.get("boss_killed") or result.get("hit"):
+                save_user(data["id"], data)
+            txt = boss_strike_result_text(data, result)
+            kb  = boss_strike_keyboard(data)
+            if result.get("crit"):
+                await call.answer("⭐ КРИТИЧЕСКИЙ УДАР!", show_alert=False)
+            elif result.get("error"):
+                await call.answer("❌ Ошибка атаки", show_alert=True)
+            await edit(txt, kb)
+            return
+
         # ===== ОСТАЛЬНЫЕ РАЗДЕЛЫ =====
         responses = {
             "stats":    '<tg-emoji emoji-id="5231200819986047254">📊</tg-emoji> <b>СТАТИСТИКА</b>\n\n<blockquote><b>📝 Раздел в разработке...</b></blockquote>',
-            "hunt":     '<tg-emoji emoji-id="5424972470023104089">🏹</tg-emoji> <b>ОХОТА</b>\n\n<blockquote><b>📝 Раздел в разработке...</b></blockquote>',
             "status":   '<tg-emoji emoji-id="5438496463044752972">📌</tg-emoji> <b>СТАТУС</b>\n\n<blockquote><b>📝 Раздел в разработке...</b></blockquote>',
             "exchange": '<tg-emoji emoji-id="5402186569006210455">💱</tg-emoji> <b>БИРЖА</b>\n\n<blockquote><b>📝 Раздел в разработке...</b></blockquote>',
             "leaders":  '<tg-emoji emoji-id="5440539497383087970">🏆</tg-emoji> <b>ЛИДЕРЫ</b>\n\n<blockquote><b>📝 Раздел в разработке...</b></blockquote>',
@@ -802,6 +876,7 @@ async def main():
     logging.basicConfig(level=logging.INFO)
 
     init_db()  # создаёт таблицу при первом запуске
+    init_hunt_db()  # создаёт таблицу боссов
 
     # ── Миграция: добавляем поля питомцев для старых пользователей ──
     from database import get_all_users, save_user as _save_mig
@@ -821,6 +896,13 @@ async def main():
             _changed = True
         if "pet_last_group_notify" not in _u:
             _u["pet_last_group_notify"] = 0
+            _changed = True
+        # Миграция охоты
+        if "owned_swords" not in _u:
+            _u["owned_swords"] = []
+            _changed = True
+        if "equipped_sword" not in _u:
+            _u["equipped_sword"] = None
             _changed = True
         if _changed:
             _save_mig(_u["id"], _u)
