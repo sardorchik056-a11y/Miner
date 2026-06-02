@@ -49,21 +49,21 @@ _E = {
 #  ЭМОДЗИ МЕЧЕЙ (замени ID на свои премиум-эмодзи)
 # ─────────────────────────────────────────
 SWORD_EMOJIS = {
-    "blade_of_despair":    "5427168083074628963",  # 🗡 Клинок Отчаяния       — TODO: заменить
-    "kings_bane":          "5296668976414203103",  # 🗡 Погибель Королей      — TODO: заменить
-    "frozen_doom":         "5438571934210082705",  # 🗡 Ледяная Погибель      — TODO: заменить
-    "void_herald":         "5258203794772085854",  # 🗡 Вестник Бездны        — TODO: заменить
-    "fate_cleaver":        "4945387415205315532",  # 🗡 Рассекатель Судеб     — TODO: заменить
-    "deaths_whisper":      "5341498088408234504",  # 🗡 Шепот Смерти          — TODO: заменить
-    "ash_oath":            "5449683594425410231",  # 🗡 Клятва Пепла          — TODO: заменить
-    "desecrated_blade":    "5382194935057372936",  # 🗡 Осквернённый Клинок   — TODO: заменить
-    "last_verdict":        "5397782960512444700",  # 🗡 Последний Приговор    — TODO: заменить
-    "shadow_of_oblivion":  "5240241223632954241",  # 🗡 Тень Забвения         — TODO: заменить
-    "soul_harvest":        "5199552030615558774",  # 🗡 Жатва Душ             — TODO: заменить
-    "blade_of_hopelessness":"5310278924616356636", # 🗡 Клинок Безысходности  — TODO: заменить
-    "seal_of_doom":        "5206607081334906820",  # 🗡 Печать Гибели         — TODO: заменить
-    "rift_of_eternity":    "5438571934210082705",  # 🗡 Разлом Вечности       — TODO: заменить
-    "star_devourer":       "5440621591387980068",  # 🗡 Пожиратель Звёзд      — TODO: заменить
+    "blade_of_despair":    "5321022334335724730",
+    "kings_bane":          "5229011542011299168",
+    "frozen_doom":         "5278728331083149050",
+    "void_herald":         "5449883370534238228",
+    "fate_cleaver":        "5449841584797413927",
+    "deaths_whisper":      "5253539825360843975",
+    "ash_oath":            "6311852434616489836",
+    "desecrated_blade":    "5454172148782359440",
+    "last_verdict":        "5805204653427660834",
+    "shadow_of_oblivion":  "5316641691032104151",
+    "soul_harvest":        "5219714655802381430",
+    "blade_of_hopelessness":"5336812863203853480", # 🗡 Клинок Безысходности  — TODO: заменить
+    "seal_of_doom":        "5463250708918711044",
+    "rift_of_eternity":    "5463277406435422003",
+    "star_devourer":       "5357173434843413977",
 }
 
 _DIGIT_EMOJIS = {
@@ -108,7 +108,6 @@ SWORDS = [
         "name": "Клинок Отчаяния",
         "emoji_id": SWORD_EMOJIS["blade_of_despair"],
         "desc": "<b>Выкован из слёз тех, кто не вернулся из глубин.</b>\n<b>Каждый удар — последний крик отчаявшейся души.</b>",
-        "rarity": "Обычный", "rarity_color": "⬜",
         "dmg_min": 50, "dmg_max": 150,
         "crit_chance": 0.05, "crit_mult": 2.0,
         "price": 200_000,
@@ -118,7 +117,6 @@ SWORDS = [
         "name": "Погибель Королей",
         "emoji_id": SWORD_EMOJIS["kings_bane"],
         "desc": "<b>Им пали семь правителей подземных царств.</b>\n<b>Лезвие помнит каждую корону. И жаждет следующей.</b>",
-        "rarity": "Необычный", "rarity_color": "🟩",
         "dmg_min": 80, "dmg_max": 250,
         "crit_chance": 0.05, "crit_mult": 2.0,
         "price": 325_000,
@@ -128,7 +126,6 @@ SWORDS = [
         "name": "Ледяная Погибель",
         "emoji_id": SWORD_EMOJIS["frozen_doom"],
         "desc": "<b>Закалён в вечном льду самого холодного яруса.</b>\n<b>Прикосновение к рукояти оставляет ожог холодом.</b>",
-        "rarity": "Редкий", "rarity_color": "🟦",
         "dmg_min": 200, "dmg_max": 500,
         "crit_chance": 0.05, "crit_mult": 2.0,
         "price": 500_000,
@@ -138,7 +135,6 @@ SWORDS = [
         "name": "Вестник Бездны",
         "emoji_id": SWORD_EMOJIS["void_herald"],
         "desc": "<b>Он появляется раньше, чем бездна открывается.</b>\n<b>Шёпот клинка слышат только обречённые.</b>",
-        "rarity": "Эпический", "rarity_color": "🟪",
         "dmg_min": 350, "dmg_max": 700,
         "crit_chance": 0.05, "crit_mult": 2.0,
         "price": 750_000,
@@ -148,7 +144,6 @@ SWORDS = [
         "name": "Рассекатель Судеб",
         "emoji_id": SWORD_EMOJIS["fate_cleaver"],
         "desc": "<b>Разрезает не только плоть — но и нити судьбы.</b>\n<b>Те, кого он касался, больше не принадлежат этому миру.</b>",
-        "rarity": "Легендарный", "rarity_color": "🟨",
         "dmg_min": 500, "dmg_max": 1_250,
         "crit_chance": 0.05, "crit_mult": 2.0,
         "price": 1_250_000,
@@ -158,7 +153,6 @@ SWORDS = [
         "name": "Шепот Смерти",
         "emoji_id": SWORD_EMOJIS["deaths_whisper"],
         "desc": "<b>Не издаёт звука при ударе. Жертва слышит лишь тишину.</b>\n<b>Говорят, смерть сама подсказывает ему цель.</b>",
-        "rarity": "Легендарный", "rarity_color": "🟨",
         "dmg_min": 700, "dmg_max": 1_800,
         "crit_chance": 0.05, "crit_mult": 2.0,
         "price": 3_500_000,
@@ -168,7 +162,6 @@ SWORDS = [
         "name": "Клятва Пепла",
         "emoji_id": SWORD_EMOJIS["ash_oath"],
         "desc": "<b>Выкован из пепла сгоревших шахт и павших воинов.</b>\n<b>Клятва вложена в каждый удар: не остановиться.</b>",
-        "rarity": "Легендарный", "rarity_color": "🟨",
         "dmg_min": 900, "dmg_max": 2_400,
         "crit_chance": 0.05, "crit_mult": 2.0,
         "price": 7_000_000,
@@ -178,7 +171,6 @@ SWORDS = [
         "name": "Осквернённый Клинок",
         "emoji_id": SWORD_EMOJIS["desecrated_blade"],
         "desc": "<b>Освящённый клинок, погружённый в чёрную магию глубин.</b>\n<b>Святость обернулась проклятием — и стала страшнее.</b>",
-        "rarity": "Мифический", "rarity_color": "🔴",
         "dmg_min": 1_200, "dmg_max": 3_200,
         "crit_chance": 0.05, "crit_mult": 2.0,
         "price": 15_000_000,
@@ -188,7 +180,6 @@ SWORDS = [
         "name": "Последний Приговор",
         "emoji_id": SWORD_EMOJIS["last_verdict"],
         "desc": "<b>Вынесен миром, который устал ждать.</b>\n<b>Приговор окончателен. Обжалование невозможно.</b>",
-        "rarity": "Мифический", "rarity_color": "🔴",
         "dmg_min": 1_600, "dmg_max": 4_200,
         "crit_chance": 0.05, "crit_mult": 2.0,
         "price": 30_000_000,
@@ -198,7 +189,6 @@ SWORDS = [
         "name": "Тень Забвения",
         "emoji_id": SWORD_EMOJIS["shadow_of_oblivion"],
         "desc": "<b>Из него вышли все тени. В него они и вернутся.</b>\n<b>Забвение — не конец. Это начало чего-то хуже.</b>",
-        "rarity": "Мифический", "rarity_color": "🔴",
         "dmg_min": 2_000, "dmg_max": 5_500,
         "crit_chance": 0.05, "crit_mult": 2.0,
         "price": 60_000_000,
@@ -208,7 +198,6 @@ SWORDS = [
         "name": "Жатва Душ",
         "emoji_id": SWORD_EMOJIS["soul_harvest"],
         "desc": "<b>Каждая убитая им душа остаётся внутри клинка.</b>\n<b>Их вопли — его боевой клич.</b>",
-        "rarity": "Мифический", "rarity_color": "🔴",
         "dmg_min": 2_600, "dmg_max": 7_000,
         "crit_chance": 0.05, "crit_mult": 2.0,
         "price": 120_000_000,
@@ -218,7 +207,6 @@ SWORDS = [
         "name": "Клинок Безысходности",
         "emoji_id": SWORD_EMOJIS["blade_of_hopelessness"],
         "desc": "<b>Тем, кто его видит, кажется — выхода нет.</b>\n<b>Они правы. Выхода нет.</b>",
-        "rarity": "Божественный", "rarity_color": "🌟",
         "dmg_min": 3_500, "dmg_max": 9_000,
         "crit_chance": 0.05, "crit_mult": 2.0,
         "price": 250_000_000,
@@ -228,7 +216,6 @@ SWORDS = [
         "name": "Печать Гибели",
         "emoji_id": SWORD_EMOJIS["seal_of_doom"],
         "desc": "<b>Поставить печать — значит вынести приговор вечности.</b>\n<b>Никто не снял её ни разу. Никто и не снимет.</b>",
-        "rarity": "Божественный", "rarity_color": "🌟",
         "dmg_min": 4_500, "dmg_max": 12_000,
         "crit_chance": 0.05, "crit_mult": 2.0,
         "price": 500_000_000,
@@ -238,7 +225,6 @@ SWORDS = [
         "name": "Разлом Вечности",
         "emoji_id": SWORD_EMOJIS["rift_of_eternity"],
         "desc": "<b>Разрезает ткань времени. Каждый удар — в прошлое и будущее одновременно.</b>\n<b>Вечность не бесконечна. Он это доказал.</b>",
-        "rarity": "Божественный", "rarity_color": "🌟",
         "dmg_min": 6_000, "dmg_max": 16_000,
         "crit_chance": 0.05, "crit_mult": 2.0,
         "price": 1_000_000_000,
@@ -248,7 +234,6 @@ SWORDS = [
         "name": "Пожиратель Звёзд",
         "emoji_id": SWORD_EMOJIS["star_devourer"],
         "desc": "<b>Им была погашена первая звезда. Им будет погашена последняя.</b>\n<b>Вселенная боится его. И правильно делает.</b>",
-        "rarity": "Абсолютный", "rarity_color": "💠",
         "dmg_min": 8_000, "dmg_max": 22_000,
         "crit_chance": 0.05, "crit_mult": 2.0,
         "price": 5_000_000_000,
@@ -879,7 +864,6 @@ def sword_detail_text(data: dict, sword_key: str) -> str:
     return (
         f'<blockquote>'
         f'{sword_emoji} <b>{sword["name"]}</b>\n'
-        f'{sword["rarity_color"]} <b>{sword["rarity"]}</b>'
         f'</blockquote>\n\n'
         f'<blockquote>'
         f'{sword["desc"]}'
