@@ -42,6 +42,27 @@ _E = {
     "bag":     "5443038326535759644",  # инвентарь
 }
 
+# ─────────────────────────────────────────
+#  ЭМОДЗИ МЕЧЕЙ (замени ID на свои премиум-эмодзи)
+# ─────────────────────────────────────────
+SWORD_EMOJIS = {
+    "blade_of_despair":    "5427168083074628963",  # 🗡 Клинок Отчаяния       — TODO: заменить
+    "kings_bane":          "5296668976414203103",  # 🗡 Погибель Королей      — TODO: заменить
+    "frozen_doom":         "5438571934210082705",  # 🗡 Ледяная Погибель      — TODO: заменить
+    "void_herald":         "5258203794772085854",  # 🗡 Вестник Бездны        — TODO: заменить
+    "fate_cleaver":        "4945387415205315532",  # 🗡 Рассекатель Судеб     — TODO: заменить
+    "deaths_whisper":      "5341498088408234504",  # 🗡 Шепот Смерти          — TODO: заменить
+    "ash_oath":            "5449683594425410231",  # 🗡 Клятва Пепла          — TODO: заменить
+    "desecrated_blade":    "5382194935057372936",  # 🗡 Осквернённый Клинок   — TODO: заменить
+    "last_verdict":        "5397782960512444700",  # 🗡 Последний Приговор    — TODO: заменить
+    "shadow_of_oblivion":  "5240241223632954241",  # 🗡 Тень Забвения         — TODO: заменить
+    "soul_harvest":        "5199552030615558774",  # 🗡 Жатва Душ             — TODO: заменить
+    "blade_of_hopelessness":"5310278924616356636", # 🗡 Клинок Безысходности  — TODO: заменить
+    "seal_of_doom":        "5206607081334906820",  # 🗡 Печать Гибели         — TODO: заменить
+    "rift_of_eternity":    "5438571934210082705",  # 🗡 Разлом Вечности       — TODO: заменить
+    "star_devourer":       "5440621591387980068",  # 🗡 Пожиратель Звёзд      — TODO: заменить
+}
+
 def _tg(eid, fb="·"):
     return f'<tg-emoji emoji-id="{eid}">{fb}</tg-emoji>'
 
@@ -58,7 +79,7 @@ SWORDS = [
     {
         "key": "blade_of_despair",
         "name": "Клинок Отчаяния",
-        "emoji_id": "5427168083074628963",
+        "emoji_id": SWORD_EMOJIS["blade_of_despair"],
         "desc": "<b>Выкован из слёз тех, кто не вернулся из глубин.</b>\n<b>Каждый удар — последний крик отчаявшейся души.</b>",
         "rarity": "Обычный", "rarity_color": "⬜",
         "dmg_min": 50, "dmg_max": 150,
@@ -68,7 +89,7 @@ SWORDS = [
     {
         "key": "kings_bane",
         "name": "Погибель Королей",
-        "emoji_id": "5296668976414203103",
+        "emoji_id": SWORD_EMOJIS["kings_bane"],
         "desc": "<b>Им пали семь правителей подземных царств.</b>\n<b>Лезвие помнит каждую корону. И жаждет следующей.</b>",
         "rarity": "Необычный", "rarity_color": "🟩",
         "dmg_min": 80, "dmg_max": 250,
@@ -78,7 +99,7 @@ SWORDS = [
     {
         "key": "frozen_doom",
         "name": "Ледяная Погибель",
-        "emoji_id": "5438571934210082705",
+        "emoji_id": SWORD_EMOJIS["frozen_doom"],
         "desc": "<b>Закалён в вечном льду самого холодного яруса.</b>\n<b>Прикосновение к рукояти оставляет ожог холодом.</b>",
         "rarity": "Редкий", "rarity_color": "🟦",
         "dmg_min": 200, "dmg_max": 500,
@@ -88,7 +109,7 @@ SWORDS = [
     {
         "key": "void_herald",
         "name": "Вестник Бездны",
-        "emoji_id": "5258203794772085854",
+        "emoji_id": SWORD_EMOJIS["void_herald"],
         "desc": "<b>Он появляется раньше, чем бездна открывается.</b>\n<b>Шёпот клинка слышат только обречённые.</b>",
         "rarity": "Эпический", "rarity_color": "🟪",
         "dmg_min": 350, "dmg_max": 700,
@@ -98,7 +119,7 @@ SWORDS = [
     {
         "key": "fate_cleaver",
         "name": "Рассекатель Судеб",
-        "emoji_id": "4945387415205315532",
+        "emoji_id": SWORD_EMOJIS["fate_cleaver"],
         "desc": "<b>Разрезает не только плоть — но и нити судьбы.</b>\n<b>Те, кого он касался, больше не принадлежат этому миру.</b>",
         "rarity": "Легендарный", "rarity_color": "🟨",
         "dmg_min": 500, "dmg_max": 1_250,
@@ -108,7 +129,7 @@ SWORDS = [
     {
         "key": "deaths_whisper",
         "name": "Шепот Смерти",
-        "emoji_id": "5341498088408234504",
+        "emoji_id": SWORD_EMOJIS["deaths_whisper"],
         "desc": "<b>Не издаёт звука при ударе. Жертва слышит лишь тишину.</b>\n<b>Говорят, смерть сама подсказывает ему цель.</b>",
         "rarity": "Легендарный", "rarity_color": "🟨",
         "dmg_min": 700, "dmg_max": 1_800,
@@ -118,7 +139,7 @@ SWORDS = [
     {
         "key": "ash_oath",
         "name": "Клятва Пепла",
-        "emoji_id": "5449683594425410231",
+        "emoji_id": SWORD_EMOJIS["ash_oath"],
         "desc": "<b>Выкован из пепла сгоревших шахт и павших воинов.</b>\n<b>Клятва вложена в каждый удар: не остановиться.</b>",
         "rarity": "Легендарный", "rarity_color": "🟨",
         "dmg_min": 900, "dmg_max": 2_400,
@@ -128,7 +149,7 @@ SWORDS = [
     {
         "key": "desecrated_blade",
         "name": "Осквернённый Клинок",
-        "emoji_id": "5382194935057372936",
+        "emoji_id": SWORD_EMOJIS["desecrated_blade"],
         "desc": "<b>Освящённый клинок, погружённый в чёрную магию глубин.</b>\n<b>Святость обернулась проклятием — и стала страшнее.</b>",
         "rarity": "Мифический", "rarity_color": "🔴",
         "dmg_min": 1_200, "dmg_max": 3_200,
@@ -138,7 +159,7 @@ SWORDS = [
     {
         "key": "last_verdict",
         "name": "Последний Приговор",
-        "emoji_id": "5397782960512444700",
+        "emoji_id": SWORD_EMOJIS["last_verdict"],
         "desc": "<b>Вынесен миром, который устал ждать.</b>\n<b>Приговор окончателен. Обжалование невозможно.</b>",
         "rarity": "Мифический", "rarity_color": "🔴",
         "dmg_min": 1_600, "dmg_max": 4_200,
@@ -148,7 +169,7 @@ SWORDS = [
     {
         "key": "shadow_of_oblivion",
         "name": "Тень Забвения",
-        "emoji_id": "5240241223632954241",
+        "emoji_id": SWORD_EMOJIS["shadow_of_oblivion"],
         "desc": "<b>Из него вышли все тени. В него они и вернутся.</b>\n<b>Забвение — не конец. Это начало чего-то хуже.</b>",
         "rarity": "Мифический", "rarity_color": "🔴",
         "dmg_min": 2_000, "dmg_max": 5_500,
@@ -158,7 +179,7 @@ SWORDS = [
     {
         "key": "soul_harvest",
         "name": "Жатва Душ",
-        "emoji_id": "5199552030615558774",
+        "emoji_id": SWORD_EMOJIS["soul_harvest"],
         "desc": "<b>Каждая убитая им душа остаётся внутри клинка.</b>\n<b>Их вопли — его боевой клич.</b>",
         "rarity": "Мифический", "rarity_color": "🔴",
         "dmg_min": 2_600, "dmg_max": 7_000,
@@ -168,7 +189,7 @@ SWORDS = [
     {
         "key": "blade_of_hopelessness",
         "name": "Клинок Безысходности",
-        "emoji_id": "5310278924616356636",
+        "emoji_id": SWORD_EMOJIS["blade_of_hopelessness"],
         "desc": "<b>Тем, кто его видит, кажется — выхода нет.</b>\n<b>Они правы. Выхода нет.</b>",
         "rarity": "Божественный", "rarity_color": "🌟",
         "dmg_min": 3_500, "dmg_max": 9_000,
@@ -178,7 +199,7 @@ SWORDS = [
     {
         "key": "seal_of_doom",
         "name": "Печать Гибели",
-        "emoji_id": "5206607081334906820",
+        "emoji_id": SWORD_EMOJIS["seal_of_doom"],
         "desc": "<b>Поставить печать — значит вынести приговор вечности.</b>\n<b>Никто не снял её ни разу. Никто и не снимет.</b>",
         "rarity": "Божественный", "rarity_color": "🌟",
         "dmg_min": 4_500, "dmg_max": 12_000,
@@ -188,7 +209,7 @@ SWORDS = [
     {
         "key": "rift_of_eternity",
         "name": "Разлом Вечности",
-        "emoji_id": "5438571934210082705",
+        "emoji_id": SWORD_EMOJIS["rift_of_eternity"],
         "desc": "<b>Разрезает ткань времени. Каждый удар — в прошлое и будущее одновременно.</b>\n<b>Вечность не бесконечна. Он это доказал.</b>",
         "rarity": "Божественный", "rarity_color": "🌟",
         "dmg_min": 6_000, "dmg_max": 16_000,
@@ -198,7 +219,7 @@ SWORDS = [
     {
         "key": "star_devourer",
         "name": "Пожиратель Звёзд",
-        "emoji_id": "5440621591387980068",
+        "emoji_id": SWORD_EMOJIS["star_devourer"],
         "desc": "<b>Им была погашена первая звезда. Им будет погашена последняя.</b>\n<b>Вселенная боится его. И правильно делает.</b>",
         "rarity": "Абсолютный", "rarity_color": "💠",
         "dmg_min": 8_000, "dmg_max": 22_000,
@@ -209,32 +230,64 @@ SWORDS = [
 
 SWORDS_BY_KEY = {s["key"]: s for s in SWORDS}
 
-# Рандомные описания для магазина оружия
+# Рандомные цитаты для каждого меча в магазине
+_SWORD_QUOTES = {
+    "blade_of_despair":     "<b>Говорят, первый удар этим клинком снится тебе каждую ночь.</b>",
+    "kings_bane":           "<b>Семь корон. Семь ударов. Восьмая твоя.</b>",
+    "frozen_doom":          "<b>Даже рукоять обжигает холодом. Представь, каково лезвие.</b>",
+    "void_herald":          "<b>Бездна смотрит в тебя сквозь него. Смотри в ответ.</b>",
+    "fate_cleaver":         "<b>Нити судьбы тонкие. Этот клинок знает, как их найти.</b>",
+    "deaths_whisper":       "<b>Тишина после удара — страшнее любого крика.</b>",
+    "ash_oath":             "<b>Клятва не нарушается. Никогда. Ни при каких условиях.</b>",
+    "desecrated_blade":     "<b>Освящение требует веры. Осквернение — только желания.</b>",
+    "last_verdict":         "<b>Апелляций нет. Судья уже вынес решение.</b>",
+    "shadow_of_oblivion":   "<b>Забвение — это не смерть. Это хуже. Гораздо хуже.</b>",
+    "soul_harvest":         "<b>Внутри — тысячи голосов. Скоро станет больше.</b>",
+    "blade_of_hopelessness":"<b>Те, кто его видит, перестают искать выход. Они правы.</b>",
+    "seal_of_doom":         "<b>Печать нельзя снять. Можно только получить следующую.</b>",
+    "rift_of_eternity":     "<b>Прошлое и будущее — одинаково уязвимы для него.</b>",
+    "star_devourer":        "<b>Первая звезда погасла от его удара. Последняя — тоже его.</b>",
+}
+
+# Рандомные цитаты для каждого босса на главном экране охоты
+_BOSS_HUNT_QUOTES = {
+    "stone_titan":       "<b>Тысячи лет сна — и он всё ещё злой. Разбуди его правильно.</b>",
+    "lava_warden":       "<b>Там, где он стоял, земля не остывает годами.</b>",
+    "shadow_colossus":   "<b>Тень без источника. Форма без тела. Смерть без предупреждения.</b>",
+    "crystal_leviathan": "<b>Каждый осколок — отдельная рана. Их много.</b>",
+    "iron_golem_rex":    "<b>Создатель давно мёртв. Голем — нет. Это проблема.</b>",
+    "plague_wyrm":       "<b>Километры тоннелей. Тонны яда. Один червь.</b>",
+    "frost_behemoth":    "<b>−60 градусов вокруг него — и это в шахте.</b>",
+    "void_emperor":      "<b>Его корона из костей тех, кто пробовал. Не пополняй коллекцию.</b>",
+    "thunder_drake":     "<b>Шахтёры называют его Конец Смены. Это не метафора.</b>",
+    "ancient_devourer":  "<b>Он ел руду миллионы лет. Теперь голоден по-настоящему.</b>",
+}
+
+# Запасные цитаты если босс/меч не найден в словаре
 _SHOP_QUOTES = [
-    f'<b>Каждый клинок здесь — это история. Не все из них хорошо закончились.</b>',
-    f'<b>Оружие не убивает. Убивают руки. Но хорошее оружие очень помогает.</b>',
-    f'<b>Говорят, лучший меч тот, который ещё не пробовали на деле. Лжецы.</b>',
-    f'<b>Боссы не боятся тебя. Пока. Купи правильный клинок — и посмотрим.</b>',
-    f'<b>Железо помнит удары. Лучшие клинки помнят победы.</b>',
-    f'<b>Цена меча — ничто по сравнению с ценой поражения.</b>',
-    f'<b>Шахтёр без меча — просто шахтёр. Шахтёр с мечом — охотник.</b>',
-    f'<b>Выбирай оружие сердцем. Но кошельком тоже думай.</b>',
-    f'<b>Некоторые боссы видели тысячи клинков. Твой они запомнят.</b>',
-    f'<b>Хороший меч — это не покупка. Это инвестиция в чужую гибель.</b>',
+    "<b>Каждый клинок здесь — это история. Не все из них хорошо закончились.</b>",
+    "<b>Оружие не убивает. Убивают руки. Но хорошее оружие очень помогает.</b>",
+    "<b>Говорят, лучший меч тот, который ещё не пробовали на деле. Лжецы.</b>",
+    "<b>Боссы не боятся тебя. Пока. Купи правильный клинок — и посмотрим.</b>",
+    "<b>Железо помнит удары. Лучшие клинки помнят победы.</b>",
+    "<b>Цена меча — ничто по сравнению с ценой поражения.</b>",
+    "<b>Шахтёр без меча — просто шахтёр. Шахтёр с мечом — охотник.</b>",
+    "<b>Выбирай оружие сердцем. Но кошельком тоже думай.</b>",
+    "<b>Некоторые боссы видели тысячи клинков. Твой они запомнят.</b>",
+    "<b>Хороший меч — это не покупка. Это инвестиция в чужую гибель.</b>",
 ]
 
-# Рандомные описания для главного экрана охоты
 _HUNT_QUOTES = [
-    f'<b>Каждый босс — это стена. Каждый удар — трещина в ней.</b>',
-    f'<b>Они не умирают сами. Кто-то должен им помочь. Этот кто-то — ты.</b>',
-    f'<b>Охота — это не жестокость. Это экономика.</b>',
-    f'<b>Босс ждёт. Он терпеливый. Но не вечный.</b>',
-    f'<b>Пять миллионов монет за одну смерть. Неплохая ставка.</b>',
-    f'<b>Глубины полны чудовищ. Хорошо, что у тебя есть меч.</b>',
-    f'<b>Говорят, боссы чувствуют страх охотника. Не давай им эту радость.</b>',
-    f'<b>Каждый удар приближает награду. Не останавливайся.</b>',
-    f'<b>Шахта — это не только руда. Иногда это ещё и кровь.</b>',
-    f'<b>Легендарные охотники начинали с железного клинка. Ты уже начал.</b>',
+    "<b>Каждый босс — это стена. Каждый удар — трещина в ней.</b>",
+    "<b>Они не умирают сами. Кто-то должен им помочь. Этот кто-то — ты.</b>",
+    "<b>Охота — это не жестокость. Это экономика.</b>",
+    "<b>Босс ждёт. Он терпеливый. Но не вечный.</b>",
+    "<b>Пять миллионов монет за одну смерть. Неплохая ставка.</b>",
+    "<b>Глубины полны чудовищ. Хорошо, что у тебя есть меч.</b>",
+    "<b>Говорят, боссы чувствуют страх охотника. Не давай им эту радость.</b>",
+    "<b>Каждый удар приближает награду. Не останавливайся.</b>",
+    "<b>Шахта — это не только руда. Иногда это ещё и кровь.</b>",
+    "<b>Легендарные охотники начинали с железного клинка. Ты уже начал.</b>",
 ]
 
 # ─────────────────────────────────────────
@@ -543,15 +596,26 @@ def hunt_main_text(data: dict) -> str:
     eq_key = get_equipped_sword(data)
     eq_name = SWORDS_BY_KEY[eq_key]["name"] if eq_key and eq_key in SWORDS_BY_KEY else "—"
 
+    # Цитата: берём от текущего босса, иначе рандом из запасных
+    _state  = get_boss_state()
+    _bkey   = _state.get('boss_key')
+    _quote  = _BOSS_HUNT_QUOTES.get(_bkey) or random.choice(_HUNT_QUOTES)
+
     header = (
         f'<blockquote>'
         f'{_tg(_E["hunt"], "🏹")} <b>ОХОТА НА БОССОВ</b>\n'
-        f'<b>Мечей в арсенале: {count} / {len(SWORDS)}</b>'
+        f'<b>Мечей в арсенале: {count} / {len(SWORDS)}</b>\n\n'
+        f'{_quote}'
         f'</blockquote>\n\n'
     )
 
-    if eq_key:
-        sword = SWORDS_BY_KEY[eq_key]
+    sword = SWORDS_BY_KEY.get(eq_key) if eq_key else None
+    if eq_key and not sword:
+        # Устаревший меч — сбрасываем экипировку
+        data["equipped_sword"] = None
+        eq_key = None
+
+    if sword:
         eq_block = (
             f'<blockquote>'
             f'{_tg(_E["sword"], "⚔️")} <b>Активный меч:</b> <b>{sword["name"]}</b>\n'
@@ -616,7 +680,7 @@ def hunt_main_keyboard(data: dict) -> InlineKeyboardMarkup:
         icon_custom_emoji_id=_E["bag"]
     ))
     builder.row(InlineKeyboardButton(
-        text="🛒 Магазин оружия",
+        text="🛒 Оружейная",
         callback_data="hunt_shop_swords",
         icon_custom_emoji_id=_E["shop"]
     ))
@@ -630,36 +694,81 @@ def hunt_main_keyboard(data: dict) -> InlineKeyboardMarkup:
 
 # ─── Магазин мечей ───
 
-def sword_shop_text(data: dict) -> str:
+SHOP_PAGE_SIZE = 5  # мечей на одну страницу
+
+
+def sword_shop_text(data: dict, page: int = 0) -> str:
+    total_pages = (len(SWORDS) + SHOP_PAGE_SIZE - 1) // SHOP_PAGE_SIZE
+    page = max(0, min(page, total_pages - 1))
+    start = page * SHOP_PAGE_SIZE
+    page_swords = SWORDS[start:start + SHOP_PAGE_SIZE]
+
+    owned_count = sum(1 for s in SWORDS if has_sword(data, s["key"]))
+
+    # Рандомная цитата одного из мечей на текущей странице
+    quote_sword = random.choice(page_swords)
+    quote = _SWORD_QUOTES.get(quote_sword["key"], random.choice(_SHOP_QUOTES))
+
+    lines = []
+    for sword in page_swords:
+        owned = has_sword(data, sword["key"])
+        mark  = f'{_tg(_E["ok"], "✅")}' if owned else f'{_tg(_E["lock"], "🔒")}'
+        lines.append(
+            f'{mark} {sword["rarity_color"]} <b>{sword["name"]}</b>\n'
+            f'   {_tg(_E["dmg"], "💥")} <b>{_fmt(sword["dmg_min"])}–{_fmt(sword["dmg_max"])}</b>  '
+            f'{_tg(_E["price"], "🏷")} <b>{_fmt(sword["price"])}</b>'
+        )
+
+    body = "\n\n".join(lines)
+
     return (
         f'<blockquote>'
-        f'{_tg(_E["shop"], "🛒")} <b>МАГАЗИН ОРУЖИЯ</b>\n\n'
-        f'<b>Выбери меч и иди в бой с боссами.</b>\n'
-        f'<b>Чем мощнее клинок — тем больше урон.</b>'
-        f'</blockquote>'
+        f'{_tg(_E["shop"], "🛒")} <b>ОРУЖЕЙНАЯ</b>\n'
+        f'<b>Куплено: {owned_count} / {len(SWORDS)}</b>  |  '
+        f'<b>Страница {page + 1} / {total_pages}</b>\n\n'
+        f'{quote}'
+        f'</blockquote>\n\n'
+        f'<blockquote>{body}</blockquote>'
     )
 
 
-def sword_shop_keyboard(data: dict) -> InlineKeyboardMarkup:
+def sword_shop_keyboard(data: dict, page: int = 0) -> InlineKeyboardMarkup:
+    total_pages = (len(SWORDS) + SHOP_PAGE_SIZE - 1) // SHOP_PAGE_SIZE
+    page = max(0, min(page, total_pages - 1))
+    start = page * SHOP_PAGE_SIZE
+    page_swords = SWORDS[start:start + SHOP_PAGE_SIZE]
+
     builder = InlineKeyboardBuilder()
-    for sword in SWORDS:
+
+    for sword in page_swords:
         owned = has_sword(data, sword["key"])
-        label = f'{sword["name"]} — {_fmt(sword["price"])} монет'
         if owned:
-            builder.row(InlineKeyboardButton(
-                text=sword["name"],
-                callback_data=f'sword_info_{sword["key"]}',
-                icon_custom_emoji_id=sword["emoji_id"],
-                style="success"
-            ))
+            label = f'✅ {sword["name"]}'
         else:
-            builder.row(InlineKeyboardButton(
-                text=label,
-                callback_data=f'sword_info_{sword["key"]}',
-                icon_custom_emoji_id=sword["emoji_id"]
-            ))
+            label = f'{sword["rarity_color"]} {sword["name"]} — {_fmt(sword["price"])}'
+        builder.row(InlineKeyboardButton(
+            text=label,
+            callback_data=f'sword_info_{sword["key"]}',
+            icon_custom_emoji_id=sword["emoji_id"]
+        ))
+
+    # Навигация по страницам
+    nav = []
+    if page > 0:
+        nav.append(InlineKeyboardButton(
+            text="◀️ Назад",
+            callback_data=f'sword_shop_page_{page - 1}'
+        ))
+    if page < total_pages - 1:
+        nav.append(InlineKeyboardButton(
+            text="Вперёд ▶️",
+            callback_data=f'sword_shop_page_{page + 1}'
+        ))
+    if nav:
+        builder.row(*nav)
+
     builder.row(InlineKeyboardButton(
-        text="Назад",
+        text="В меню охоты",
         callback_data="hunt",
         icon_custom_emoji_id=_E["back"]
     ))
@@ -706,6 +815,10 @@ def sword_detail_keyboard(data: dict, sword_key: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     sword   = SWORDS_BY_KEY.get(sword_key)
 
+    # Определяем страницу на которой находится этот меч
+    sword_index = next((i for i, s in enumerate(SWORDS) if s["key"] == sword_key), 0)
+    back_page   = sword_index // SHOP_PAGE_SIZE
+
     if sword:
         owned    = has_sword(data, sword_key)
         equipped = get_equipped_sword(data) == sword_key
@@ -725,7 +838,7 @@ def sword_detail_keyboard(data: dict, sword_key: str) -> InlineKeyboardMarkup:
 
     builder.row(InlineKeyboardButton(
         text="Назад",
-        callback_data="hunt_shop_swords",
+        callback_data=f'sword_shop_page_{back_page}',
         icon_custom_emoji_id=_E["back"]
     ))
     return builder.as_markup()
