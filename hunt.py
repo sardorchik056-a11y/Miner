@@ -20,26 +20,28 @@ DB_PATH = "tgstellar.db"
 #  ЭМОДЗИ
 # ─────────────────────────────────────────
 _E = {
-    "sword":   "5427168083074628963",  # arrow/стрела — для меча
-    "skull":   "5341498088408234504",  # xp иконка — для босса/черепа
+    "sword":   "5258203794772085854",  # активный меч
+    "skull":   "5228962845672096235",  # все боссы
     "fire":    "5438571934210082705",  # fire booster
     "coin":    "5199552030615558774",  # монета
     "lock":    "5240241223632954241",  # замок
     "ok":      "5206607081334906820",  # галочка
-    "back":    "6039539366177541657",  # назад
+    "back":    "5255703720078879038",  # назад
+    "forward": "5253767677670862169",  # вперёд
     "alert":   "5258203794772085854",  # alert/молния
     "timer":   "5440621591387980068",  # таймер
-    "crit":    "5382194935057372936",  # крит/таймер2
-    "dmg":     "5382194935057372936",  # таймер2 — для урона
+    "crit":    "5373342608028352831",  # крит
+    "dmg":     "5373173798633752502",  # урон
     "shop":    "5310278924616356636",  # сундук — для магазина
-    "hp":      "5341498088408234504",  # xp bar — для hp
+    "hp":      "5354905713585975489",  # hp
     "trophy":  "5449683594425410231",  # доход/трофей
-    "arrow":   "5427168083074628963",  # стрела
+    "arrow":   "5258203794772085854",  # стрела
     "hunt":    "5337047059180566409",  # лапа — для охоты
-    "dead":    "5258203794772085854",  # alert — для смерти
+    "dead":    "5228962845672096235",  # для смерти босса
     "spawn":   "5197371802136892976",  # шахта
     "price":   "5397782960512444700",  # ценник
     "bag":     "5443038326535759644",  # инвентарь
+    "boss":    "5438571934210082705",  # текущий босс
 }
 
 # ─────────────────────────────────────────
@@ -740,7 +742,7 @@ def hunt_main_text(data: dict) -> str:
         pct = hp / BOSS_MAX_HP * 100
         boss_block = (
             f'<blockquote>'
-            f'{_tg(_E["skull"], "💀")} <b>Текущий босс: {boss["name"]}</b> {boss["emoji"]}\n'
+            f'{_tg(_E["boss"], "🔥")} <b>Текущий босс: {boss["name"]}</b> {boss["emoji"]}\n'
             f'{_tg(_E["hp"], "❤️")} <b>HP:</b> {_fmt_digits(hp)} / {_fmt_digits(BOSS_MAX_HP)} <b>({pct:.1f}%)</b>'
             f'</blockquote>'
         )
@@ -769,19 +771,19 @@ def hunt_main_keyboard(data: dict) -> InlineKeyboardMarkup:
     # Первый ряд — 2 кнопки
     builder.row(
         InlineKeyboardButton(
-            text="⚔️ Атаковать босса",
+            text="Атаковать босса",
             callback_data="hunt_boss",
             icon_custom_emoji_id=_E["skull"]
         ),
         InlineKeyboardButton(
-            text="🗡️ Мои мечи",
+            text="Мои мечи",
             callback_data="hunt_my_swords",
             icon_custom_emoji_id=_E["bag"]
         )
     )
     # Далее по одной кнопке в ряд
     builder.row(InlineKeyboardButton(
-        text="🛒 Оружейная",
+        text="Оружейная",
         callback_data="hunt_shop_swords",
         icon_custom_emoji_id=_E["shop"]
     ))
@@ -848,13 +850,15 @@ def sword_shop_keyboard(data: dict, page: int = 0) -> InlineKeyboardMarkup:
     nav = []
     if page > 0:
         nav.append(InlineKeyboardButton(
-            text="◀️ Назад",
-            callback_data=f'sword_shop_page_{page - 1}'
+            text="Назад",
+            callback_data=f'sword_shop_page_{page - 1}',
+            icon_custom_emoji_id=_E["back"]
         ))
     if page < total_pages - 1:
         nav.append(InlineKeyboardButton(
-            text="Вперёд ▶️",
-            callback_data=f'sword_shop_page_{page + 1}'
+            text="Вперёд",
+            callback_data=f'sword_shop_page_{page + 1}',
+            icon_custom_emoji_id=_E["forward"]
         ))
     if nav:
         builder.row(*nav)
@@ -1059,9 +1063,9 @@ def boss_attack_keyboard(data: dict) -> InlineKeyboardMarkup:
 
     if state.get("boss_alive") and eq_key:
         builder.row(InlineKeyboardButton(
-            text="⚔️ Ударить!",
+            text="Ударить!",
             callback_data="hunt_strike",
-            icon_custom_emoji_id=_E["fire"]
+            icon_custom_emoji_id=_E["sword"]
         ))
 
     builder.row(InlineKeyboardButton(
@@ -1119,7 +1123,7 @@ def boss_strike_result_text(data: dict, result: dict) -> str:
         f'{_tg(_E["skull"], "💀")} <b>{boss_name}</b> {boss_emoji}'
         f'</blockquote>\n\n'
         f'<blockquote>'
-        f'{_tg(_E["dmg"], "💥")} <b>Твой удар: {_fmt(dmg)}</b>{crit_line}'
+        f'{_tg(_E["dmg"], "💥")} <b>Твой удар: {_fmt(dmg)}</b> {_tg(_E["dmg"], "💥")}{crit_line}'
         f'</blockquote>\n\n'
         f'<blockquote>'
         f'{_tg(_E["hp"], "❤️")} <b>HP:</b> {_fmt_digits(hp_after)} / {_fmt_digits(BOSS_MAX_HP)} <b>({pct:.1f}%)</b>'
@@ -1138,9 +1142,9 @@ def boss_strike_keyboard(data: dict) -> InlineKeyboardMarkup:
 
     if state.get("boss_alive") and eq_key:
         builder.row(InlineKeyboardButton(
-            text="⚔️ Ударить ещё!",
+            text="Ударить ещё!",
             callback_data="hunt_strike",
-            icon_custom_emoji_id=_E["fire"]
+            icon_custom_emoji_id=_E["sword"]
         ))
 
     builder.row(InlineKeyboardButton(
