@@ -729,14 +729,18 @@ def sword_shop_keyboard(data: dict, page: int = 0) -> InlineKeyboardMarkup:
     for sword in page_swords:
         owned = has_sword(data, sword["key"])
         if owned:
-            label = f'✅ {sword["name"]}'
+            builder.row(InlineKeyboardButton(
+                text=f'{sword["name"]}',
+                callback_data=f'sword_info_{sword["key"]}',
+                icon_custom_emoji_id=sword["emoji_id"],
+                style="success"
+            ))
         else:
-            label = f'{sword["rarity_color"]} {sword["name"]} — {_fmt(sword["price"])}'
-        builder.row(InlineKeyboardButton(
-            text=label,
-            callback_data=f'sword_info_{sword["key"]}',
-            icon_custom_emoji_id=sword["emoji_id"]
-        ))
+            builder.row(InlineKeyboardButton(
+                text=f'{sword["rarity_color"]} {sword["name"]} — {_fmt(sword["price"])}',
+                callback_data=f'sword_info_{sword["key"]}',
+                icon_custom_emoji_id=sword["emoji_id"]
+            ))
 
     # Навигация по страницам
     nav = []
