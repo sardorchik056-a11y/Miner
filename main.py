@@ -680,7 +680,14 @@ async def handle_callback(call: CallbackQuery):
 
         # ===== ОХОТА: магазин мечей =====
         if cd == "hunt_shop_swords":
-            await edit(sword_shop_text(data), sword_shop_keyboard(data))
+            await edit(sword_shop_text(data, 0), sword_shop_keyboard(data, 0))
+            return
+
+        # ===== ОХОТА: пагинация магазина мечей =====
+        if cd.startswith("sword_shop_page_"):
+            page = int(cd.removeprefix("sword_shop_page_"))
+            await call.answer()
+            await edit(sword_shop_text(data, page), sword_shop_keyboard(data, page))
             return
 
         # ===== ОХОТА: мои мечи =====
