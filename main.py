@@ -641,7 +641,7 @@ async def handle_callback(call: CallbackQuery):
         if cd.startswith("pet_info_"):
             pk   = cd.removeprefix("pet_info_")
             idx  = next((i for i, p in enumerate(PETS) if p["key"] == pk), 0)
-            page = idx // 4
+            page = idx // 5
             await edit(pet_detail_text(data, pk), pet_detail_keyboard(data, pk, page))
             return
 
@@ -658,7 +658,7 @@ async def handle_callback(call: CallbackQuery):
                 plain = re.sub(r'<[^>]+>', '', msg)
                 await call.answer(plain[:200], show_alert=True)
             idx  = next((i for i, p in enumerate(PETS) if p["key"] == pk), 0)
-            page = idx // 4
+            page = idx // 5
             await edit(pet_detail_text(data, pk), pet_detail_keyboard(data, pk, page))
             return
 
