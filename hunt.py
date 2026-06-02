@@ -87,10 +87,13 @@ def _now_ts():
 
 def _fmt_digits(n: int) -> str:
     """Форматирует число эмодзи-цифрами."""
-    s = str(int(n))
+    s = f"{int(n):,}".replace(",", " ")
     parts = []
     for ch in s:
-        parts.append(_tg(_DIGIT_EMOJIS[ch], ch))
+        if ch.isdigit():
+            parts.append(_tg(_DIGIT_EMOJIS[ch], "🔢"))
+        else:
+            parts.append(ch)
     return ''.join(parts)
 
 # ─────────────────────────────────────────
@@ -887,7 +890,7 @@ def sword_detail_text(data: dict, sword_key: str) -> str:
 
     return (
         f'<blockquote>'
-        f'{_tg(sword["emoji_id"], "⚔️")} <b>{sword["rarity_color"]} {sword["name"]}</b>\n'
+        f'{_tg(sword["emoji_id"])} <b>{sword["rarity_color"]} {sword["name"]}</b>\n'
         f'<b>{sword["rarity"]}</b>'
         f'</blockquote>\n\n'
         f'<blockquote>'
@@ -895,9 +898,9 @@ def sword_detail_text(data: dict, sword_key: str) -> str:
         f'</blockquote>\n\n'
         f'{sword_quote_block}'
         f'<blockquote>'
-        f'{_tg(_E["dmg"], "💥")} <b>Урон: {_fmt(sword["dmg_min"])} — {_fmt(sword["dmg_max"])}</b>\n'
-        f'{_tg(_E["crit"], "⭐")} <b>Крит: 5% × ×{sword["crit_mult"]:.0f} — макс. {_fmt(int(sword["dmg_max"] * sword["crit_mult"]))}</b>\n'
-        f'{_tg(_E["price"], "💰")} <b>Цена: {_fmt(sword["price"])} {_tg(_E["coin"], "💰")}</b>\n\n'
+        f'{_tg(_E["dmg"])} <b>Урон: {_fmt(sword["dmg_min"])} — {_fmt(sword["dmg_max"])}</b>\n'
+        f'{_tg(_E["crit"])} <b>Крит: 5% × ×{sword["crit_mult"]:.0f} — макс. {_fmt(int(sword["dmg_max"] * sword["crit_mult"]))}</b>\n'
+        f'{_tg(_E["price"])} <b>Цена: {_fmt(sword["price"])} {_tg(_E["coin"])}</b>\n\n'
         f'{status_line}'
         f'</blockquote>'
     )
