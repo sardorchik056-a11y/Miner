@@ -529,6 +529,11 @@ def get_boss_state() -> dict:
         _spawn_next_boss(state, force_index=0)
         return state
 
+    # Если сохранённый boss_key не существует в текущем списке — спавним заново
+    if state.get("boss_key") not in BOSSES_BY_KEY:
+        _spawn_next_boss(state, force_index=0)
+        return state
+
     now = _now_ts()
 
     # Если босс мёртв — проверяем время возрождения (2 часа)
@@ -827,7 +832,7 @@ def sword_shop_keyboard(data: dict, page: int = 0) -> InlineKeyboardMarkup:
             ))
         else:
             builder.row(InlineKeyboardButton(
-                text=f'{sword["rarity_color"]} {sword["name"]} — {_fmt(sword["price"])}',
+                text=f'{sword["name"]} — {_fmt(sword["price"])}',
                 callback_data=f'sword_info_{sword["key"]}',
                 icon_custom_emoji_id=sword["emoji_id"]
             ))
