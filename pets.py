@@ -347,12 +347,12 @@ def pets_main_keyboard(data, page=0) -> InlineKeyboardMarkup:
     nav_btns = []
     if page > 0:
         nav_btns.append(InlineKeyboardButton(
-            text="◀️", callback_data=f"pets_page_{page-1}",
+            text="1", callback_data=f"pets_page_{page-1}",
             icon_custom_emoji_id="5255703720078879038"
         ))
     if start + PAGE_SIZE < len(PETS):
         nav_btns.append(InlineKeyboardButton(
-            text="▶️", callback_data=f"pets_page_{page+1}",
+            text="2", callback_data=f"pets_page_{page+1}",
             icon_custom_emoji_id="5253767677670862169"
         ))
     if nav_btns:
