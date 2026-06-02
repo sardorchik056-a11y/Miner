@@ -791,7 +791,8 @@ def sword_shop_text(data: dict, page: int = 0) -> str:
     # Цитата меча с названием
     quote_sword = random.choice(page_swords)
     raw_quote = _SWORD_QUOTES.get(quote_sword["key"], random.choice(_SHOP_QUOTES))
-    quote = f'<b>{quote_sword["name"]}:</b>\n{raw_quote}'
+    sword_emoji = _tg(quote_sword["emoji_id"], "🗡")
+    quote = f'{sword_emoji} <b>{quote_sword["name"]}:</b>\n{raw_quote}'
 
     return (
         f'<blockquote>'
@@ -873,19 +874,21 @@ def sword_detail_text(data: dict, sword_key: str) -> str:
     sword_quote = _SWORD_QUOTES.get(sword_key, "")
     sword_quote_block = f'<blockquote>{sword_quote}</blockquote>\n\n' if sword_quote else ""
 
+    sword_emoji = _tg(sword["emoji_id"], "🗡")
+
     return (
         f'<blockquote>'
-        f'{_tg(sword["emoji_id"])} <b>{sword["rarity_color"]} {sword["name"]}</b>\n'
-        f'<b>{sword["rarity"]}</b>'
+        f'{sword_emoji} <b>{sword["name"]}</b>\n'
+        f'{sword["rarity_color"]} <b>{sword["rarity"]}</b>'
         f'</blockquote>\n\n'
         f'<blockquote>'
         f'{sword["desc"]}'
         f'</blockquote>\n\n'
         f'{sword_quote_block}'
         f'<blockquote>'
-        f'{_tg(_E["dmg"])} <b>Урон: {_fmt(sword["dmg_min"])} — {_fmt(sword["dmg_max"])}</b>\n'
-        f'{_tg(_E["crit"])} <b>Крит: 5% × ×{sword["crit_mult"]:.0f} — макс. {_fmt(int(sword["dmg_max"] * sword["crit_mult"]))}</b>\n'
-        f'{_tg(_E["price"])} <b>Цена: {_fmt(sword["price"])} {_tg(_E["coin"])}</b>\n\n'
+        f'{_tg(_E["dmg"], "💥")} <b>Урон: {_fmt(sword["dmg_min"])} — {_fmt(sword["dmg_max"])}</b>\n'
+        f'{_tg(_E["crit"], "⭐")} <b>Крит: 5% × ×{sword["crit_mult"]:.0f} — макс. {_fmt(int(sword["dmg_max"] * sword["crit_mult"]))}</b>\n'
+        f'{_tg(_E["price"], "💲")} <b>Цена: {_fmt(sword["price"])} {_tg(_E["coin"], "💰")}</b>\n\n'
         f'{status_line}'
         f'</blockquote>'
     )
@@ -905,15 +908,15 @@ def sword_detail_keyboard(data: dict, sword_key: str) -> InlineKeyboardMarkup:
 
         if not owned:
             builder.row(InlineKeyboardButton(
-                text=f'Купить — {_fmt(sword["price"])} монет',
+                text=f'Купить {sword["name"]} — {_fmt(sword["price"])} монет',
                 callback_data=f'sword_buy_{sword_key}',
-                icon_custom_emoji_id=_E["coin"]
+                icon_custom_emoji_id=sword["emoji_id"]
             ))
         elif not equipped:
             builder.row(InlineKeyboardButton(
-                text="Экипировать",
+                text=f'Экипировать {sword["name"]}',
                 callback_data=f'sword_equip_{sword_key}',
-                icon_custom_emoji_id=_E["ok"]
+                icon_custom_emoji_id=sword["emoji_id"]
             ))
 
     builder.row(InlineKeyboardButton(
@@ -942,8 +945,9 @@ def my_swords_text(data: dict) -> str:
             if not sw:
                 continue
             eq_mark = f' {_tg(_E["fire"], "⚡")} <b>[Экип.]</b>' if sk == eq_key else ""
+            sword_emoji = _tg(sw["emoji_id"], "🗡")
             lines.append(
-                f'{sw["rarity_color"]} <b>{sw["name"]}</b>{eq_mark}\n'
+                f'{sword_emoji} <b>{sw["name"]}</b>{eq_mark}\n'
                 f'   {_tg(_E["dmg"], "💥")} <b>{_fmt(sw["dmg_min"])}–{_fmt(sw["dmg_max"])} урона</b>'
             )
         body = "\n\n".join(lines)
@@ -1027,7 +1031,7 @@ def boss_attack_text(data: dict) -> str:
         f'{_tg(_E["hp"], "❤️")} <b>HP:</b> {_fmt_digits(hp)} / {_fmt_digits(BOSS_MAX_HP)} <b>({pct:.1f}%)</b>'
         f'</blockquote>\n\n'
         f'<blockquote>'
-        f'{_tg(_E["sword"], "⚔️")} <b>Твой меч: {sword["name"]}</b>\n'
+        f'{_tg(_E["sword"], "⚔️")} <b>Твой меч: {_tg(sword["emoji_id"], "🗡")} {sword["name"]}</b>\n'
         f'{_tg(_E["dmg"], "💥")} <b>Урон: {_fmt(sword["dmg_min"])} — {_fmt(sword["dmg_max"])}</b>\n'
         f'{_tg(_E["crit"], "⭐")} <b>Крит: 5% × {sword["crit_mult"]:.0f} от макс. урона</b>'
         f'</blockquote>\n\n'
