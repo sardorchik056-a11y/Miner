@@ -315,6 +315,13 @@ def attack_boss(data: dict) -> dict:
         "boss_killed": False, "reward": 0, "error": None,
     }
 
+    # Кулдаун 1 секунда — тихий игнор
+    now = _now_ts()
+    last_hit = data.get("last_boss_hit", 0)
+    if now - last_hit < 1:
+        result["error"] = "cooldown"
+        return result
+
     sword_key = data.get("equipped_sword")
     if not sword_key:
         result["error"] = "no_sword"
@@ -331,6 +338,9 @@ def attack_boss(data: dict) -> dict:
         result["error"] = "boss_dead"
         return result
 
+    # Фиксируем время удара
+    data["last_boss_hit"] = now
+
     # Урон
     dmg = random.randint(sword["dmg_min"], sword["dmg_max"])
     crit = False
@@ -342,9 +352,9 @@ def attack_boss(data: dict) -> dict:
     hp_after  = max(0, hp_before - dmg)
     state["boss_hp"] = hp_after
 
-    result["hit"]           = True
-    result["crit"]          = crit
-    result["dmg"]           = dmg
+    result["hit"]            = True
+    result["crit"]           = crit
+    result["dmg"]            = dmg
     result["boss_hp_before"] = hp_before
     result["boss_hp_after"]  = hp_after
 
@@ -526,12 +536,20 @@ def sword_shop_keyboard(data: dict) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     for sword in SWORDS:
         owned = has_sword(data, sword["key"])
-        label = f'{"✅ " if owned else ""}{sword["name"]} — {_fmt(sword["price"])} монет'
-        builder.row(InlineKeyboardButton(
-            text=label,
-            callback_data=f'sword_info_{sword["key"]}',
-            icon_custom_emoji_id=sword["emoji_id"]
-        ))
+        label = f'{sword["name"]} — {_fmt(sword["price"])} монет'
+        if owned:
+            builder.row(InlineKeyboardButton(
+                text=sword["name"],
+                callback_data=f'sword_info_{sword["key"]}',
+                icon_custom_emoji_id=sword["emoji_id"],
+                style="success"
+            ))
+        else:
+            builder.row(InlineKeyboardButton(
+                text=label,
+                callback_data=f'sword_info_{sword["key"]}',
+                icon_custom_emoji_id=sword["emoji_id"]
+            ))
     builder.row(InlineKeyboardButton(
         text="Назад",
         callback_data="hunt",
