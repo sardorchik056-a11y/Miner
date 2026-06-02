@@ -63,6 +63,19 @@ SWORD_EMOJIS = {
     "star_devourer":       "5440621591387980068",  # 🗡 Пожиратель Звёзд      — TODO: заменить
 }
 
+_DIGIT_EMOJIS = {
+    '0': '5217946323277330300',
+    '1': '5217834838811227319',
+    '2': '5217455082097882931',
+    '3': '5217897558218648996',
+    '4': '5217549433939438318',
+    '5': '5215460404796339401',
+    '6': '5217653758695060428',
+    '7': '5217861347349413496',
+    '8': '5217965650630161714',
+    '9': '5217442991764942337',
+}
+
 def _tg(eid, fb=""):
     return f'<tg-emoji emoji-id="{eid}">{fb}</tg-emoji>'
 
@@ -71,6 +84,14 @@ def _fmt(n):
 
 def _now_ts():
     return int(datetime.now(timezone.utc).timestamp())
+
+def _fmt_digits(n: int) -> str:
+    """Форматирует число эмодзи-цифрами."""
+    s = str(int(n))
+    parts = []
+    for ch in s:
+        parts.append(_tg(_DIGIT_EMOJIS[ch], ch))
+    return ''.join(parts)
 
 # ─────────────────────────────────────────
 #  МЕЧИ
@@ -659,21 +680,6 @@ def equip_sword(data: dict, sword_key: str) -> tuple[bool, str]:
 #  ТЕКСТЫ
 # ─────────────────────────────────────────
 
-def _hp_bar(hp: int, hp_max: int = BOSS_MAX_HP, length: int = 10) -> str:
-    """Полоска HP босса из блоков."""
-    pct  = max(0.0, min(hp / hp_max, 1.0))
-    full = round(pct * length)
-    empty = length - full
-
-    if pct > 0.6:
-        bar_char = "🟩"
-    elif pct > 0.3:
-        bar_char = "🟨"
-    else:
-        bar_char = "🟥"
-
-    return bar_char * full + "⬛" * empty
-
 
 def hunt_main_text(data: dict) -> str:
     owned = get_owned_swords(data)
@@ -729,12 +735,10 @@ def hunt_main_text(data: dict) -> str:
     if state.get("boss_alive") and boss:
         hp  = state["boss_hp"]
         pct = hp / BOSS_MAX_HP * 100
-        bar = _hp_bar(hp)
         boss_block = (
             f'<blockquote>'
             f'{_tg(_E["skull"], "💀")} <b>Текущий босс: {boss["name"]}</b> {boss["emoji"]}\n'
-            f'{_tg(_E["hp"], "❤️")} <b>HP: {_fmt(hp)} / {_fmt(BOSS_MAX_HP)}</b> <b>({pct:.1f}%)</b>\n'
-            f'{bar}'
+            f'{_tg(_E["hp"], "❤️")} <b>HP:</b> {_fmt_digits(hp)} / {_fmt_digits(BOSS_MAX_HP)} <b>({pct:.1f}%)</b>'
             f'</blockquote>'
         )
     elif not state.get("boss_alive"):
@@ -1025,7 +1029,6 @@ def boss_attack_text(data: dict) -> str:
 
     hp     = state["boss_hp"]
     pct    = hp / BOSS_MAX_HP * 100
-    bar    = _hp_bar(hp)
 
     return (
         f'<blockquote>'
@@ -1033,8 +1036,7 @@ def boss_attack_text(data: dict) -> str:
         f'<i>{boss["lore"]}</i>'
         f'</blockquote>\n\n'
         f'<blockquote>'
-        f'{_tg(_E["hp"], "❤️")} <b>HP: {_fmt(hp)} / {_fmt(BOSS_MAX_HP)}</b> <b>({pct:.1f}%)</b>\n'
-        f'{bar}'
+        f'{_tg(_E["hp"], "❤️")} <b>HP:</b> {_fmt_digits(hp)} / {_fmt_digits(BOSS_MAX_HP)} <b>({pct:.1f}%)</b>'
         f'</blockquote>\n\n'
         f'<blockquote>'
         f'{_tg(_E["sword"], "⚔️")} <b>Твой меч: {sword["name"]}</b>\n'
@@ -1084,7 +1086,6 @@ def boss_strike_result_text(data: dict, result: dict) -> str:
     hp_after  = result["boss_hp_after"]
     killed    = result["boss_killed"]
     pct       = hp_after / BOSS_MAX_HP * 100
-    bar       = _hp_bar(hp_after)
 
     crit_line = (
         f'\n{_tg(_E["crit"], "⭐")} <b>КРИТИЧЕСКИЙ УДАР!</b>'
@@ -1118,8 +1119,7 @@ def boss_strike_result_text(data: dict, result: dict) -> str:
         f'{_tg(_E["dmg"], "💥")} <b>Твой удар: {_fmt(dmg)}</b>{crit_line}'
         f'</blockquote>\n\n'
         f'<blockquote>'
-        f'{_tg(_E["hp"], "❤️")} <b>HP: {_fmt(hp_after)} / {_fmt(BOSS_MAX_HP)}</b> <b>({pct:.1f}%)</b>\n'
-        f'{bar}'
+        f'{_tg(_E["hp"], "❤️")} <b>HP:</b> {_fmt_digits(hp_after)} / {_fmt_digits(BOSS_MAX_HP)} <b>({pct:.1f}%)</b>'
         f'</blockquote>\n\n'
         f'<blockquote>'
         f'{_tg(_E["trophy"], "🏆")} <b>Награда за убийство: {_fmt(BOSS_KILL_REWARD)} {_tg(_E["coin"], "💰")}</b>'
