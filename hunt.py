@@ -700,8 +700,7 @@ SHOP_PAGE_SIZE = 5  # мечей на одну страницу
 def sword_shop_text(data: dict, page: int = 0) -> str:
     total_pages = (len(SWORDS) + SHOP_PAGE_SIZE - 1) // SHOP_PAGE_SIZE
     page = max(0, min(page, total_pages - 1))
-    start = page * SHOP_PAGE_SIZE
-    page_swords = SWORDS[start:start + SHOP_PAGE_SIZE]
+    page_swords = SWORDS[page * SHOP_PAGE_SIZE:(page + 1) * SHOP_PAGE_SIZE]
 
     owned_count = sum(1 for s in SWORDS if has_sword(data, s["key"]))
 
@@ -709,25 +708,13 @@ def sword_shop_text(data: dict, page: int = 0) -> str:
     quote_sword = random.choice(page_swords)
     quote = _SWORD_QUOTES.get(quote_sword["key"], random.choice(_SHOP_QUOTES))
 
-    lines = []
-    for sword in page_swords:
-        owned = has_sword(data, sword["key"])
-        mark  = f'{_tg(_E["ok"], "✅")}' if owned else f'{_tg(_E["lock"], "🔒")}'
-        lines.append(
-            f'{mark} {sword["rarity_color"]} <b>{sword["name"]}</b>\n'
-            f'   {sword["desc"]}'
-        )
-
-    body = "\n\n".join(lines)
-
     return (
         f'<blockquote>'
         f'{_tg(_E["shop"], "🛒")} <b>ОРУЖЕЙНАЯ</b>\n'
         f'<b>Куплено: {owned_count} / {len(SWORDS)}</b>  |  '
         f'<b>Страница {page + 1} / {total_pages}</b>\n\n'
         f'{quote}'
-        f'</blockquote>\n\n'
-        f'<blockquote>{body}</blockquote>'
+        f'</blockquote>'
     )
 
 
