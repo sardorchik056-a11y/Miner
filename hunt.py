@@ -40,7 +40,6 @@ _E = {
     "spawn":   "5197371802136892976",  # шахта
     "price":   "5397782960512444700",  # ценник
     "bag":     "5443038326535759644",  # инвентарь
-    "boss":    "5228962845672096235",  # единый премиум-эмодзи для боссов
 }
 
 # ─────────────────────────────────────────
@@ -250,7 +249,31 @@ _SWORD_QUOTES = {
     "star_devourer":        "<b>Первая звезда погасла от его удара. Последняя — тоже его.</b>",
 }
 
-# Запасные цитаты если меч не найден в словаре
+# Рандомные цитаты для каждого босса на главном экране охоты
+_BOSS_HUNT_QUOTES = {
+    "ash_lord":         "<b>Пепел не лжёт. Он показывает, что было. Скоро покажет, что будешь ты.</b>",
+    "rift_lord":        "<b>Разлом открылся не случайно. Он ждал именно тебя.</b>",
+    "ruin_warden":      "<b>Руины хранят тайны. Он хранит руины. Тебе сюда не надо.</b>",
+    "storm_king":       "<b>Буря в тоннеле — это не стихия. Это его настроение.</b>",
+    "wasteland_master": "<b>Пустошь была лесом. До него. Учти это.</b>",
+    "volcano_lord":     "<b>Лава не горячая. Это просто его кровь остыла немного.</b>",
+    "ice_overlord":     "<b>Холод — это не температура. Это его взгляд на тебя.</b>",
+    "abyss_titan":      "<b>Бездна смотрит в тебя. Но сначала — он.</b>",
+    "chasm_keeper":     "<b>Пропасть бездонная. Он проверял. Лично. Много раз.</b>",
+    "storm_overlord":   "<b>Молния бьёт дважды. Если он промахнулся с первого раза.</b>",
+    "stone_monarch":    "<b>Гора — это его трон. Ты только что вошёл во дворец.</b>",
+    "ash_lands_lord":   "<b>Пепельные земли помнят тех, кто приходил. Долго. Очень долго.</b>",
+    "ice_sovereign":    "<b>Лёд не тает. Он ждёт. Терпеливее, чем ты думаешь.</b>",
+    "dark_viceroy":     "<b>Он уже знает о тебе всё. Ты о нём — почти ничего.</b>",
+    "ruin_overlord":    "<b>Каждая цивилизация строила. Он разрушал. Счёт не в пользу цивилизаций.</b>",
+    "depths_master":    "<b>Глубины не молчат. Это он молчит. Пока.</b>",
+    "mountain_lord":    "<b>Ты думал, что идёшь в гору. Ты идёшь к нему.</b>",
+    "cursed_monarch":   "<b>Проклятие убивает слабых. Его оно только злит.</b>",
+    "void_king":        "<b>Пустота — это не ничто. Это его королевство. Добро пожаловать.</b>",
+    "last_keeper":      "<b>Он пережил всех. Каждого. Он переживёт и тебя — если не постараешься.</b>",
+}
+
+# Запасные цитаты если босс/меч не найден в словаре
 _SHOP_QUOTES = [
     "<b>Каждый клинок здесь — это история. Не все из них хорошо закончились.</b>",
     "<b>Оружие не убивает. Убивают руки. Но хорошее оружие очень помогает.</b>",
@@ -524,25 +547,6 @@ def get_boss_state() -> dict:
     return state
 
 
-# ─────────────────────────────────────────
-#  НОВАЯ ЦВЕТНАЯ ШКАЛА HP (▰▱)
-# ─────────────────────────────────────────
-def _hp_bar(hp: int, hp_max: int = BOSS_MAX_HP, length: int = 12) -> str:
-    """Цветная полоска HP из символов ▰ и ▱."""
-    pct = max(0.0, min(hp / hp_max, 1.0))
-    filled = round(pct * length)
-    empty = length - filled
-    
-    if pct > 0.66:
-        color = "🟢"
-    elif pct > 0.33:
-        color = "🟡"
-    else:
-        color = "🔴"
-    
-    bar = "▰" * filled + "▱" * empty
-    return f"{color} {bar}"
-
 def attack_boss(data: dict) -> dict:
     """
     Атака босса игроком.
@@ -655,6 +659,22 @@ def equip_sword(data: dict, sword_key: str) -> tuple[bool, str]:
 #  ТЕКСТЫ
 # ─────────────────────────────────────────
 
+def _hp_bar(hp: int, hp_max: int = BOSS_MAX_HP, length: int = 10) -> str:
+    """Полоска HP босса из блоков."""
+    pct  = max(0.0, min(hp / hp_max, 1.0))
+    full = round(pct * length)
+    empty = length - full
+
+    if pct > 0.6:
+        bar_char = "🟩"
+    elif pct > 0.3:
+        bar_char = "🟨"
+    else:
+        bar_char = "🟥"
+
+    return bar_char * full + "⬛" * empty
+
+
 def hunt_main_text(data: dict) -> str:
     owned = get_owned_swords(data)
     count = len(owned)
@@ -712,7 +732,7 @@ def hunt_main_text(data: dict) -> str:
         bar = _hp_bar(hp)
         boss_block = (
             f'<blockquote>'
-            f'{_tg(_E["boss"], "💀")} <b>Текущий босс: {boss["name"]}</b> {boss["emoji"]}\n'
+            f'{_tg(_E["skull"], "💀")} <b>Текущий босс: {boss["name"]}</b> {boss["emoji"]}\n'
             f'{_tg(_E["hp"], "❤️")} <b>HP: {_fmt(hp)} / {_fmt(BOSS_MAX_HP)}</b> <b>({pct:.1f}%)</b>\n'
             f'{bar}'
             f'</blockquote>'
@@ -808,6 +828,7 @@ def sword_shop_keyboard(data: dict, page: int = 0) -> InlineKeyboardMarkup:
                 text=f'{sword["name"]}',
                 callback_data=f'sword_info_{sword["key"]}',
                 icon_custom_emoji_id=sword["emoji_id"],
+                style="success"
             ))
         else:
             builder.row(InlineKeyboardButton(
@@ -1008,7 +1029,7 @@ def boss_attack_text(data: dict) -> str:
 
     return (
         f'<blockquote>'
-        f'{_tg(_E["boss"], "💀")} <b>{boss["name"]}</b> {boss["emoji"]}\n'
+        f'{_tg(_E["skull"], "💀")} <b>{boss["name"]}</b> {boss["emoji"]}\n'
         f'<i>{boss["lore"]}</i>'
         f'</blockquote>\n\n'
         f'<blockquote>'
@@ -1091,7 +1112,7 @@ def boss_strike_result_text(data: dict, result: dict) -> str:
 
     return (
         f'<blockquote>'
-        f'{_tg(_E["boss"], "💀")} <b>{boss_name}</b> {boss_emoji}'
+        f'{_tg(_E["skull"], "💀")} <b>{boss_name}</b> {boss_emoji}'
         f'</blockquote>\n\n'
         f'<blockquote>'
         f'{_tg(_E["dmg"], "💥")} <b>Твой удар: {_fmt(dmg)}</b>{crit_line}'
