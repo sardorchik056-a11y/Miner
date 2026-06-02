@@ -42,22 +42,6 @@ _E = {
     "bag":     "5443038326535759644",  # инвентарь
 }
 
-# Эмодзи цифр
-_DIGIT_EMOJIS = {
-    '0': '5217946323277330300',
-    '1': '5217455082097882931',
-    '2': '5217897558218648996',
-    '3': '5217549433939438318',
-    '4': '5215460404796339401',
-    '5': '5217653758695060428',
-    '6': '5217861347349413496',
-    '7': '5217965650630161714',
-    '8': '5217442991764942337',
-    '9': '5217442991764942337',  # 9 использует тот же ID, что и 8? По вашим данным 9-5217442991764942337
-}
-# Исправляем для 9 (на всякий случай оставляю как есть, но если ID для 9 другой — замените)
-_DIGIT_EMOJIS['9'] = '5217442991764942337'  # согласно вашему списку
-
 # ─────────────────────────────────────────
 #  ЭМОДЗИ МЕЧЕЙ (замени ID на свои премиум-эмодзи)
 # ─────────────────────────────────────────
@@ -79,7 +63,20 @@ SWORD_EMOJIS = {
     "star_devourer":       "5440621591387980068",  # 🗡 Пожиратель Звёзд      — TODO: заменить
 }
 
-def _tg(eid, fb="⭐"):
+_DIGIT_EMOJIS = {
+    '0': '5217946323277330300',
+    '1': '5217834838811227319',
+    '2': '5217455082097882931',
+    '3': '5217897558218648996',
+    '4': '5217549433939438318',
+    '5': '5215460404796339401',
+    '6': '5217653758695060428',
+    '7': '5217861347349413496',
+    '8': '5217965650630161714',
+    '9': '5217442991764942337',
+}
+
+def _tg(eid, fb=""):
     return f'<tg-emoji emoji-id="{eid}">{fb}</tg-emoji>'
 
 def _fmt(n):
@@ -88,19 +85,16 @@ def _fmt(n):
 def _now_ts():
     return int(datetime.now(timezone.utc).timestamp())
 
-# ─────────────────────────────────────────
-#  ФОРМАТИРОВАНИЕ ЧИСЕЛ ЭМОДЗИ-ЦИФРАМИ
-# ─────────────────────────────────────────
-def _format_hp_with_digits(hp: int) -> str:
-    """Преобразует число HP в строку из emoji-цифр."""
-    hp_str = f"{int(hp):,}".replace(",", " ")  # пробелы как разделители
-    result_parts = []
-    for ch in hp_str:
+def _fmt_digits(n: int) -> str:
+    """Форматирует число эмодзи-цифрами."""
+    s = f"{int(n):,}".replace(",", " ")
+    parts = []
+    for ch in s:
         if ch.isdigit():
-            result_parts.append(_tg(_DIGIT_EMOJIS[ch], ch))
+            parts.append(_tg(_DIGIT_EMOJIS[ch], ch))
         else:
-            result_parts.append(ch)  # пробелы оставляем как есть
-    return ''.join(result_parts)
+            parts.append(ch)
+    return ''.join(parts)
 
 # ─────────────────────────────────────────
 #  МЕЧИ
@@ -689,7 +683,6 @@ def equip_sword(data: dict, sword_key: str) -> tuple[bool, str]:
 #  ТЕКСТЫ
 # ─────────────────────────────────────────
 
-# Функция _hp_bar УДАЛЕНА по вашему запросу
 
 def hunt_main_text(data: dict) -> str:
     owned = get_owned_swords(data)
@@ -745,15 +738,10 @@ def hunt_main_text(data: dict) -> str:
     if state.get("boss_alive") and boss:
         hp  = state["boss_hp"]
         pct = hp / BOSS_MAX_HP * 100
-        
-        # ОТОБРАЖАЕМ HP ЭМОДЗИ-ЦИФРАМИ вместо шкалы
-        hp_display = _format_hp_with_digits(hp)
-        max_hp_display = _format_hp_with_digits(BOSS_MAX_HP)
-        
         boss_block = (
             f'<blockquote>'
             f'{_tg(_E["skull"], "💀")} <b>Текущий босс: {boss["name"]}</b> {boss["emoji"]}\n'
-            f'{_tg(_E["hp"], "❤️")} <b>HP: {hp_display} / {max_hp_display}</b> <b>({pct:.1f}%)</b>\n'
+            f'{_tg(_E["hp"], "❤️")} <b>HP:</b> {_fmt_digits(hp)} / {_fmt_digits(BOSS_MAX_HP)} <b>({pct:.1f}%)</b>'
             f'</blockquote>'
         )
     elif not state.get("boss_alive"):
@@ -1044,10 +1032,6 @@ def boss_attack_text(data: dict) -> str:
 
     hp     = state["boss_hp"]
     pct    = hp / BOSS_MAX_HP * 100
-    
-    # ОТОБРАЖАЕМ HP ЭМОДЗИ-ЦИФРАМИ
-    hp_display = _format_hp_with_digits(hp)
-    max_hp_display = _format_hp_with_digits(BOSS_MAX_HP)
 
     return (
         f'<blockquote>'
@@ -1055,7 +1039,7 @@ def boss_attack_text(data: dict) -> str:
         f'<i>{boss["lore"]}</i>'
         f'</blockquote>\n\n'
         f'<blockquote>'
-        f'{_tg(_E["hp"], "❤️")} <b>HP: {hp_display} / {max_hp_display}</b> <b>({pct:.1f}%)</b>\n'
+        f'{_tg(_E["hp"], "❤️")} <b>HP:</b> {_fmt_digits(hp)} / {_fmt_digits(BOSS_MAX_HP)} <b>({pct:.1f}%)</b>'
         f'</blockquote>\n\n'
         f'<blockquote>'
         f'{_tg(_E["sword"], "⚔️")} <b>Твой меч: {sword["name"]}</b>\n'
@@ -1106,10 +1090,6 @@ def boss_strike_result_text(data: dict, result: dict) -> str:
     killed    = result["boss_killed"]
     pct       = hp_after / BOSS_MAX_HP * 100
 
-    # ОТОБРАЖАЕМ HP ЭМОДЗИ-ЦИФРАМИ
-    hp_after_display = _format_hp_with_digits(hp_after)
-    max_hp_display = _format_hp_with_digits(BOSS_MAX_HP)
-
     crit_line = (
         f'\n{_tg(_E["crit"], "⭐")} <b>КРИТИЧЕСКИЙ УДАР!</b>'
         if crit else ""
@@ -1142,7 +1122,7 @@ def boss_strike_result_text(data: dict, result: dict) -> str:
         f'{_tg(_E["dmg"], "💥")} <b>Твой удар: {_fmt(dmg)}</b>{crit_line}'
         f'</blockquote>\n\n'
         f'<blockquote>'
-        f'{_tg(_E["hp"], "❤️")} <b>HP: {hp_after_display} / {max_hp_display}</b> <b>({pct:.1f}%)</b>\n'
+        f'{_tg(_E["hp"], "❤️")} <b>HP:</b> {_fmt_digits(hp_after)} / {_fmt_digits(BOSS_MAX_HP)} <b>({pct:.1f}%)</b>'
         f'</blockquote>\n\n'
         f'<blockquote>'
         f'{_tg(_E["trophy"], "🏆")} <b>Награда за убийство: {_fmt(BOSS_KILL_REWARD)} {_tg(_E["coin"], "💰")}</b>'
