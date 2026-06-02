@@ -66,7 +66,7 @@ from shop import (
     use_xp_item, sell_xp_item,
 )
 
-BOT_TOKEN = '8918670807:AAHlyTU-PRM2Z1XXoJAfJFWYHrOk9v0bXGY'
+BOT_TOKEN = '8400110033:AAH9NyaOW4us1hhiLGVIr9EobgnsRaowWLo'
 
 bot = Bot(token=BOT_TOKEN)
 
