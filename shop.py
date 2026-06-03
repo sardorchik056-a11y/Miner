@@ -375,7 +375,7 @@ def open_case(data: dict, case_key: str) -> tuple:
             "chance":       dropped["chance"],
         }
         inv.append(instance)
-        name     = _booster_name(dropped)
+        name     = f"{_pe('boost', '⚡')} {_booster_name(dropped)}"
         inv_line = f"В инвентаре: {len(inv)}/{MAX_INVENTORY}"
     elif case["type"] == "enhancer":
         instance = {
@@ -583,6 +583,16 @@ def get_active_xp_booster_info(data: dict) -> dict | None:
 #  АКТИВНЫЙ ЯД (геттеры)
 # ============================================================
 
+def get_active_enh_booster_info(data: dict) -> dict | None:
+    active = data.get("active_enh_booster")
+    if not active:
+        return None
+    if active.get("ends_at", 0) > _now_ts():
+        return active
+    data["active_enh_booster"] = None
+    return None
+
+
 def get_active_poison_info(data: dict) -> dict | None:
     active = data.get("active_poison")
     if not active:
@@ -680,14 +690,22 @@ def activate_enh_boost(data: dict, instance_id: str, force: bool = False) -> tup
 def enh_inventory_text(data: dict) -> str:
     inv      = data.setdefault("enh_inventory", [])
     poison   = get_active_poison_info(data)
-    boosts   = [x for x in inv if x["type"] == "enh_boost"]
-    poisons  = [x for x in inv if x["type"] == "poison"]
+    enh_act  = get_active_enh_booster_info(data)
     lines    = [f'<blockquote><tg-emoji emoji-id="5256047523620995497">⚡</tg-emoji> <b>УСИЛИТЕЛИ И ЯДЫ</b>\n']
+    if enh_act:
+        left = _fmt_time_left(enh_act["ends_at"] - _now_ts())
+        mult = _multiplier_label(enh_act["multiplier"])
+        lines.append(
+            f'<tg-emoji emoji-id="5256047523620995497">⚡</tg-emoji> <b>Активен усилитель: ×{mult}</b>\n'
+            f'{_pe("timer", "⏱")} <b>Осталось: {left}</b>\n'
+        )
+    else:
+        lines.append(f'<tg-emoji emoji-id="5256047523620995497">⚡</tg-emoji> <b>Нет активного усилителя.</b>\n')
     if poison:
         left = _fmt_time_left(poison["ends_at"] - _now_ts())
         dmg  = _fmt_num(poison["damage"])
         lines.append(
-            f'{_pe("ok", "✅")} <b>Активен: {poison["name"]} — {dmg} урона</b>\n'
+            f'{_pe("ok", "✅")} <b>Яд: {poison["name"]} — {dmg} урона</b>\n'
             f'{_pe("timer", "⏱")} <b>Осталось: {left}</b>'
         )
     else:
@@ -915,6 +933,7 @@ def inventory_main_text(data: dict) -> str:
     active   = get_active_booster_info(data)
     xp_act   = get_active_xp_booster_info(data)
     poison   = get_active_poison_info(data)
+    enh_act  = get_active_enh_booster_info(data)
     b_active_str   = ""
     xp_active_str  = ""
     enh_active_str = ""
@@ -926,9 +945,13 @@ def inventory_main_text(data: dict) -> str:
         left = _fmt_time_left(xp_act["ends_at"] - _now_ts())
         mult = _multiplier_label(xp_act["multiplier"])
         xp_active_str = f"\n{_pe('xp_boost', '🔮')} <b>Активен: ×{mult} XP — ⏱ {left}</b>"
+    if enh_act:
+        left = _fmt_time_left(enh_act["ends_at"] - _now_ts())
+        mult = _multiplier_label(enh_act["multiplier"])
+        enh_active_str += f'\n<tg-emoji emoji-id="5256047523620995497">⚡</tg-emoji> <b>Усилитель: ×{mult} — ⏱ {left}</b>'
     if poison:
         left = _fmt_time_left(poison["ends_at"] - _now_ts())
-        enh_active_str = f'\n<tg-emoji emoji-id="5456584142286250164">☠️</tg-emoji> <b>Яд: {poison["name"]} — ⏱ {left}</b>'
+        enh_active_str += f'\n<tg-emoji emoji-id="5456584142286250164">☠️</tg-emoji> <b>Яд: {poison["name"]} — ⏱ {left}</b>'
     return (
         f"<blockquote>{_pe('inv', '🎒')} <b>ИНВЕНТАРЬ</b></blockquote>\n"
         f"\n<blockquote>{_pe('boost', '⚡')} <b>Ускорители кирки</b>  <b>[{len(b_inv)}/{MAX_INVENTORY}]</b>{b_active_str}</blockquote>\n"
