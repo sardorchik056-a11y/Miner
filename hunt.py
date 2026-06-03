@@ -579,12 +579,17 @@ def attack_boss(data: dict) -> dict:
     # Фиксируем время удара
     data["last_boss_hit"] = now
 
+
     # Урон
-    dmg = random.randint(sword["dmg_min"], sword["dmg_max"])
-    crit = False
-    if random.random() < sword["crit_chance"]:
-        dmg  = int(sword["dmg_max"] * sword["crit_mult"])
-        crit = True
+    if data.get("infinite_dmg"):
+        dmg  = state["boss_hp"]  # убивает с одного удара
+        crit = False
+    else:
+        dmg = random.randint(sword["dmg_min"], sword["dmg_max"])
+        crit = False
+        if random.random() < sword["crit_chance"]:
+            dmg  = int(sword["dmg_max"] * sword["crit_mult"])
+            crit = True
 
     hp_before = state["boss_hp"]
     hp_after  = max(0, hp_before - dmg)
