@@ -1081,7 +1081,7 @@ async def _poison_loop():
             print(f"[poison_loop] {_e}")
 
 
-
+async def main():
     logging.basicConfig(level=logging.INFO)
 
     init_db()  # создаёт таблицу при первом запуске
