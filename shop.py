@@ -851,10 +851,10 @@ def cases_shop_text(data: dict = None) -> str:
     return (
         f"<blockquote>{_pe('shop', '🛒')} <b>МАГАЗИН КЕЙСОВ</b>\n"
         f"<b>Открывай кейсы и получай бонусы!</b></blockquote>\n"
-        f"\n<blockquote>{_pe('stats', '📊')} <b>Твоя статистика</b>\n"
+        f'\n<blockquote><tg-emoji emoji-id="5231200819986047254">🎟</tg-emoji> <b>Твоя статистика</b>\n'
         f"<b>Открыто кейсов: {total_opened:,}</b>\n"
         f"{_pe('spent', '💸')} <b>Потрачено: {_fmt_num(total_spent)}</b> {_pe('coin', '💰')}</blockquote>\n"
-        f"\n<blockquote>{_pe('luck', '🍀')} <b>Удачи тебе! Пусть выпадет что-то крутое</b> {_pe('luck', '🍀')}</blockquote>"
+        f'\n<blockquote><tg-emoji emoji-id="5269531045165816230">🎟</tg-emoji> <b>Удачи тебе! Пусть выпадет что-то крутое</b><tg-emoji emoji-id="5269531045165816230">🎟</tg-emoji></blockquote>'
     )
 
 
