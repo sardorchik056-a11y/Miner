@@ -126,7 +126,7 @@ def main_menu_keyboard() -> InlineKeyboardMarkup:
     builder.row(
         InlineKeyboardButton(text="Профиль",    callback_data="profile",  icon_custom_emoji_id=EMOJI_PROFILE),
         InlineKeyboardButton(text="Статистика", callback_data="stats",    icon_custom_emoji_id=EMOJI_STATS),
-        InlineKeyboardButton(text="Кейсы",      callback_data="shop_cases", icon_custom_emoji_id=EMOJI_SHOP),
+        InlineKeyboardButton(text="Магазин",    callback_data="shop",     icon_custom_emoji_id=EMOJI_SHOP),
     )
     builder.row(InlineKeyboardButton(text=" Шахта ", callback_data="mine", icon_custom_emoji_id=EMOJI_MINE))
     builder.row(
@@ -1005,7 +1005,83 @@ async def _pets_loop():
         await asyncio.sleep(15 * 60)
 
 
-async def main():
+async def _poison_loop():
+    """Фоновая задача: яд наносит урон боссу каждую минуту.
+    Суммарный урон = damage, распределённый равномерно по 30 тикам (30 мин).
+    Если босс умирает от яда — владелец получает награду.
+    """
+    from database import get_all_users, save_user as _sv
+    from hunt import get_boss_state, _save_boss_state, BOSS_KILL_REWARD, _now_ts as _h_now
+    from shop import get_active_poison_info
+
+    while True:
+        await asyncio.sleep(60)  # тик каждую минуту
+        try:
+            from database import get_all_users as _gau
+            for _d in _gau():
+                poison = get_active_poison_info(_d)
+                if not poison:
+                    continue
+
+                now = _h_now()
+
+                # Считаем сколько тиков уже прошло и сколько урона нанесено
+                applied_at   = poison.get("applied_at", poison["ends_at"] - 1800)
+                total_damage = poison["damage"]
+                duration_sec = 30 * 60  # 30 минут = 1800 сек
+                tick_damage  = round(total_damage / 30)  # урон за 1 тик (1 мин)
+
+                last_tick = poison.get("last_tick", applied_at)
+                if now - last_tick < 55:  # ещё не прошла минута
+                    continue
+
+                # Наносим тик урона боссу
+                state = get_boss_state()
+                if not state.get("boss_alive"):
+                    continue
+
+                hp_before = state["boss_hp"]
+                hp_after  = max(0, hp_before - tick_damage)
+                state["boss_hp"] = hp_after
+
+                poison["last_tick"] = now
+                _d["active_poison"] = poison
+
+                killed = hp_after == 0
+                if killed:
+                    from datetime import datetime, timezone as _tz
+                    died_at      = now
+                    spawned_at   = state.get("boss_spawned", died_at)
+                    kill_duration = died_at - spawned_at
+                    state["boss_alive"]         = False
+                    state["boss_died_at"]        = died_at
+                    state["boss_kill_duration"]  = kill_duration
+                    _d["balance"] = _d.get("balance", 0) + BOSS_KILL_REWARD
+                    _d["active_poison"] = None
+
+                _save_boss_state(state)
+                _sv(_d["id"], _d)
+
+                if killed:
+                    from hunt import BOSSES_BY_KEY
+                    boss_name = BOSSES_BY_KEY.get(state.get("boss_key"), {}).get("name", "Босс")
+                    reward_text = (
+                        f'<tg-emoji emoji-id="5456584142286250164">☠️</tg-emoji> <b>Яд добил босса!</b>\n\n'
+                        f'<blockquote>'
+                        f'<b>{boss_name} уничтожен ядом!</b>\n'
+                        f'<tg-emoji emoji-id="5438496463044752972">💰</tg-emoji> <b>Награда: +{BOSS_KILL_REWARD:,} монет</b>'
+                        f'</blockquote>'
+                    )
+                    try:
+                        await bot.send_message(_d["id"], reward_text, parse_mode="HTML")
+                    except Exception:
+                        pass
+
+        except Exception as _e:
+            print(f"[poison_loop] {_e}")
+
+
+
     logging.basicConfig(level=logging.INFO)
 
     init_db()  # создаёт таблицу при первом запуске
@@ -1045,6 +1121,9 @@ async def main():
 
     # ── Запускаем фоновую задачу питомцев ──
     asyncio.create_task(_pets_loop())
+
+    # ── Запускаем фоновую задачу яда ──
+    asyncio.create_task(_poison_loop())
 
     print("🤖 Бот запущен! БД: tgstellar.db")
     await dp.start_polling(bot)
