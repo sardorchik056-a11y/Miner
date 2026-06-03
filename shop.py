@@ -258,9 +258,9 @@ def get_xp_sell_price(item: dict) -> int:
 
 
 CASES = {
-    "common":   {"key": "common",   "name": "Обычный",    "cost": 10_000, "pool": _BOOSTER_POOL, "type": "booster"},
-    "xp":       {"key": "xp",       "name": "XP",         "cost": 25_000, "pool": _XP_POOL,      "type": "xp"},
-    "enhancer": {"key": "enhancer", "name": "Усилителей", "cost": 50_000, "pool": _ENH_POOL,     "type": "enhancer"},
+    "common":   {"key": "common",   "name": "Ускорителей", "cost": 10_000, "pool": _BOOSTER_POOL, "type": "booster"},
+    "xp":       {"key": "xp",       "name": "XP",          "cost": 25_000, "pool": _XP_POOL,      "type": "xp"},
+    "enhancer": {"key": "enhancer", "name": "Усилителей",  "cost": 50_000, "pool": _ENH_POOL,     "type": "enhancer"},
 }
 
 # ============================================================
@@ -943,7 +943,7 @@ def boosters_inventory_text(data: dict) -> str:
         lines.append(f"{_pe('cancel', '❌')} <b>Нет активного ускорителя.</b>")
     lines.append("</blockquote>")
     if not inv:
-        lines.append(f"\n<blockquote>{_pe('case', '📦')} <b>Инвентарь пуст. Открой Обычный кейс!</b></blockquote>")
+        lines.append(f"\n<blockquote>{_pe('case', '📦')} <b>Инвентарь пуст. Открой Кейс ускорителей!</b></blockquote>")
     else:
         inv_lines = [f"\n<blockquote><b>В инвентаре ({len(inv)}/{MAX_INVENTORY}):</b>"]
         for i, item in enumerate(inv, 1):
