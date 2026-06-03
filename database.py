@@ -206,9 +206,10 @@ def profile_text(d: dict) -> str:
         xp_str   = f"<b>{xp:,}/{xp_max:,}</b>"
 
     # Ускорители
-    from shop import get_active_booster_info, get_active_xp_booster_info, _multiplier_label, _DUR_LABELS, _fmt_time_left, _now_ts
-    active    = get_active_booster_info(d)
-    xp_active = get_active_xp_booster_info(d)
+    from shop import get_active_booster_info, get_active_xp_booster_info, get_active_enh_booster_info, _multiplier_label, _DUR_LABELS, _fmt_time_left, _now_ts
+    active     = get_active_booster_info(d)
+    xp_active  = get_active_xp_booster_info(d)
+    enh_active = get_active_enh_booster_info(d)
 
     booster_lines = ""
 
@@ -222,6 +223,11 @@ def profile_text(d: dict) -> str:
         dur  = _DUR_LABELS[xp_active["dur_key"]]
         left = _fmt_time_left(xp_active["ends_at"] - _now_ts())
         booster_lines += f'\n<tg-emoji emoji-id="5224607267797606837">🔮</tg-emoji> XP: ×{mult} на {dur} — <tg-emoji emoji-id="5382194935057372936">⏱</tg-emoji> {left}'
+    if enh_active:
+        mult = _multiplier_label(enh_active["multiplier"])
+        dur  = _DUR_LABELS[enh_active["dur_key"]]
+        left = _fmt_time_left(enh_active["ends_at"] - _now_ts())
+        booster_lines += f'\n<tg-emoji emoji-id="5256047523620995497">⚡</tg-emoji> Усилитель: ×{mult} на {dur} — <tg-emoji emoji-id="5382194935057372936">⏱</tg-emoji> {left}'
 
     booster_block = (
         f'\n\n<blockquote><tg-emoji emoji-id="5258203794772085854">⚡</tg-emoji> <b>Активные бусты</b>{booster_lines}</blockquote>'
