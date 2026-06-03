@@ -258,9 +258,9 @@ def get_xp_sell_price(item: dict) -> int:
 
 
 CASES = {
-    "common":   {"key": "common",   "name": "Ускорителей", "cost": 10_000, "pool": _BOOSTER_POOL, "type": "booster"},
-    "xp":       {"key": "xp",       "name": "XP",          "cost": 25_000, "pool": _XP_POOL,      "type": "xp"},
-    "enhancer": {"key": "enhancer", "name": "Усилителей",  "cost": 50_000, "pool": _ENH_POOL,     "type": "enhancer"},
+    "common":   {"key": "common",   "name": "Кейс ускорителей", "cost": 10_000, "pool": _BOOSTER_POOL, "type": "booster"},
+    "xp":       {"key": "xp",       "name": "XP",               "cost": 25_000, "pool": _XP_POOL,      "type": "xp"},
+    "enhancer": {"key": "enhancer", "name": "Кейс усилителей",  "cost": 50_000, "pool": _ENH_POOL,     "type": "enhancer"},
 }
 
 # ============================================================
@@ -284,6 +284,15 @@ def _booster_name(b: dict) -> str:
 
 def _xp_item_name(item: dict) -> str:
     if item["type"] == "xp_instant":
+        return f"✨ {_fmt_num(item['xp'])} XP"
+    mult = _multiplier_label(item["multiplier"])
+    dur  = _DUR_LABELS[item["dur_key"]]
+    return f"🔮 XP-ускоритель {mult} на {dur}"
+
+
+def _xp_item_name_rich(item: dict) -> str:
+    """С tg-emoji — только для текста сообщений."""
+    if item["type"] == "xp_instant":
         return f"{_pe('xp_instant', '✨')} {_fmt_num(item['xp'])} XP"
     mult = _multiplier_label(item["multiplier"])
     dur  = _DUR_LABELS[item["dur_key"]]
@@ -297,6 +306,16 @@ def _enh_item_name(item: dict) -> str:
     mult = _multiplier_label(item["multiplier"])
     dur  = _DUR_LABELS[item["dur_key"]]
     return f'{_pe("enh_boost", "⚡")} Усилитель {mult} на {dur}'
+
+
+def _enh_item_name_plain(item: dict) -> str:
+    """Версия без tg-emoji тегов — для текста кнопок."""
+    if item["type"] == "poison":
+        dmg = _fmt_num(item["damage"])
+        return f'☠️ {item["name"]} — {dmg} урона'
+    mult = _multiplier_label(item["multiplier"])
+    dur  = _DUR_LABELS[item["dur_key"]]
+    return f'⚡ Усилитель {mult} на {dur}'
 
 
 def _now_ts() -> float:
@@ -386,12 +405,12 @@ def open_case(data: dict, case_key: str) -> tuple:
         }
         if dropped["type"] == "xp_instant":
             instance["xp"] = dropped["xp"]
-            name = _xp_item_name(dropped)
+            name = _xp_item_name_rich(dropped)
         else:
             instance["multiplier"]   = dropped["multiplier"]
             instance["dur_key"]      = dropped["dur_key"]
             instance["duration_sec"] = _DUR[dropped["dur_key"]]
-            name = _xp_item_name(dropped)
+            name = _xp_item_name_rich(dropped)
         inv.append(instance)
         inv_line = f"В XP-инвентаре: {len(inv)}/{MAX_XP_INVENTORY}"
     data["cases_total_opened"] = data.get("cases_total_opened", 0) + 1
@@ -506,7 +525,7 @@ def sell_xp_item(data: dict, instance_id: str) -> tuple:
     data["balance"] = data.get("balance", 0) + price
     return True, (
         f"<blockquote>{_pe('sell', '💸')} <b>Продано!</b>\n"
-        f"{_xp_item_name(item)}\n"
+        f"{_xp_item_name_rich(item)}\n"
         f"{_pe('coin', '💰')} <b>+{_fmt_num(price)}</b>\n"
         f"{_pe('balance', '💰')} <b>Баланс: {_fmt_num(data['balance'])}</b> {_pe('coin', '💰')}</blockquote>"
     ), price
@@ -692,8 +711,10 @@ def enh_inventory_keyboard(data: dict) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     inv = data.get("enh_inventory", [])
     for item in inv[:MAX_ENH_INVENTORY]:
-        e_key = "poison" if item["type"] == "poison" else "enh_boost"
-        builder.row(_btn(_E[e_key], _enh_item_name(item), f'enh_info_{item["instance_id"]}'))
+        builder.row(InlineKeyboardButton(
+            text=_enh_item_name_plain(item),
+            callback_data=f'enh_info_{item["instance_id"]}'
+        ))
     builder.row(_back_btn("profile_boosters", "Инвентарь"))
     return builder.as_markup()
 
@@ -830,8 +851,8 @@ def cases_shop_keyboard() -> InlineKeyboardMarkup:
             e_key = "xp_case"
         else:
             e_key = "enh_case"
-        builder.row(_btn(_E[e_key], f'{c["name"]} кейс', f'case_info_{c["key"]}'))
-    builder.row(_back_btn("shop", "Назад в магазин"))
+        builder.row(_btn(_E[e_key], c["name"], f'case_info_{c["key"]}'))
+    builder.row(_back_btn("back_to_menu", "Назад"))
     return builder.as_markup()
 
 
@@ -922,7 +943,7 @@ def inventory_main_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.row(_btn(_E["boost"],    "Ускорители кирки", "inv_boosters"))
     builder.row(_btn(_E["xp_boost"], "XP-предметы",      "inv_xp"))
-    builder.row(_btn(_E["enh_case"], "Усилители и яды",  "inv_enh"))
+    builder.row(InlineKeyboardButton(text="⚡ Усилители и яды", callback_data="inv_enh"))
     builder.row(_back_btn("profile", "Назад в профиль"))
     return builder.as_markup()
 
@@ -1052,7 +1073,7 @@ def xp_inventory_text(data: dict) -> str:
         inv_lines = [f"\n<blockquote><b>В инвентаре ({len(inv)}/{MAX_XP_INVENTORY}):</b>"]
         for i, item in enumerate(inv, 1):
             price = get_xp_sell_price(item)
-            inv_lines.append(f"\n<b>{i}. {_xp_item_name(item)}</b>\n{_pe('coin', '💰')} <b>{_fmt_num(price)}</b>")
+            inv_lines.append(f"\n<b>{i}. {_xp_item_name_rich(item)}</b>\n{_pe('coin', '💰')} <b>{_fmt_num(price)}</b>")
         inv_lines.append("</blockquote>")
         lines.extend(inv_lines)
     return "".join(lines)
