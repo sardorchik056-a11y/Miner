@@ -599,6 +599,12 @@ def attack_boss(data: dict) -> dict:
     data["last_boss_hit"] = now
 
 
+    # Множитель усилителя урона из кейса усилителей
+    from datetime import datetime, timezone as _tz
+    _now_check = datetime.now(_tz.utc).timestamp()
+    _enh = data.get("active_enh_booster")
+    enh_mult = (_enh["multiplier"] if _enh and _enh.get("ends_at", 0) > _now_check else 1.0)
+
     # Урон
     if data.get("infinite_dmg"):
         dmg  = state["boss_hp"]  # убивает с одного удара
@@ -609,6 +615,7 @@ def attack_boss(data: dict) -> dict:
         if random.random() < sword["crit_chance"]:
             dmg  = int(sword["dmg_max"] * sword["crit_mult"])
             crit = True
+        dmg = int(dmg * enh_mult)
 
     hp_before = state["boss_hp"]
     hp_after  = max(0, hp_before - dmg)
@@ -1037,6 +1044,26 @@ def boss_attack_text(data: dict) -> str:
     max_hp = state.get("boss_max_hp", BOSS_MAX_HP)
     pct    = hp / max_hp * 100
 
+    # Строка активного усилителя урона
+    from datetime import datetime, timezone as _tz
+    _now_check = datetime.now(_tz.utc).timestamp()
+    _enh = data.get("active_enh_booster")
+    if _enh and _enh.get("ends_at", 0) > _now_check:
+        _rem = int(_enh["ends_at"] - _now_check)
+        _h, _rem2 = divmod(_rem, 3600)
+        _m, _s    = divmod(_rem2, 60)
+        _left = f"{_h}ч {_m:02d}м" if _h else (f"{_m}м {_s:02d}с" if _m else f"{_s}с")
+        _mult = _enh["multiplier"]
+        _ms   = str(_mult).rstrip("0").rstrip(".")
+        enh_line = (
+            f'\n\n<blockquote>'
+            f'{_tg(_E["fire"], "⚡")} <b>Усилитель урона: ×{_ms} активен</b>\n'
+            f'{_tg(_E["timer"], "⏱")} <b>Осталось: {_left}</b>'
+            f'</blockquote>'
+        )
+    else:
+        enh_line = ""
+
     return (
         f'<blockquote>'
         f'{_tg(_E["skull"], "💀")} <b>{boss["name"]}</b>\n'
@@ -1053,6 +1080,7 @@ def boss_attack_text(data: dict) -> str:
         f'<blockquote>'
         f'{_tg(_E["trophy"], "🏆")} <b>Награда за убийство: {_fmt(BOSS_KILL_REWARD)} {_tg(_E["coin"], "💰")}</b>'
         f'</blockquote>'
+        f'{enh_line}'
     )
 
 
