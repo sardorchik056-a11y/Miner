@@ -280,26 +280,42 @@ async def cmd_updamage(message: Message):
     if message.from_user.id not in ADMIN_IDS:
         return  # тихо игнорируем
 
-    from hunt import get_boss_state, _save_boss_state, _spawn_next_boss, _now_ts, BOSSES_BY_KEY, BOSS_KILL_REWARD
-
-    state = get_boss_state()
-
-    if not state.get("boss_alive", False):
-        await message.reply("❌ Босс уже мёртв, нечего убивать.", parse_mode="HTML")
+    parts = message.text.strip().split()
+    if len(parts) != 2:
+        await message.reply(
+            "❌ Неверный формат.\nИспользование: <code>/updamage username|id</code>",
+            parse_mode="HTML"
+        )
         return
 
-    boss_key = state.get("boss_key")
-    boss = BOSSES_BY_KEY.get(boss_key)
-    boss_name = boss["name"] if boss else boss_key
+    target_raw = parts[1].lstrip("@")
+    from database import get_all_users, save_user as _save
+    all_users = get_all_users()
 
-    state["boss_hp"] = 0
-    state["boss_alive"] = False
-    state["boss_died_at"] = _now_ts()
-    _save_boss_state(state)
+    if target_raw.lstrip("-").isdigit():
+        found = next((u for u in all_users if u["id"] == int(target_raw)), None)
+    else:
+        found = next(
+            (u for u in all_users if (u.get("username") or "").lower() == target_raw.lower()),
+            None
+        )
+
+    if not found:
+        await message.reply(
+            f"❌ Пользователь <code>{target_raw}</code> не найден в базе.",
+            parse_mode="HTML"
+        )
+        return
+
+    current = found.get("infinite_dmg", False)
+    found["infinite_dmg"] = not current
+    _save(found["id"], found)
+
+    name = found.get("first_name") or found.get("username") or str(found["id"])
+    status = "✅ <b>Включён</b>" if found["infinite_dmg"] else "❌ <b>Выключен</b>"
 
     await message.reply(
-        f'💀 <b>Босс <i>{boss_name}</i> уничтожен одним ударом!</b>\n'
-        f'<blockquote>Следующий появится через 2 часа.</blockquote>',
+        f'⚔️ <b>Бесконечный урон для {name}:</b> {status}',
         parse_mode="HTML"
     )
 
