@@ -1077,7 +1077,7 @@ def boss_strike_result_text(data: dict, result: dict) -> str:
         reward = result["reward"]
         return (
             f'<blockquote>'
-            f'{_tg(_E["trophy"], "🏆")} <b>БОСС УНИЧТОЖЕН!</b>\n\n'
+            f'{_tg(_E["skull"], "💀")} <b>БОСС УНИЧТОЖЕН!</b>\n\n'
             f'<b>{boss["name"] if boss else "Босс"} повержен!</b>'
             f'</blockquote>\n\n'
             f'<blockquote>'
