@@ -892,7 +892,7 @@ def sword_detail_keyboard(data: dict, sword_key: str) -> InlineKeyboardMarkup:
 
         if not owned:
             builder.row(InlineKeyboardButton(
-                text=f'Купить {sword["name"]} — {_fmt(sword["price"])} монет',
+                text=f'{_fmt(sword["price"])} 🪙',
                 callback_data=f'sword_buy_{sword_key}',
                 icon_custom_emoji_id=sword["emoji_id"]
             ))
@@ -938,7 +938,7 @@ def my_swords_text(data: dict) -> str:
 
     return (
         f'<blockquote>'
-        f'{_tg(_E["bag"], "🎒")} <b>МОИ МЕЧИ</b>\n'
+        f'{_tg(_E["my_swords"], "⚔️")} <b>МОИ МЕЧИ</b>\n'
         f'<b>Арсенал: {len(owned)} / {len(SWORDS)}</b>'
         f'</blockquote>\n\n'
         f'<blockquote>{body}</blockquote>'
