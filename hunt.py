@@ -892,7 +892,7 @@ def sword_detail_keyboard(data: dict, sword_key: str) -> InlineKeyboardMarkup:
 
         if not owned:
             builder.row(InlineKeyboardButton(
-                text=f'{_fmt(sword["price"])} 🪙',
+                text=f'{_fmt(sword["price"])} {COIN}',
                 callback_data=f'sword_buy_{sword_key}',
                 icon_custom_emoji_id=sword["emoji_id"]
             ))
