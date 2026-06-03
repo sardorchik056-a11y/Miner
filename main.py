@@ -62,8 +62,12 @@ from shop import (
     xp_inventory_text, xp_inventory_keyboard,
     xp_item_detail_text, xp_item_detail_keyboard,
     xp_confirm_replace_text, xp_confirm_replace_keyboard,
+    enh_inventory_text, enh_inventory_keyboard,
+    enh_item_detail_text, enh_item_detail_keyboard,
+    enh_confirm_replace_text, enh_confirm_replace_keyboard,
     open_case, activate_booster, sell_booster,
     use_xp_item, sell_xp_item,
+    use_poison, activate_enh_boost, sell_enh_item,
 )
 
 BOT_TOKEN = '8400110033:AAH9NyaOW4us1hhiLGVIr9EobgnsRaowWLo'
@@ -502,7 +506,79 @@ async def handle_callback(call: CallbackQuery):
             await edit(xp_inventory_text(data), xp_inventory_keyboard(data))
             return
 
-        if cd == "shop_pickaxes":
+        # ===== ИНВЕНТАРЬ — раздел усилителей и ядов =====
+        if cd == "inv_enh":
+            await edit(enh_inventory_text(data), enh_inventory_keyboard(data))
+            return
+
+        # ===== КАРТОЧКА УСИЛИТЕЛЯ / ЯДА =====
+        if cd.startswith("enh_info_"):
+            instance_id = cd.removeprefix("enh_info_")
+            inv  = data.get("enh_inventory", [])
+            item = next((x for x in inv if x["instance_id"] == instance_id), None)
+            if not item:
+                await call.answer("❌ Предмет не найден.", show_alert=True)
+                return
+            await edit(enh_item_detail_text(data, instance_id), enh_item_detail_keyboard(item["type"], instance_id))
+            return
+
+        # ===== ПРИМЕНИТЬ ЯД =====
+        if cd.startswith("enh_use_"):
+            instance_id = cd.removeprefix("enh_use_")
+            ok, msg = use_poison(data, instance_id)
+            if ok:
+                save_user(data["id"], data)
+                await call.answer("☠️ Яд применён!", show_alert=True)
+                await edit(enh_inventory_text(data), enh_inventory_keyboard(data))
+            elif msg.startswith("CONFIRM_REPLACE_POISON:"):
+                await edit(enh_confirm_replace_text(data, instance_id, "poison"), enh_confirm_replace_keyboard(instance_id, "poison"))
+            else:
+                await call.answer(msg, show_alert=True)
+            return
+
+        # ===== АКТИВИРОВАТЬ УСИЛИТЕЛЬ УРОНА =====
+        if cd.startswith("enh_activate_"):
+            instance_id = cd.removeprefix("enh_activate_")
+            ok, msg = activate_enh_boost(data, instance_id)
+            if ok:
+                save_user(data["id"], data)
+                await call.answer("⚡ Усилитель активирован!", show_alert=True)
+                await edit(enh_inventory_text(data), enh_inventory_keyboard(data))
+            elif msg.startswith("CONFIRM_REPLACE_ENH:"):
+                await edit(enh_confirm_replace_text(data, instance_id, "enh_boost"), enh_confirm_replace_keyboard(instance_id, "enh_boost"))
+            else:
+                await call.answer(msg, show_alert=True)
+            return
+
+        # ===== ПОДТВЕРЖДЕНИЕ ЗАМЕНЫ ЯДА =====
+        if cd.startswith("enh_poison_replace_"):
+            instance_id = cd.removeprefix("enh_poison_replace_")
+            ok, msg = use_poison(data, instance_id, force=True)
+            await call.answer("☠️ Яд заменён!" if ok else msg, show_alert=True)
+            if ok:
+                save_user(data["id"], data)
+            await edit(enh_inventory_text(data), enh_inventory_keyboard(data))
+            return
+
+        # ===== ПОДТВЕРЖДЕНИЕ ЗАМЕНЫ УСИЛИТЕЛЯ УРОНА =====
+        if cd.startswith("enh_boost_replace_"):
+            instance_id = cd.removeprefix("enh_boost_replace_")
+            ok, msg = activate_enh_boost(data, instance_id, force=True)
+            await call.answer("⚡ Усилитель заменён!" if ok else msg, show_alert=True)
+            if ok:
+                save_user(data["id"], data)
+            await edit(enh_inventory_text(data), enh_inventory_keyboard(data))
+            return
+
+        # ===== ПРОДАЖА УСИЛИТЕЛЯ / ЯДА =====
+        if cd.startswith("enh_sell_"):
+            instance_id = cd.removeprefix("enh_sell_")
+            ok, msg, price = sell_enh_item(data, instance_id)
+            await call.answer(f"💸 Продано за {price:,} монет!" if ok else msg, show_alert=True)
+            if ok:
+                save_user(data["id"], data)
+            await edit(enh_inventory_text(data), enh_inventory_keyboard(data))
+            return
             await edit(shop_pickaxes_text(), shop_pickaxes_keyboard(data))
             return
 
