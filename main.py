@@ -275,7 +275,36 @@ async def cmd_add_balance(message: Message):
     )
 
 
-@dp.message(Command("start", "menu"))
+@dp.message(Command("updamage"))
+async def cmd_updamage(message: Message):
+    if message.from_user.id not in ADMIN_IDS:
+        return  # тихо игнорируем
+
+    from hunt import get_boss_state, _save_boss_state, _spawn_next_boss, _now_ts, BOSSES_BY_KEY, BOSS_KILL_REWARD
+
+    state = get_boss_state()
+
+    if not state.get("boss_alive", False):
+        await message.reply("❌ Босс уже мёртв, нечего убивать.", parse_mode="HTML")
+        return
+
+    boss_key = state.get("boss_key")
+    boss = BOSSES_BY_KEY.get(boss_key)
+    boss_name = boss["name"] if boss else boss_key
+
+    state["boss_hp"] = 0
+    state["boss_alive"] = False
+    state["boss_died_at"] = _now_ts()
+    _save_boss_state(state)
+
+    await message.reply(
+        f'💀 <b>Босс <i>{boss_name}</i> уничтожен одним ударом!</b>\n'
+        f'<blockquote>Следующий появится через 2 часа.</blockquote>',
+        parse_mode="HTML"
+    )
+
+
+
 async def send_welcome(message: Message):
     get_or_create_user(message.from_user)
     await message.answer(
