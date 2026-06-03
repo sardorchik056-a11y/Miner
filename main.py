@@ -126,7 +126,7 @@ def main_menu_keyboard() -> InlineKeyboardMarkup:
     builder.row(
         InlineKeyboardButton(text="Профиль",    callback_data="profile",  icon_custom_emoji_id=EMOJI_PROFILE),
         InlineKeyboardButton(text="Статистика", callback_data="stats",    icon_custom_emoji_id=EMOJI_STATS),
-        InlineKeyboardButton(text="Кейсы",      callback_data="shop_cases", icon_custom_emoji_id="5438571934210082705"),
+        InlineKeyboardButton(text="Кейсы",      callback_data="shop_cases", icon_custom_emoji_id="5442939099906325301"),
     )
     builder.row(InlineKeyboardButton(text=" Шахта ", callback_data="mine", icon_custom_emoji_id=EMOJI_MINE))
     builder.row(
