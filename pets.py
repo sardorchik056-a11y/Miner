@@ -113,7 +113,7 @@ def _get_pet_page(pet_key):
     return 0
 
 def _n(eid, fb, name, text):
-    return f'{_tg(eid, fb)} <b>{name}</b> {text}'
+    return f'{_tg(eid, fb)} <b>{name}</b> <b>{text}</b>'
 
 _NOTIFICATIONS = {
     "hamster": [
@@ -264,7 +264,12 @@ def get_pending_notifications(data):
     return result
 
 def pet_income_text(pet_key, amount, notification):
-    return notification
+    return (
+        f'<blockquote>{notification}</blockquote>\n\n'
+        f'<blockquote>'
+        f'{_tg("5427168083074628963", "➡️")} <b>Принёс тебе: +{_fmt(amount)} {_tg(_E["coin"], "💰")}</b>'
+        f'</blockquote>'
+    )
 
 # 10 уникальных случайных текстов для раздела питомцев
 _PETS_MENU_TEXTS = [
