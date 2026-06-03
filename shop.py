@@ -299,6 +299,25 @@ def _enh_item_name(item: dict) -> str:
     return f'{_pe("enh_boost", "⚡")} Усилитель {mult} на {dur}'
 
 
+def _enh_item_name_plain(item: dict) -> str:
+    """Без HTML-тегов — для текста кнопок клавиатуры."""
+    if item["type"] == "poison":
+        dmg = _fmt_num(item["damage"])
+        return f'{item["name"]} — {dmg} урона'
+    mult = _multiplier_label(item["multiplier"])
+    dur  = _DUR_LABELS[item["dur_key"]]
+    return f'Усилитель {mult} на {dur}'
+
+
+def _xp_item_name_plain(item: dict) -> str:
+    """Без HTML-тегов — для текста кнопок клавиатуры."""
+    if item["type"] == "xp_instant":
+        return f'{_fmt_num(item["xp"])} XP'
+    mult = _multiplier_label(item["multiplier"])
+    dur  = _DUR_LABELS[item["dur_key"]]
+    return f'XP-ускоритель {mult} на {dur}'
+
+
 def _now_ts() -> float:
     return datetime.now(timezone.utc).timestamp()
 
@@ -634,13 +653,13 @@ def activate_enh_boost(data: dict, instance_id: str, force: bool = False) -> tup
     item = next((x for x in inv if x["instance_id"] == instance_id), None)
     if not item or item["type"] != "enh_boost":
         return False, "❌ Усилитель не найден."
-    active     = data.get("active_booster")
+    active     = data.get("active_enh_booster")
     has_active = active and active.get("ends_at", 0) > _now_ts()
     if has_active and not force:
         return False, f"CONFIRM_REPLACE_ENH:{instance_id}"
     data["enh_inventory"] = [x for x in inv if x["instance_id"] != instance_id]
     ends_at = _now_ts() + item["duration_sec"]
-    data["active_booster"] = {
+    data["active_enh_booster"] = {
         "key":        item["key"],
         "multiplier": item["multiplier"],
         "dur_key":    item["dur_key"],
@@ -693,7 +712,7 @@ def enh_inventory_keyboard(data: dict) -> InlineKeyboardMarkup:
     inv = data.get("enh_inventory", [])
     for item in inv[:MAX_ENH_INVENTORY]:
         e_key = "poison" if item["type"] == "poison" else "enh_boost"
-        builder.row(_btn(_E[e_key], _enh_item_name(item), f'enh_info_{item["instance_id"]}'))
+        builder.row(_btn(_E[e_key], _enh_item_name_plain(item), f'enh_info_{item["instance_id"]}'))
     builder.row(_back_btn("profile_boosters", "Инвентарь"))
     return builder.as_markup()
 
@@ -726,7 +745,7 @@ def enh_item_detail_text(data: dict, instance_id: str) -> str:
     # enh_boost
     mult     = _multiplier_label(item["multiplier"])
     dur      = _DUR_LABELS[item["dur_key"]]
-    active   = data.get("active_booster")
+    active   = data.get("active_enh_booster")
     warning  = ""
     if active and active.get("ends_at", 0) > _now_ts():
         left     = _fmt_time_left(active["ends_at"] - _now_ts())
@@ -831,7 +850,7 @@ def cases_shop_keyboard() -> InlineKeyboardMarkup:
         else:
             e_key = "enh_case"
         builder.row(_btn(_E[e_key], f'{c["name"]} кейс', f'case_info_{c["key"]}'))
-    builder.row(_back_btn("shop", "Назад в магазин"))
+    builder.row(_back_btn("back_to_menu", "Назад в меню"))
     return builder.as_markup()
 
 
@@ -1062,7 +1081,7 @@ def xp_inventory_keyboard(data: dict) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     inv = data.get("xp_inventory", [])
     for item in inv[:MAX_XP_INVENTORY]:
-        builder.row(_btn(_E["xp_boost"], _xp_item_name(item), f'xp_info_{item["instance_id"]}'))
+        builder.row(_btn(_E["xp_boost"], _xp_item_name_plain(item), f'xp_info_{item["instance_id"]}'))
     builder.row(_back_btn("profile_boosters", "Инвентарь"))
     return builder.as_markup()
 
