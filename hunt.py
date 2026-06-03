@@ -20,29 +20,30 @@ DB_PATH = "tgstellar.db"
 #  ЭМОДЗИ
 # ─────────────────────────────────────────
 _E = {
-    "sword":     "5258203794772085854",  # активный меч
-    "skull":     "5228962845672096235",  # все боссы
-    "fire":      "5438571934210082705",  # fire booster
-    "coin":      "5199552030615558774",  # монета
-    "lock":      "5240241223632954241",  # замок
-    "ok":        "5206607081334906820",  # галочка
-    "back":      "6039539366177541657",  # назад (в меню/раздел)
-    "back_page": "5255703720078879038",  # назад (по страницам)
-    "forward":   "5253767677670862169",  # вперёд (по страницам)
-    "alert":     "5258203794772085854",  # alert/молния
-    "timer":     "5440621591387980068",  # таймер
-    "crit":      "5373342608028352831",  # крит
-    "dmg":       "5373173798633752502",  # урон
-    "shop":      "5465154440287757794",  # оружейная
-    "my_swords": "5454014806950429357",  # мои мечи
-    "hp":        "5354905713585975489",  # hp
-    "trophy":    "5449683594425410231",  # доход/трофей
-    "hunt":      "5228962845672096235",  # охота на боссов
-    "dead":      "5228962845672096235",  # для смерти босса
-    "spawn":     "5197371802136892976",  # шахта
-    "price":     "5397782960512444700",  # ценник
-    "bag":       "5443038326535759644",  # инвентарь
-    "boss":      "5438571934210082705",  # текущий босс
+    "sword":        "5258203794772085854",  # активный меч
+    "skull":        "5228962845672096235",  # все боссы
+    "fire":         "5438571934210082705",  # fire booster
+    "coin":         "5199552030615558774",  # монета
+    "reward_coin":  "5438496463044752972",  # монета награды за босса
+    "lock":         "5240241223632954241",  # замок
+    "ok":           "5206607081334906820",  # галочка
+    "back":         "6039539366177541657",  # назад (в меню/раздел)
+    "back_page":    "5255703720078879038",  # назад (по страницам)
+    "forward":      "5253767677670862169",  # вперёд (по страницам)
+    "alert":        "5258203794772085854",  # alert/молния
+    "timer":        "5440621591387980068",  # таймер
+    "crit":         "5373342608028352831",  # крит
+    "dmg":          "5373173798633752502",  # урон
+    "shop":         "5465154440287757794",  # оружейная
+    "my_swords":    "5454014806950429357",  # мои мечи
+    "hp":           "5354905713585975489",  # hp
+    "trophy":       "5449683594425410231",  # доход/трофей
+    "hunt":         "5228962845672096235",  # охота на боссов
+    "dead":         "5228962845672096235",  # для смерти босса
+    "spawn":        "5197371802136892976",  # шахта
+    "price":        "5397782960512444700",  # ценник
+    "bag":          "5443038326535759644",  # инвентарь
+    "boss":         "5438571934210082705",  # текущий босс
 }
 
 # ─────────────────────────────────────────
@@ -319,6 +320,11 @@ BOSS_MAX_HP      = 10_000_000
 BOSS_KILL_REWARD = 5_000_000
 BOSS_RESPAWN_SEC = 2 * 3600   # 2 часа после смерти — следующий босс
 
+# HP следующего босса в зависимости от скорости убийства предыдущего
+BOSS_HP_FAST   = 150_000_000  # убит за ≤ 5 минут
+BOSS_HP_MEDIUM =  50_000_000  # убит за 5–30 минут
+BOSS_HP_SLOW   =  10_000_000  # убит за > 30 минут (обычный)
+
 BOSSES = [
     {
         "key": "ash_lord",
@@ -495,20 +501,33 @@ def _ensure_boss():
 
 
 def _spawn_next_boss(state: dict, force_index: int = None):
-    """Спавнит следующего босса по ротации."""
+    """Спавнит следующего босса по ротации. HP зависит от скорости убийства предыдущего."""
     if force_index is not None:
         idx = force_index
     else:
         last_idx = state.get("boss_index", -1)
         idx = (last_idx + 1) % len(BOSSES)
 
+    # Определяем HP нового босса по скорости убийства предыдущего
+    kill_duration = state.get("boss_kill_duration", None)
+    if kill_duration is None:
+        next_hp = BOSS_MAX_HP  # первый спавн — стандартный
+    elif kill_duration <= 5 * 60:
+        next_hp = BOSS_HP_FAST    # убит за ≤ 5 минут → 150 млн
+    elif kill_duration <= 30 * 60:
+        next_hp = BOSS_HP_MEDIUM  # убит за 5–30 минут → 50 млн
+    else:
+        next_hp = BOSS_HP_SLOW    # убит за > 30 минут → 10 млн
+
     boss = BOSSES[idx]
-    state["boss_key"]     = boss["key"]
-    state["boss_index"]   = idx
-    state["boss_hp"]      = BOSS_MAX_HP
-    state["boss_alive"]   = True
-    state["boss_spawned"] = _now_ts()
-    state["boss_died_at"] = None
+    state["boss_key"]            = boss["key"]
+    state["boss_index"]          = idx
+    state["boss_hp"]             = next_hp
+    state["boss_max_hp"]         = next_hp
+    state["boss_alive"]          = True
+    state["boss_spawned"]        = _now_ts()
+    state["boss_died_at"]        = None
+    state["boss_kill_duration"]  = None
     _save_boss_state(state)
     return state
 
@@ -602,10 +621,15 @@ def attack_boss(data: dict) -> dict:
     result["boss_hp_after"]  = hp_after
 
     if hp_after == 0:
-        state["boss_alive"]   = False
-        state["boss_died_at"] = _now_ts()
-        result["boss_killed"] = True
-        result["reward"]      = BOSS_KILL_REWARD
+        died_at = _now_ts()
+        spawned_at = state.get("boss_spawned", died_at)
+        kill_duration = died_at - spawned_at  # секунды с момента спавна
+
+        state["boss_alive"]        = False
+        state["boss_died_at"]      = died_at
+        state["boss_kill_duration"] = kill_duration
+        result["boss_killed"]      = True
+        result["reward"]           = BOSS_KILL_REWARD
         data["balance"] = data.get("balance", 0) + BOSS_KILL_REWARD
 
     _save_boss_state(state)
@@ -709,12 +733,13 @@ def hunt_main_text(data: dict) -> str:
     boss = BOSSES_BY_KEY.get(boss_key)
 
     if state.get("boss_alive") and boss:
-        hp  = state["boss_hp"]
-        pct = hp / BOSS_MAX_HP * 100
+        hp     = state["boss_hp"]
+        max_hp = state.get("boss_max_hp", BOSS_MAX_HP)
+        pct    = hp / max_hp * 100
         boss_block = (
             f'<blockquote>'
             f'{_tg(_E["boss"], "🔥")} <b>Текущий босс: {boss["name"]}</b>\n'
-            f'{_tg(_E["hp"], "❤️")} <b>HP:</b> {_fmt_digits(hp)} / {_fmt_digits(BOSS_MAX_HP)} <b>({pct:.1f}%)</b>'
+            f'{_tg(_E["hp"], "❤️")} <b>HP:</b> {_fmt_digits(hp)} / {_fmt_digits(max_hp)} <b>({pct:.1f}%)</b>'
             f'</blockquote>'
         )
     elif not state.get("boss_alive"):
@@ -1009,7 +1034,8 @@ def boss_attack_text(data: dict) -> str:
         return "<b>❌ Ошибка: босс не найден.</b>"
 
     hp     = state["boss_hp"]
-    pct    = hp / BOSS_MAX_HP * 100
+    max_hp = state.get("boss_max_hp", BOSS_MAX_HP)
+    pct    = hp / max_hp * 100
 
     return (
         f'<blockquote>'
@@ -1017,7 +1043,7 @@ def boss_attack_text(data: dict) -> str:
         f'<i>{boss["lore"]}</i>'
         f'</blockquote>\n\n'
         f'<blockquote>'
-        f'{_tg(_E["hp"], "❤️")} <b>HP:</b> {_fmt_digits(hp)} / {_fmt_digits(BOSS_MAX_HP)} <b>({pct:.1f}%)</b>'
+        f'{_tg(_E["hp"], "❤️")} <b>HP:</b> {_fmt_digits(hp)} / {_fmt_digits(max_hp)} <b>({pct:.1f}%)</b>'
         f'</blockquote>\n\n'
         f'<blockquote>'
         f'{_tg(_E["sword"], "⚔️")} <b>Твой меч: {_tg(sword["emoji_id"], "🗡")} {sword["name"]}</b>\n'
@@ -1066,7 +1092,8 @@ def boss_strike_result_text(data: dict, result: dict) -> str:
     crit      = result["crit"]
     hp_after  = result["boss_hp_after"]
     killed    = result["boss_killed"]
-    pct       = hp_after / BOSS_MAX_HP * 100
+    max_hp    = state.get("boss_max_hp", BOSS_MAX_HP)
+    pct       = hp_after / max_hp * 100
 
     crit_line = (
         f'\n{_tg(_E["crit"], "⭐")} <b>КРИТИЧЕСКИЙ УДАР!</b>'
@@ -1082,7 +1109,7 @@ def boss_strike_result_text(data: dict, result: dict) -> str:
             f'</blockquote>\n\n'
             f'<blockquote>'
             f'{_tg(_E["dmg"], "💥")} <b>Последний удар: {_fmt(dmg)}</b>{crit_line}\n'
-            f'{_tg(_E["coin"], "💰")} <b>Награда: +{_fmt(reward)} {_tg(_E["coin"], "💰")}</b>'
+            f'{_tg(_E["reward_coin"], "💰")} <b>Награда: +{_fmt(reward)} {_tg(_E["reward_coin"], "💰")}</b>'
             f'</blockquote>\n\n'
             f'<blockquote>'
             f'{_tg(_E["timer"], "⏱")} <b>Следующий босс появится через 2 часа.</b>'
@@ -1099,7 +1126,7 @@ def boss_strike_result_text(data: dict, result: dict) -> str:
         f'{_tg(_E["dmg"], "💥")} <b>Твой удар: {_fmt(dmg)}</b> {_tg(_E["dmg"], "💥")}{crit_line}'
         f'</blockquote>\n\n'
         f'<blockquote>'
-        f'{_tg(_E["hp"], "❤️")} <b>HP:</b> {_fmt_digits(hp_after)} / {_fmt_digits(BOSS_MAX_HP)} <b>({pct:.1f}%)</b>'
+        f'{_tg(_E["hp"], "❤️")} <b>HP:</b> {_fmt_digits(hp_after)} / {_fmt_digits(max_hp)} <b>({pct:.1f}%)</b>'
         f'</blockquote>\n\n'
         f'<blockquote>'
         f'{_tg(_E["trophy"], "🏆")} <b>Награда за убийство: {_fmt(BOSS_KILL_REWARD)} {_tg(_E["coin"], "💰")}</b>'
