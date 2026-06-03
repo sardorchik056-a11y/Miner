@@ -33,7 +33,10 @@ def _back_btn(cb: str, label: str = "Назад") -> InlineKeyboardButton:
 _E = {
     "case":       "5438571934210082705",
     "xp_case":    "5404843113652970870",
+    "enh_case":   "5256047523620995497",
     "boost":      "5438571934210082705",
+    "enh_boost":  "5256047523620995497",
+    "poison":     "5456584142286250164",
     "xp_boost":   "5224607267797606837",
     "xp_instant": "5404843113652970870",
     "coin":       "5199552030615558774",
@@ -64,6 +67,7 @@ def _pe(key: str, fallback: str) -> str:
 # ============================================================
 
 _DUR = {
+    "5min":  5  * 60,
     "10min": 10 * 60,
     "30min": 30 * 60,
     "1h":    60 * 60,
@@ -76,6 +80,7 @@ _DUR = {
 }
 
 _DUR_LABELS = {
+    "5min":  "5 мин",
     "10min": "10 мин",
     "30min": "30 мин",
     "1h":    "1 час",
@@ -168,8 +173,77 @@ _XP_POOL = [
 XP_POOL_BY_KEY = {x["key"]: x for x in _XP_POOL}
 MAX_XP_INVENTORY = 10
 
+# ============================================================
+#  ПУЛ КЕЙСА УСИЛИТЕЛЕЙ
+# ============================================================
+
+_ENH_BOOSTER_POOL = [
+    # ── 1.2× ──────────────────────────────────────────────
+    {"key": "enh_boost_1.2x_5min",  "type": "enh_boost", "multiplier": 1.2, "dur_key": "5min",  "chance": 85},
+    {"key": "enh_boost_1.2x_30min", "type": "enh_boost", "multiplier": 1.2, "dur_key": "30min", "chance": 65},
+    {"key": "enh_boost_1.2x_1h",    "type": "enh_boost", "multiplier": 1.2, "dur_key": "1h",    "chance": 45},
+    {"key": "enh_boost_1.2x_2h",    "type": "enh_boost", "multiplier": 1.2, "dur_key": "2h",    "chance": 32},
+    {"key": "enh_boost_1.2x_4h",    "type": "enh_boost", "multiplier": 1.2, "dur_key": "4h",    "chance": 22},
+    {"key": "enh_boost_1.2x_10h",   "type": "enh_boost", "multiplier": 1.2, "dur_key": "10h",   "chance": 16},
+    {"key": "enh_boost_1.2x_24h",   "type": "enh_boost", "multiplier": 1.2, "dur_key": "24h",   "chance":  9},
+    # ── 1.5× ──────────────────────────────────────────────
+    {"key": "enh_boost_1.5x_5min",  "type": "enh_boost", "multiplier": 1.5, "dur_key": "5min",  "chance": 62},
+    {"key": "enh_boost_1.5x_30min", "type": "enh_boost", "multiplier": 1.5, "dur_key": "30min", "chance": 38},
+    {"key": "enh_boost_1.5x_1h",    "type": "enh_boost", "multiplier": 1.5, "dur_key": "1h",    "chance": 32},
+    {"key": "enh_boost_1.5x_2h",    "type": "enh_boost", "multiplier": 1.5, "dur_key": "2h",    "chance": 22},
+    {"key": "enh_boost_1.5x_4h",    "type": "enh_boost", "multiplier": 1.5, "dur_key": "4h",    "chance": 16},
+    {"key": "enh_boost_1.5x_10h",   "type": "enh_boost", "multiplier": 1.5, "dur_key": "10h",   "chance": 10},
+    {"key": "enh_boost_1.5x_24h",   "type": "enh_boost", "multiplier": 1.5, "dur_key": "24h",   "chance":  4},
+    # ── 2× ────────────────────────────────────────────────
+    {"key": "enh_boost_2x_5min",    "type": "enh_boost", "multiplier": 2.0, "dur_key": "5min",  "chance": 42},
+    {"key": "enh_boost_2x_30min",   "type": "enh_boost", "multiplier": 2.0, "dur_key": "30min", "chance": 28},
+    {"key": "enh_boost_2x_1h",      "type": "enh_boost", "multiplier": 2.0, "dur_key": "1h",    "chance": 20},
+    {"key": "enh_boost_2x_2h",      "type": "enh_boost", "multiplier": 2.0, "dur_key": "2h",    "chance": 10},
+    {"key": "enh_boost_2x_4h",      "type": "enh_boost", "multiplier": 2.0, "dur_key": "4h",    "chance":  7},
+    {"key": "enh_boost_2x_10h",     "type": "enh_boost", "multiplier": 2.0, "dur_key": "10h",   "chance":  2},
+    {"key": "enh_boost_2x_24h",     "type": "enh_boost", "multiplier": 2.0, "dur_key": "24h",   "chance":  1},
+]
+
+# 5 ядов: Гадюка / Кобра / Чёрная Мамба / Василиск / Левиафан
+_POISON_POOL = [
+    {"key": "poison_1", "type": "poison", "name": "Яд Гадюки",       "damage": 100_000, "dur_key": "30min", "chance": 5.0},
+    {"key": "poison_2", "type": "poison", "name": "Яд Кобры",        "damage": 150_000, "dur_key": "30min", "chance": 3.0},
+    {"key": "poison_3", "type": "poison", "name": "Яд Чёрной Мамбы", "damage": 225_000, "dur_key": "30min", "chance": 2.0},
+    {"key": "poison_4", "type": "poison", "name": "Яд Василиска",    "damage": 350_000, "dur_key": "30min", "chance": 1.0},
+    {"key": "poison_5", "type": "poison", "name": "Яд Левиафана",    "damage": 500_000, "dur_key": "30min", "chance": 0.5},
+]
+
+_ENH_POOL = _ENH_BOOSTER_POOL + _POISON_POOL
+ENH_POOL_BY_KEY = {x["key"]: x for x in _ENH_POOL}
+POISON_BY_KEY   = {x["key"]: x for x in _POISON_POOL}
+MAX_ENH_INVENTORY = 10
+
+_ENH_SELL_PRICES = {
+    # ── 1.2× ──
+    "enh_boost_1.2x_5min":  350,   "enh_boost_1.2x_30min": 1_000, "enh_boost_1.2x_1h":   1_700,
+    "enh_boost_1.2x_2h":  2_900,   "enh_boost_1.2x_4h":    4_600,  "enh_boost_1.2x_10h":  8_500,
+    "enh_boost_1.2x_24h": 15_000,
+    # ── 1.5× ──
+    "enh_boost_1.5x_5min":  550,   "enh_boost_1.5x_30min": 1_700,  "enh_boost_1.5x_1h":   3_000,
+    "enh_boost_1.5x_2h":  5_200,   "enh_boost_1.5x_4h":    8_000,  "enh_boost_1.5x_10h": 14_000,
+    "enh_boost_1.5x_24h": 24_000,
+    # ── 2× ──
+    "enh_boost_2x_5min":   800,    "enh_boost_2x_30min":   2_600,  "enh_boost_2x_1h":     4_700,
+    "enh_boost_2x_2h":   8_500,    "enh_boost_2x_4h":     13_000,  "enh_boost_2x_10h":   22_000,
+    "enh_boost_2x_24h":  40_000,
+    # ── Яды ──
+    "poison_1": 7_500,
+    "poison_2": 13_000,
+    "poison_3": 20_000,
+    "poison_4": 35_000,
+    "poison_5": 50_000,
+}
+
+
+def get_enh_sell_price(item: dict) -> int:
+    return _ENH_SELL_PRICES.get(item["key"], 1_000)
+
 _XP_SELL_PRICES = {
-    "xp_100": 200, "xp_225": 500, "xp_750": 1_800, "xp_2000": 5_000, "xp_5000": 14_000,
     "xpboost_1.4x_30min": 1_500, "xpboost_1.4x_1h": 2_800, "xpboost_1.4x_2h": 5_000,
     "xpboost_1.4x_4h": 8_500, "xpboost_1.4x_6h": 13_000, "xpboost_1.4x_24h": 22_000,
     "xpboost_1.4x_48h": 38_000,
@@ -184,8 +258,9 @@ def get_xp_sell_price(item: dict) -> int:
 
 
 CASES = {
-    "common": {"key": "common", "name": "Обычный", "cost": 10_000, "pool": _BOOSTER_POOL, "type": "booster"},
-    "xp":     {"key": "xp",     "name": "XP",       "cost": 25_000, "pool": _XP_POOL,      "type": "xp"},
+    "common":   {"key": "common",   "name": "Обычный",    "cost": 10_000, "pool": _BOOSTER_POOL, "type": "booster"},
+    "xp":       {"key": "xp",       "name": "XP",         "cost": 25_000, "pool": _XP_POOL,      "type": "xp"},
+    "enhancer": {"key": "enhancer", "name": "Усилителей", "cost": 50_000, "pool": _ENH_POOL,     "type": "enhancer"},
 }
 
 # ============================================================
@@ -213,6 +288,15 @@ def _xp_item_name(item: dict) -> str:
     mult = _multiplier_label(item["multiplier"])
     dur  = _DUR_LABELS[item["dur_key"]]
     return f"{_pe('xp_boost', '🔮')} XP-ускоритель {mult} на {dur}"
+
+
+def _enh_item_name(item: dict) -> str:
+    if item["type"] == "poison":
+        dmg = _fmt_num(item["damage"])
+        return f'{_pe("poison", "☠️")} {item["name"]} — {dmg} урона'
+    mult = _multiplier_label(item["multiplier"])
+    dur  = _DUR_LABELS[item["dur_key"]]
+    return f'{_pe("enh_boost", "⚡")} Усилитель {mult} на {dur}'
 
 
 def _now_ts() -> float:
@@ -247,6 +331,10 @@ def open_case(data: dict, case_key: str) -> tuple:
         inv = data.setdefault("boosters_inventory", [])
         if len(inv) >= MAX_INVENTORY:
             return False, f"❌ Инвентарь ускорителей полон!\nМаксимум {MAX_INVENTORY} шт. Активируй или продай лишние.", None
+    elif case["type"] == "enhancer":
+        inv = data.setdefault("enh_inventory", [])
+        if len(inv) >= MAX_ENH_INVENTORY:
+            return False, f"❌ Инвентарь усилителей полон!\nМаксимум {MAX_ENH_INVENTORY} шт. Используй или продай лишние.", None
     else:
         inv = data.setdefault("xp_inventory", [])
         if len(inv) >= MAX_XP_INVENTORY:
@@ -270,6 +358,25 @@ def open_case(data: dict, case_key: str) -> tuple:
         inv.append(instance)
         name     = _booster_name(dropped)
         inv_line = f"В инвентаре: {len(inv)}/{MAX_INVENTORY}"
+    elif case["type"] == "enhancer":
+        instance = {
+            "instance_id": instance_id,
+            "key":         dropped["key"],
+            "type":        dropped["type"],
+            "chance":      dropped["chance"],
+        }
+        if dropped["type"] == "poison":
+            instance["name"]       = dropped["name"]
+            instance["damage"]     = dropped["damage"]
+            instance["dur_key"]    = dropped["dur_key"]
+            instance["duration_sec"] = _DUR[dropped["dur_key"]]
+        else:
+            instance["multiplier"]   = dropped["multiplier"]
+            instance["dur_key"]      = dropped["dur_key"]
+            instance["duration_sec"] = _DUR[dropped["dur_key"]]
+        inv.append(instance)
+        name     = _enh_item_name(instance)
+        inv_line = f"В инвентаре усилителей: {len(inv)}/{MAX_ENH_INVENTORY}"
     else:
         instance = {
             "instance_id": instance_id,
@@ -453,6 +560,254 @@ def get_active_xp_booster_info(data: dict) -> dict | None:
 #  UI
 # ============================================================
 
+# ============================================================
+#  АКТИВНЫЙ ЯД (геттеры)
+# ============================================================
+
+def get_active_poison_info(data: dict) -> dict | None:
+    active = data.get("active_poison")
+    if not active:
+        return None
+    if active.get("ends_at", 0) > _now_ts():
+        return active
+    data["active_poison"] = None
+    return None
+
+
+# ============================================================
+#  ПРИМЕНЕНИЕ ЯДА
+# ============================================================
+
+def use_poison(data: dict, instance_id: str, force: bool = False) -> tuple:
+    inv  = data.setdefault("enh_inventory", [])
+    item = next((x for x in inv if x["instance_id"] == instance_id), None)
+    if not item or item["type"] != "poison":
+        return False, "❌ Яд не найден."
+    active     = get_active_poison_info(data)
+    has_active = active is not None
+    if has_active and not force:
+        return False, f"CONFIRM_REPLACE_POISON:{instance_id}"
+    data["enh_inventory"] = [x for x in inv if x["instance_id"] != instance_id]
+    ends_at = _now_ts() + item["duration_sec"]
+    data["active_poison"] = {
+        "key":      item["key"],
+        "name":     item["name"],
+        "damage":   item["damage"],
+        "dur_key":  item["dur_key"],
+        "ends_at":  ends_at,
+        "applied_at": _now_ts(),
+    }
+    return True, (
+        f'<blockquote><tg-emoji emoji-id="5456584142286250164">☠️</tg-emoji> <b>Яд применён!</b>\n'
+        f'<b>{item["name"]}</b>\n'
+        f'<tg-emoji emoji-id="{_E["timer"]}">⏱</tg-emoji> <b>Урон наносится 30 минут автоматически</b>\n'
+        f'<b>Суммарный урон боссу: {_fmt_num(item["damage"])}</b></blockquote>'
+    )
+
+
+# ============================================================
+#  ПРОДАЖА предмета из инвентаря усилителей
+# ============================================================
+
+def sell_enh_item(data: dict, instance_id: str) -> tuple:
+    inv  = data.setdefault("enh_inventory", [])
+    item = next((x for x in inv if x["instance_id"] == instance_id), None)
+    if not item:
+        return False, "❌ Предмет не найден.", 0
+    price = get_enh_sell_price(item)
+    data["enh_inventory"] = [x for x in inv if x["instance_id"] != instance_id]
+    data["balance"] = data.get("balance", 0) + price
+    return True, (
+        f'<blockquote>{_pe("sell", "💸")} <b>Продано!</b>\n'
+        f'{_enh_item_name(item)}\n'
+        f'{_pe("coin", "💰")} <b>+{_fmt_num(price)}</b>\n'
+        f'{_pe("balance", "💰")} <b>Баланс: {_fmt_num(data["balance"])}</b> {_pe("coin", "💰")}</blockquote>'
+    ), price
+
+
+# ============================================================
+#  АКТИВАЦИЯ ускорителя из кейса усилителей
+# ============================================================
+
+def activate_enh_boost(data: dict, instance_id: str, force: bool = False) -> tuple:
+    inv  = data.setdefault("enh_inventory", [])
+    item = next((x for x in inv if x["instance_id"] == instance_id), None)
+    if not item or item["type"] != "enh_boost":
+        return False, "❌ Усилитель не найден."
+    active     = data.get("active_booster")
+    has_active = active and active.get("ends_at", 0) > _now_ts()
+    if has_active and not force:
+        return False, f"CONFIRM_REPLACE_ENH:{instance_id}"
+    data["enh_inventory"] = [x for x in inv if x["instance_id"] != instance_id]
+    ends_at = _now_ts() + item["duration_sec"]
+    data["active_booster"] = {
+        "key":        item["key"],
+        "multiplier": item["multiplier"],
+        "dur_key":    item["dur_key"],
+        "ends_at":    ends_at,
+    }
+    mult = _multiplier_label(item["multiplier"])
+    dur  = _DUR_LABELS[item["dur_key"]]
+    return True, (
+        f'<blockquote>{_pe("enh_boost", "⚡")} <b>Усилитель активирован!</b>\n'
+        f'<b>Урон ×{mult} на {dur}!</b></blockquote>'
+    )
+
+
+# ============================================================
+#  UI — ИНВЕНТАРЬ УСИЛИТЕЛЕЙ
+# ============================================================
+
+def enh_inventory_text(data: dict) -> str:
+    inv      = data.setdefault("enh_inventory", [])
+    poison   = get_active_poison_info(data)
+    boosts   = [x for x in inv if x["type"] == "enh_boost"]
+    poisons  = [x for x in inv if x["type"] == "poison"]
+    lines    = [f'<blockquote><tg-emoji emoji-id="5256047523620995497">⚡</tg-emoji> <b>УСИЛИТЕЛИ И ЯДЫ</b>\n']
+    if poison:
+        left = _fmt_time_left(poison["ends_at"] - _now_ts())
+        dmg  = _fmt_num(poison["damage"])
+        lines.append(
+            f'{_pe("ok", "✅")} <b>Активен: {poison["name"]} — {dmg} урона</b>\n'
+            f'{_pe("timer", "⏱")} <b>Осталось: {left}</b>'
+        )
+    else:
+        lines.append(f'{_pe("cancel", "❌")} <b>Нет активного яда.</b>')
+    lines.append("</blockquote>")
+    if not inv:
+        lines.append(
+            f'\n<blockquote><tg-emoji emoji-id="5256047523620995497">⚡</tg-emoji>'
+            f' <b>Инвентарь пуст. Открой Кейс усилителей!</b></blockquote>'
+        )
+    else:
+        lines.append(f'\n<blockquote><b>В инвентаре ({len(inv)}/{MAX_ENH_INVENTORY}):</b>')
+        for i, item in enumerate(inv, 1):
+            price = get_enh_sell_price(item)
+            lines.append(f'\n<b>{i}. {_enh_item_name(item)}</b>\n{_pe("coin", "💰")} <b>{_fmt_num(price)}</b>')
+        lines.append('</blockquote>')
+    return "".join(lines)
+
+
+def enh_inventory_keyboard(data: dict) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    inv = data.get("enh_inventory", [])
+    for item in inv[:MAX_ENH_INVENTORY]:
+        e_key = "poison" if item["type"] == "poison" else "enh_boost"
+        builder.row(_btn(_E[e_key], _enh_item_name(item), f'enh_info_{item["instance_id"]}'))
+    builder.row(_back_btn("profile_boosters", "Инвентарь"))
+    return builder.as_markup()
+
+
+def enh_item_detail_text(data: dict, instance_id: str) -> str:
+    inv  = data.get("enh_inventory", [])
+    item = next((x for x in inv if x["instance_id"] == instance_id), None)
+    if not item:
+        return "❌ Предмет не найден."
+    price = get_enh_sell_price(item)
+    if item["type"] == "poison":
+        poison_act = get_active_poison_info(data)
+        warning    = ""
+        if poison_act:
+            left = _fmt_time_left(poison_act["ends_at"] - _now_ts())
+            warning = (
+                f'\n\n<blockquote>{_pe("warn", "⚠️")} <b>Уже активен: {poison_act["name"]}</b>\n'
+                f'{_pe("timer", "⏱")} <b>Осталось: {left}</b></blockquote>'
+            )
+        return (
+            f'<blockquote><tg-emoji emoji-id="5456584142286250164">☠️</tg-emoji>'
+            f' <b>{item["name"]}</b>\n'
+            f'{_pe("timer", "⏱")} <b>Длительность: 30 минут</b>\n'
+            f'<b>Суммарный урон боссу: {_fmt_num(item["damage"])}</b></blockquote>\n'
+            f'\n<blockquote><b>Яд действует автоматически — урон списывается равномерно каждую минуту.</b>\n'
+            f'<b>Работает на текущего активного босса.</b></blockquote>\n'
+            f'\n<blockquote>{_pe("coin", "💰")} <b>Цена продажи: {_fmt_num(price)}</b></blockquote>'
+            f'{warning}'
+        )
+    # enh_boost
+    mult     = _multiplier_label(item["multiplier"])
+    dur      = _DUR_LABELS[item["dur_key"]]
+    active   = data.get("active_booster")
+    warning  = ""
+    if active and active.get("ends_at", 0) > _now_ts():
+        left     = _fmt_time_left(active["ends_at"] - _now_ts())
+        act_mult = _multiplier_label(active["multiplier"])
+        act_dur  = _DUR_LABELS[active["dur_key"]]
+        warning  = (
+            f'\n\n<blockquote>{_pe("warn", "⚠️")} <b>Активен: {act_mult} на {act_dur}</b>\n'
+            f'{_pe("timer", "⏱")} <b>Осталось: {left}</b></blockquote>'
+        )
+    return (
+        f'<blockquote><tg-emoji emoji-id="5256047523620995497">⚡</tg-emoji>'
+        f' <b>Усилитель урона {mult}</b>\n'
+        f'{_pe("timer", "⏱")} <b>Длительность: {dur}</b>\n'
+        f'{_pe("mult", "🔢")} <b>Множитель: {mult}</b></blockquote>\n'
+        f'\n<blockquote><b>Увеличивает весь урон по боссу в {mult} на {dur}.</b></blockquote>\n'
+        f'\n<blockquote>{_pe("coin", "💰")} <b>Цена продажи: {_fmt_num(price)}</b></blockquote>'
+        f'{warning}'
+    )
+
+
+def enh_item_detail_keyboard(item_type: str, instance_id: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    if item_type == "poison":
+        builder.row(_btn(_E["poison"], "Применить яд", f"enh_use_{instance_id}"))
+    else:
+        builder.row(_btn(_E["enh_boost"], "Активировать", f"enh_activate_{instance_id}"))
+    builder.row(_btn(_E["sell"], "Продать", f"enh_sell_{instance_id}"))
+    builder.row(_back_btn("inv_enh", "Назад"))
+    return builder.as_markup()
+
+
+def enh_confirm_replace_text(data: dict, instance_id: str, replace_type: str) -> str:
+    inv  = data.get("enh_inventory", [])
+    item = next((x for x in inv if x["instance_id"] == instance_id), None)
+    if not item:
+        return "❌ Ошибка."
+    if replace_type == "poison":
+        active = get_active_poison_info(data)
+        if not active:
+            return "❌ Ошибка."
+        left = _fmt_time_left(active["ends_at"] - _now_ts())
+        return (
+            f'<blockquote>{_pe("warn", "⚠️")} <b>Замена яда</b>\n'
+            f'<b>Сейчас активен: {active["name"]}</b>\n'
+            f'{_pe("timer", "⏱")} <b>Осталось: {left}</b></blockquote>\n'
+            f'\n<blockquote><b>Заменить на: {item["name"]}?</b>\n'
+            f'{_pe("warn", "⚠️")} <b>Текущий яд будет потерян!</b></blockquote>'
+        )
+    active = data.get("active_booster")
+    if not active:
+        return "❌ Ошибка."
+    left     = _fmt_time_left(active["ends_at"] - _now_ts())
+    act_mult = _multiplier_label(active["multiplier"])
+    act_dur  = _DUR_LABELS[active["dur_key"]]
+    new_mult = _multiplier_label(item["multiplier"])
+    new_dur  = _DUR_LABELS[item["dur_key"]]
+    return (
+        f'<blockquote>{_pe("warn", "⚠️")} <b>Замена усилителя</b>\n'
+        f'<b>Сейчас активен: {act_mult} на {act_dur}</b>\n'
+        f'{_pe("timer", "⏱")} <b>Осталось: {left}</b></blockquote>\n'
+        f'\n<blockquote><b>Заменить на: {new_mult} на {new_dur}?</b>\n'
+        f'{_pe("warn", "⚠️")} <b>Старый усилитель будет потерян!</b></blockquote>'
+    )
+
+
+def enh_confirm_replace_keyboard(instance_id: str, replace_type: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    if replace_type == "poison":
+        yes_cb = f"enh_poison_replace_{instance_id}"
+        no_cb  = f"enh_info_{instance_id}"
+    else:
+        yes_cb = f"enh_boost_replace_{instance_id}"
+        no_cb  = f"enh_info_{instance_id}"
+    builder.row(
+        InlineKeyboardButton(text="Да, заменить", callback_data=yes_cb, icon_custom_emoji_id=_E["ok"]),
+        InlineKeyboardButton(text="Отмена",       callback_data=no_cb,  icon_custom_emoji_id=_E["cancel"]),
+    )
+    return builder.as_markup()
+
+
+# ============================================================
 def cases_shop_text(data: dict = None) -> str:
     total_opened = (data or {}).get("cases_total_opened", 0)
     total_spent  = (data or {}).get("cases_total_spent",  0)
@@ -469,7 +824,12 @@ def cases_shop_text(data: dict = None) -> str:
 def cases_shop_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     for c in CASES.values():
-        e_key = "case" if c["type"] == "booster" else "xp_case"
+        if c["type"] == "booster":
+            e_key = "case"
+        elif c["type"] == "xp":
+            e_key = "xp_case"
+        else:
+            e_key = "enh_case"
         builder.row(_btn(_E[e_key], f'{c["name"]} кейс', f'case_info_{c["key"]}'))
     builder.row(_back_btn("shop", "Назад в магазин"))
     return builder.as_markup()
@@ -486,13 +846,29 @@ def case_detail_text(data: dict, case_key: str) -> str:
             f"{_pe('boost', '⚡')} <b>Ускоритель 1.5× — 10мин до 24ч</b>\n"
             f"{_pe('boost', '⚡')} <b>Ускоритель 2× — 10мин до 24ч</b>"
         )
+    elif case["type"] == "enhancer":
+        loot_lines = (
+            f'<tg-emoji emoji-id="5256047523620995497">⚡</tg-emoji> <b>Усилитель урона 1.2× — 5мин до 24ч</b>\n'
+            f'<tg-emoji emoji-id="5256047523620995497">⚡</tg-emoji> <b>Усилитель урона 1.5× — 5мин до 24ч</b>\n'
+            f'<tg-emoji emoji-id="5256047523620995497">⚡</tg-emoji> <b>Усилитель урона 2× — 5мин до 24ч</b>\n'
+            f'<tg-emoji emoji-id="5456584142286250164">☠️</tg-emoji> <b>Яд Гадюки — 100 000 урона (5%)</b>\n'
+            f'<tg-emoji emoji-id="5456584142286250164">☠️</tg-emoji> <b>Яд Кобры — 150 000 урона (3%)</b>\n'
+            f'<tg-emoji emoji-id="5456584142286250164">☠️</tg-emoji> <b>Яд Чёрной Мамбы — 225 000 урона (2%)</b>\n'
+            f'<tg-emoji emoji-id="5456584142286250164">☠️</tg-emoji> <b>Яд Василиска — 350 000 урона (1%)</b>\n'
+            f'<tg-emoji emoji-id="5456584142286250164">☠️</tg-emoji> <b>Яд Левиафана — 500 000 урона (0.5%)</b>'
+        )
     else:
         loot_lines = (
             f"{_pe('xp_instant', '✨')} <b>Моментальный опыт: 100 / 225 / 750 / 2 000 / 5 000 XP</b>\n"
             f"{_pe('xp_boost', '🔮')} <b>XP-ускоритель ×1.4 — от 30 мин до 48 ч</b>\n"
             f"{_pe('xp_boost', '🔮')} <b>XP-ускоритель ×1.8 — от 30 мин до 48 ч</b>"
         )
-    e_key  = "case" if case["type"] == "booster" else "xp_case"
+    if case["type"] == "booster":
+        e_key = "case"
+    elif case["type"] == "enhancer":
+        e_key = "enh_case"
+    else:
+        e_key = "xp_case"
     status = f"{_pe('ok', '✅')} <b>Хватает монет</b>" if can_buy else f"{_pe('cancel', '❌')} <b>Недостаточно монет</b>"
     return (
         f"<blockquote>{_pe(e_key, '📦')} <b>{case['name']} кейс</b>\n"
@@ -514,12 +890,15 @@ def case_detail_keyboard(case_key: str, can_buy: bool) -> InlineKeyboardMarkup:
 
 
 def inventory_main_text(data: dict) -> str:
-    b_inv   = data.get("boosters_inventory", [])
-    xp_inv  = data.get("xp_inventory", [])
-    active  = get_active_booster_info(data)
-    xp_act  = get_active_xp_booster_info(data)
-    b_active_str  = ""
-    xp_active_str = ""
+    b_inv    = data.get("boosters_inventory", [])
+    xp_inv   = data.get("xp_inventory", [])
+    enh_inv  = data.get("enh_inventory", [])
+    active   = get_active_booster_info(data)
+    xp_act   = get_active_xp_booster_info(data)
+    poison   = get_active_poison_info(data)
+    b_active_str   = ""
+    xp_active_str  = ""
+    enh_active_str = ""
     if active:
         left = _fmt_time_left(active["ends_at"] - _now_ts())
         mult = _multiplier_label(active["multiplier"])
@@ -528,10 +907,14 @@ def inventory_main_text(data: dict) -> str:
         left = _fmt_time_left(xp_act["ends_at"] - _now_ts())
         mult = _multiplier_label(xp_act["multiplier"])
         xp_active_str = f"\n{_pe('xp_boost', '🔮')} <b>Активен: ×{mult} XP — ⏱ {left}</b>"
+    if poison:
+        left = _fmt_time_left(poison["ends_at"] - _now_ts())
+        enh_active_str = f'\n<tg-emoji emoji-id="5456584142286250164">☠️</tg-emoji> <b>Яд: {poison["name"]} — ⏱ {left}</b>'
     return (
         f"<blockquote>{_pe('inv', '🎒')} <b>ИНВЕНТАРЬ</b></blockquote>\n"
         f"\n<blockquote>{_pe('boost', '⚡')} <b>Ускорители кирки</b>  <b>[{len(b_inv)}/{MAX_INVENTORY}]</b>{b_active_str}</blockquote>\n"
-        f"\n<blockquote>{_pe('xp_boost', '🔮')} <b>XP-предметы</b>  <b>[{len(xp_inv)}/{MAX_XP_INVENTORY}]</b>{xp_active_str}</blockquote>"
+        f"\n<blockquote>{_pe('xp_boost', '🔮')} <b>XP-предметы</b>  <b>[{len(xp_inv)}/{MAX_XP_INVENTORY}]</b>{xp_active_str}</blockquote>\n"
+        f'\n<blockquote><tg-emoji emoji-id="5256047523620995497">⚡</tg-emoji> <b>Усилители и яды</b>  <b>[{len(enh_inv)}/{MAX_ENH_INVENTORY}]</b>{enh_active_str}</blockquote>'
     )
 
 
@@ -539,6 +922,7 @@ def inventory_main_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.row(_btn(_E["boost"],    "Ускорители кирки", "inv_boosters"))
     builder.row(_btn(_E["xp_boost"], "XP-предметы",      "inv_xp"))
+    builder.row(_btn(_E["enh_case"], "Усилители и яды",  "inv_enh"))
     builder.row(_back_btn("profile", "Назад в профиль"))
     return builder.as_markup()
 
