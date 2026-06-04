@@ -224,19 +224,19 @@ MAX_ENH_INVENTORY = 10
 
 _ARTIFACT_POOL = [
     # ── 50% шанс — множитель 1.3× ──────────────────────────
-    {"key": "art_kulon_iskazheniya",   "type": "artifact", "name": "Кулон Искажения",       "effect": "mine",   "multiplier": 1.3, "chance": 50},
-    {"key": "art_oracle",              "type": "artifact", "name": "Оракул",                 "effect": "damage", "multiplier": 1.3, "chance": 50},
-    {"key": "art_amulet_hranitelya",   "type": "artifact", "name": "Амулет Хранителя",       "effect": "pets",   "multiplier": 1.3, "chance": 50},
+    {"key": "art_kulon_iskazheniya",   "type": "artifact", "name": "Кулон Искажения",      "emoji_id": "5938541999031325561", "effect": "mine",   "multiplier": 1.3, "chance": 50},
+    {"key": "art_oracle",              "type": "artifact", "name": "Оракул",               "emoji_id": "5165898384870999138", "effect": "damage", "multiplier": 1.3, "chance": 50},
+    {"key": "art_amulet_hranitelya",   "type": "artifact", "name": "Амулет Хранителя",     "emoji_id": "5938082716703528871", "effect": "pets",   "multiplier": 1.3, "chance": 50},
     # ── 25% шанс — множитель 1.5× ──────────────────────────
-    {"key": "art_lunnaya_relikviya",   "type": "artifact", "name": "Лунная Реликвия",        "effect": "mine",   "multiplier": 1.5, "chance": 25},
-    {"key": "art_sfera_zhadnosti",     "type": "artifact", "name": "Сфера Жадности",          "effect": "damage", "multiplier": 1.5, "chance": 25},
-    {"key": "art_amulet_zhizni",       "type": "artifact", "name": "Амулет Жизни и Смерти",  "effect": "pets",   "multiplier": 1.5, "chance": 25},
+    {"key": "art_lunnaya_relikviya",   "type": "artifact", "name": "Лунная Реликвия",      "emoji_id": "5226662903569989373", "effect": "mine",   "multiplier": 1.5, "chance": 25},
+    {"key": "art_sfera_zhadnosti",     "type": "artifact", "name": "Сфера Жадности",       "emoji_id": "5080262187302257610", "effect": "damage", "multiplier": 1.5, "chance": 25},
+    {"key": "art_amulet_zhizni",       "type": "artifact", "name": "Амулет Жизни и Смерти","emoji_id": "6228938636428052300", "effect": "pets",   "multiplier": 1.5, "chance": 25},
     # ── 15% шанс — множитель 1.8× ──────────────────────────
-    {"key": "art_sfera_illyuziy",      "type": "artifact", "name": "Сфера Иллюзий",           "effect": "mine",   "multiplier": 1.8, "chance": 15},
-    {"key": "art_serdtse_morey",       "type": "artifact", "name": "Сердце Морей",             "effect": "damage", "multiplier": 1.8, "chance": 15},
-    {"key": "art_kristall_egzorcizma", "type": "artifact", "name": "Кристалл Экзорцизма",     "effect": "pets",   "multiplier": 1.8, "chance": 15},
+    {"key": "art_sfera_illyuziy",      "type": "artifact", "name": "Сфера Иллюзий",        "emoji_id": "5343583990815156847", "effect": "mine",   "multiplier": 1.8, "chance": 15},
+    {"key": "art_serdtse_morey",       "type": "artifact", "name": "Сердце Морей",          "emoji_id": "6201647288947839133", "effect": "damage", "multiplier": 1.8, "chance": 15},
+    {"key": "art_kristall_egzorcizma", "type": "artifact", "name": "Кристалл Экзорцизма",  "emoji_id": "5451889386549425709", "effect": "pets",   "multiplier": 1.8, "chance": 15},
     # ── 1% шанс — комбо-артефакт ────────────────────────────
-    {"key": "art_vsevlastniy",         "type": "artifact", "name": "Всевластный",              "effect": "all",    "multiplier": 1.4, "chance": 1},
+    {"key": "art_vsevlastniy",         "type": "artifact", "name": "Кольцо Перерождений",  "emoji_id": "5872990619021875271", "effect": "all",    "multiplier": 1.4, "chance": 1},
 ]
 
 ARTIFACT_POOL_BY_KEY = {a["key"]: a for a in _ARTIFACT_POOL}
@@ -251,7 +251,9 @@ _ARTIFACT_EFFECT_LABELS = {
 
 def _artifact_desc(a: dict) -> str:
     effect_label = _ARTIFACT_EFFECT_LABELS.get(a["effect"], "")
-    return f'{a["name"]} — {a["multiplier"]}× {effect_label} навсегда'
+    eid = a.get("emoji_id", "")
+    emoji = f'<tg-emoji emoji-id="{eid}">♦️</tg-emoji> ' if eid else ""
+    return f'{emoji}<b>{a["name"]}</b> — {a["multiplier"]}× {effect_label}'
 
 
 def open_artifact_case(data: dict) -> tuple:
@@ -1028,24 +1030,25 @@ def case_detail_keyboard(case_key: str, can_buy: bool) -> InlineKeyboardMarkup:
 def artifact_case_detail_text(data: dict) -> str:
     opened = data.get("artifact_cases_opened", 0)
     owned  = data.get("artifacts", [])
+
+    def _ae(a):
+        eid = a.get("emoji_id", "")
+        return f'<tg-emoji emoji-id="{eid}">💎</tg-emoji>' if eid else "💎"
+
+    def _row(a, pct):
+        return f'{_ae(a)} <b>{a["name"]}</b> — {a["multiplier"]}× {_ARTIFACT_EFFECT_LABELS.get(a["effect"], "")} ({pct}%)\n'
+
+    loot = "".join(_row(a, a["chance"]) for a in _ARTIFACT_POOL)
+
     return (
         f'<blockquote><tg-emoji emoji-id="5442939099906325301">💎</tg-emoji> <b>Кейс Артефактов</b>\n'
         f'{_pe("stats", "⭐")} <b>Цена: {ARTIFACT_CASE_COST_STARS} Telegram Stars</b></blockquote>\n'
-        f'\n<blockquote><b>Возможный лут:</b>\n'
-        f'{_pe("ok", "✅")} <b>Кулон Искажения</b> — 1.3× к добыче руды (50%)\n'
-        f'{_pe("ok", "✅")} <b>Оракул</b> — 1.3× к урону по боссу (50%)\n'
-        f'{_pe("ok", "✅")} <b>Амулет Хранителя</b> — 1.3× к добыче питомцов (50%)\n'
-        f'{_pe("xp_boost", "🔮")} <b>Лунная Реликвия</b> — 1.5× к добыче руды (25%)\n'
-        f'{_pe("xp_boost", "🔮")} <b>Сфера Жадности</b> — 1.5× к урону по боссу (25%)\n'
-        f'{_pe("xp_boost", "🔮")} <b>Амулет Жизни и Смерти</b> — 1.5× к добыче питомцов (25%)\n'
-        f'{_pe("enh_boost", "⚡")} <b>Сфера Иллюзий</b> — 1.8× к добыче руды (15%)\n'
-        f'{_pe("enh_boost", "⚡")} <b>Сердце Морей</b> — 1.8× к урону по боссу (15%)\n'
-        f'{_pe("enh_boost", "⚡")} <b>Кристалл Экзорцизма</b> — 1.8× к добыче питомцов (15%)\n'
-        f'{_pe("luck", "🌟")} <b>Всевластный</b> — 1.4× ко всему сразу (1%)</blockquote>\n'
-        f'\n<blockquote>{_pe("warn", "⚠️")} <b>Артефакты дают постоянный бонус навсегда!</b>\n'
-        f'<b>Дубликаты не добавляются повторно.</b></blockquote>\n'
-        f'\n<blockquote>{_pe("inv", "🎒")} <b>Открыто кейсов: {opened}</b>\n'
-        f'{_pe("stats", "💎")} <b>Артефактов в коллекции: {len(owned)}/10</b></blockquote>'
+        f'\n<blockquote><b>Возможный лут:</b>\n{loot}</blockquote>\n'
+        f'\n<blockquote>'
+        f'{_pe("warn", "⚠️")} <b>Артефакты дают постоянный бонус навсегда!</b>\n'
+        f'{_pe("warn", "⚠️")} <b>Дубликат — компенсация монетами.</b></blockquote>\n'
+        f'\n<blockquote>{_pe("inv", "🎒")} <b>Открыто кейсов: {opened}</b>  |  '
+        f'{_pe("stats", "💎")} <b>Коллекция: {len(owned)}/10</b></blockquote>'
     )
 
 
@@ -1082,24 +1085,24 @@ def artifact_collection_text(data: dict) -> str:
     damage_mult = get_artifact_damage_multiplier(data)
     pets_mult   = get_artifact_pets_multiplier(data)
 
-    lines = [
-        f'<blockquote><tg-emoji emoji-id="5442939099906325301">💎</tg-emoji> '
-        f'<b>МОЯ КОЛЛЕКЦИЯ АРТЕФАКТОВ ({len(owned)}/10)</b></blockquote>\n'
-        f'\n<blockquote>'
-        f'{_pe("boost", "⚡")} <b>Итоговые бонусы:</b>\n'
-        f'<b>⛏ Добыча руды: ×{mine_mult}</b>\n'
-        f'<b>⚔️ Урон по боссу: ×{damage_mult}</b>\n'
-        f'<b>🐾 Добыча питомцов: ×{pets_mult}</b>'
-        f'</blockquote>\n'
-        f'\n<blockquote><b>Артефакты:</b>\n'
-    ]
+    artifact_lines = []
     for entry in owned:
         a = ARTIFACT_POOL_BY_KEY.get(entry["key"])
         if a:
+            eid = a.get("emoji_id", "")
+            ae  = f'<tg-emoji emoji-id="{eid}">💎</tg-emoji>' if eid else "💎"
             effect_label = _ARTIFACT_EFFECT_LABELS.get(a["effect"], "")
-            lines.append(f'<b>• {a["name"]} — {a["multiplier"]}× {effect_label}</b>\n')
-    lines.append('</blockquote>')
-    return "".join(lines)
+            artifact_lines.append(f'{ae} <b>{a["name"]}</b> — {a["multiplier"]}× {effect_label}\n')
+
+    return (
+        f'<blockquote><tg-emoji emoji-id="5442939099906325301">💎</tg-emoji> '
+        f'<b>МОЯ КОЛЛЕКЦИЯ ({len(owned)}/10)</b></blockquote>\n'
+        f'\n<blockquote>'
+        f'{_pe("boost", "⚡")} <b>Итоговые бонусы:</b>\n'
+        f'<b>⛏ Руда: ×{mine_mult}  ⚔️ Босс: ×{damage_mult}  🐾 Питомцы: ×{pets_mult}</b>'
+        f'</blockquote>\n'
+        f'\n<blockquote><b>Артефакты:</b>\n' + "".join(artifact_lines) + '</blockquote>'
+    )
 
 
 def artifact_collection_keyboard() -> InlineKeyboardMarkup:
