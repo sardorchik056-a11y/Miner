@@ -74,7 +74,7 @@ from shop import (
     open_artifact_case, ARTIFACT_CASE_COST_STARS, ARTIFACT_POOL_BY_KEY,
 )
 
-BOT_TOKEN = '8610804137:AAFkdrZIDRAsdhn4fZP51-rcnrI5C8d4xpg'
+BOT_TOKEN = '8400110033:AAH9NyaOW4us1hhiLGVIr9EobgnsRaowWLo'
 
 bot = Bot(token=BOT_TOKEN)
 
@@ -282,6 +282,47 @@ async def cmd_add_balance(message: Message):
         f"{action}: <b>{abs(amount):,}</b> {coin}\n"
         f"Было: <b>{old_balance:,}</b> {coin}\n"
         f"Стало: <b>{new_balance:,}</b> {coin}</blockquote>",
+        parse_mode="HTML"
+    )
+
+
+@dp.message(Command("getallart"))
+async def cmd_getallart(message: Message):
+    if message.from_user.id not in ADMIN_IDS:
+        return
+    from shop import _ARTIFACT_POOL, ARTIFACT_POOL_BY_KEY, get_artifact_mine_multiplier, get_artifact_damage_multiplier, get_artifact_pets_multiplier
+    from database import get_user, save_user as _save
+    uid  = message.from_user.id
+    data = get_user(uid)
+    if not data:
+        await message.reply("❌ Пользователь не найден в БД. Напиши /start сначала.", parse_mode="HTML")
+        return
+    artifacts = data.setdefault("artifacts", [])
+    already   = {e["key"] for e in artifacts}
+    added     = []
+    for a in _ARTIFACT_POOL:
+        if a["key"] not in already:
+            artifacts.append({"key": a["key"]})
+            added.append(a)
+    data["artifact_cases_opened"] = data.get("artifact_cases_opened", 0) + len(added)
+    _save(uid, data)
+    mine_mult   = get_artifact_mine_multiplier(data)
+    damage_mult = get_artifact_damage_multiplier(data)
+    pets_mult   = get_artifact_pets_multiplier(data)
+    if added:
+        lines = "\n".join(f'<b>✅ {a["name"]} — {a["multiplier"]}×</b>' for a in added)
+        status = f"<b>Добавлено: {len(added)} шт.</b>\n{lines}"
+    else:
+        status = "<b>Все артефакты уже были в коллекции.</b>"
+    await message.reply(
+        f'<tg-emoji emoji-id="5442939099906325301">💎</tg-emoji> <b>GETALLART</b>\n\n'
+        f'<blockquote>{status}</blockquote>\n\n'
+        f'<blockquote>'
+        f'<b>Итоговые бонусы:</b>\n'
+        f'<b>⛏ Добыча руды: ×{mine_mult}</b>\n'
+        f'<b>⚔️ Урон по боссу: ×{damage_mult}</b>\n'
+        f'<b>🐾 Добыча питомцов: ×{pets_mult}</b>'
+        f'</blockquote>',
         parse_mode="HTML"
     )
 
@@ -1081,6 +1122,12 @@ async def _pets_loop():
                     continue
 
                 amount        = _rnd.randint(pet["income_min"], pet["income_max"])
+                # Множитель артефактов к добыче питомцов
+                try:
+                    from shop import get_artifact_pets_multiplier as _apt_mult
+                    amount = int(amount * _apt_mult(_d))
+                except Exception:
+                    pass
                 _d["balance"] = _d.get("balance", 0) + amount
                 _d["pet_last_group_notify"] = now
 
