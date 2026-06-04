@@ -605,6 +605,10 @@ def attack_boss(data: dict) -> dict:
     _enh = data.get("active_enh_booster")
     enh_mult = (_enh["multiplier"] if _enh and _enh.get("ends_at", 0) > _now_check else 1.0)
 
+    # Множитель артефактов к урону
+    from shop import get_artifact_damage_multiplier
+    art_dmg_mult = get_artifact_damage_multiplier(data)
+
     # Урон
     if data.get("infinite_dmg"):
         dmg  = state["boss_hp"]  # убивает с одного удара
@@ -615,7 +619,7 @@ def attack_boss(data: dict) -> dict:
         if random.random() < sword["crit_chance"]:
             dmg  = int(sword["dmg_max"] * sword["crit_mult"])
             crit = True
-        dmg = int(dmg * enh_mult)
+        dmg = int(dmg * enh_mult * art_dmg_mult)
 
     hp_before = state["boss_hp"]
     hp_after  = max(0, hp_before - dmg)
@@ -1064,6 +1068,22 @@ def boss_attack_text(data: dict) -> str:
     else:
         enh_line = ""
 
+    # Строка артефактного бонуса к урону
+    try:
+        from shop import get_artifact_damage_multiplier
+        _art_dmg = get_artifact_damage_multiplier(data)
+    except Exception:
+        _art_dmg = 1.0
+    if _art_dmg > 1.0:
+        _art_dmg_str = f"{_art_dmg:.2f}".rstrip("0").rstrip(".")
+        art_dmg_line = (
+            f'\n\n<blockquote>'
+            f'<tg-emoji emoji-id="5442939099906325301">💎</tg-emoji> <b>Артефакт урона: ×{_art_dmg_str}</b>'
+            f'</blockquote>'
+        )
+    else:
+        art_dmg_line = ""
+
     return (
         f'<blockquote>'
         f'{_tg(_E["skull"], "💀")} <b>{boss["name"]}</b>\n'
@@ -1081,6 +1101,7 @@ def boss_attack_text(data: dict) -> str:
         f'{_tg(_E["trophy"], "🏆")} <b>Награда за убийство: {_fmt(BOSS_KILL_REWARD)} {_tg(_E["coin"], "💰")}</b>'
         f'</blockquote>'
         f'{enh_line}'
+        f'{art_dmg_line}'
     )
 
 
