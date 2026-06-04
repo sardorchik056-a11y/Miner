@@ -74,7 +74,7 @@ from shop import (
     open_artifact_case, ARTIFACT_CASE_COST_STARS, ARTIFACT_POOL_BY_KEY,
 )
 
-BOT_TOKEN = '8400110033:AAH9NyaOW4us1hhiLGVIr9EobgnsRaowWLo'
+BOT_TOKEN = '8183211325:AAEj3Jj7ZShSCQSsK5epuvOvQoFlm5c-8xo'
 
 bot = Bot(token=BOT_TOKEN)
 
