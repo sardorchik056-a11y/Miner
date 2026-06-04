@@ -266,7 +266,14 @@ def open_artifact_case(data: dict) -> tuple:
         artifacts.append({"key": chosen["key"]})
         added_msg = f"{_pe('ok', '✅')} <b>Артефакт добавлен в коллекцию!</b>"
     else:
-        added_msg = f"{_pe('warn', '⚠️')} <b>Этот артефакт у тебя уже есть!</b>"
+        # Дубликат — выдаём монеты по множителю артефакта
+        _dup_rewards = {1.3: 5_000_000, 1.5: 8_000_000, 1.8: 15_000_000, 1.4: 50_000_000}
+        _dup_coins = _dup_rewards.get(chosen["multiplier"], 5_000_000)
+        data["balance"] = data.get("balance", 0) + _dup_coins
+        added_msg = (
+            f"{_pe('warn', '⚠️')} <b>Этот артефакт у тебя уже есть!</b>\n"
+            f"{_pe('coin', '💰')} <b>Компенсация: +{_fmt_num(_dup_coins)} {COIN}</b>"
+        )
 
     data["artifact_cases_opened"] = data.get("artifact_cases_opened", 0) + 1
 
