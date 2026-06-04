@@ -1043,12 +1043,10 @@ def artifact_case_detail_text(data: dict) -> str:
         return f'<tg-emoji emoji-id="{eid}">💎</tg-emoji>' if eid else "💎"
 
     def _row(a, pct):
-        eff_icon_id = _EFFECT_ICONS.get(a["effect"], _E_BONUS)
-        eff_icon = f'<tg-emoji emoji-id="{eff_icon_id}">✨</tg-emoji>'
         eff_label = _ARTIFACT_EFFECT_LABELS.get(a["effect"], "")
         return (
             f'{_ae(a)} <b>{a["name"]}</b> — '
-            f'{eff_icon} <b><i>{a["multiplier"]}× {eff_label}</i></b> <b>({pct}%)</b>\n'
+            f'<b><i>{a["multiplier"]}× {eff_label}</i></b> <b>({pct}%)</b>\n'
         )
 
     loot = "".join(_row(a, a["chance"]) for a in _ARTIFACT_POOL)
@@ -1111,12 +1109,10 @@ def artifact_collection_text(data: dict) -> str:
         if a:
             eid = a.get("emoji_id", "")
             ae  = f'<tg-emoji emoji-id="{eid}">💎</tg-emoji>' if eid else "💎"
-            eff_icon_id = _EFFECT_ICONS.get(a["effect"], _E_BONUS)
-            eff_icon = f'<tg-emoji emoji-id="{eff_icon_id}">✨</tg-emoji>'
             effect_label = _ARTIFACT_EFFECT_LABELS.get(a["effect"], "")
             artifact_lines.append(
                 f'{ae} <b>{a["name"]}</b> — '
-                f'{eff_icon} <b><i>{a["multiplier"]}× {effect_label}</i></b>\n'
+                f'<b><i>{a["multiplier"]}× {effect_label}</i></b>\n'
             )
 
     mine_icon  = f'<tg-emoji emoji-id="{_E_MINE}">⛏</tg-emoji>'
