@@ -964,7 +964,7 @@ def cases_shop_keyboard() -> InlineKeyboardMarkup:
         else:
             e_key = "enh_case"
         builder.row(_btn(_E[e_key], f'{c["name"]} кейс', f'case_info_{c["key"]}'))
-    builder.row(_btn(_E["stats"], "Кейс Артефактов 💎", "artifact_case_info"))
+    builder.row(InlineKeyboardButton(text="Кейс Артефактов", callback_data="artifact_case_info", icon_custom_emoji_id="5229011542011299168"))
     builder.row(_back_btn("back_to_menu", "Назад в меню"))
     return builder.as_markup()
 
@@ -1053,12 +1053,12 @@ def artifact_case_detail_text(data: dict) -> str:
 
     return (
         f'<blockquote><tg-emoji emoji-id="5442939099906325301">💎</tg-emoji> <b>Кейс Артефактов</b>\n'
-        f'{_pe("stats", "⭐")} <b>Цена: {ARTIFACT_CASE_COST_STARS} Telegram Stars</b></blockquote>\n'
+        f'<tg-emoji emoji-id="5262643974912355126">⭐</tg-emoji> <b>Цена: {ARTIFACT_CASE_COST_STARS} Telegram Stars</b></blockquote>\n'
         f'\n<blockquote><b>Возможный лут:</b>\n{loot}</blockquote>\n'
         f'\n<blockquote>'
         f'<tg-emoji emoji-id="{_E_BONUS}">✨</tg-emoji> <b>Артефакты дают постоянный бонус навсегда!</b>\n'
         f'{_pe("warn", "⚠️")} <b>Дубликат — компенсация монетами.</b></blockquote>\n'
-        f'\n<blockquote>{_pe("inv", "🎒")} <b>Открыто кейсов: {opened}</b>  |  '
+        f'\n<blockquote><tg-emoji emoji-id="5359664288241829619">📦</tg-emoji> <b>Открыто кейсов: {opened}</b>  |  '
         f'{_pe("stats", "💎")} <b>Коллекция: {len(owned)}/10</b></blockquote>'
     )
 
@@ -1079,7 +1079,7 @@ def artifact_case_keyboard(invoice_url: str = None) -> InlineKeyboardMarkup:
         url="tg://stars/",
         icon_custom_emoji_id="5348570868752595928"
     ))
-    builder.row(_btn(_E["inv"], "Моя коллекция", "artifact_collection"))
+    builder.row(InlineKeyboardButton(text="Моя коллекция", callback_data="artifact_collection", icon_custom_emoji_id="5222113468051629260"))
     builder.row(_back_btn("shop_cases", "Назад"))
     return builder.as_markup()
 
