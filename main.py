@@ -96,6 +96,9 @@ _pending_stars_msg: dict[int, tuple] = {}
 # Хранит message_id экрана кейса артефактов перед оплатой: uid -> (chat_id, message_id)
 _pending_artifact_msg: dict[int, tuple] = {}
 
+# Защита от повторной обработки одного charge_id (replay-attack)
+_processed_charge_ids: set[str] = set()
+
 
 async def _get_user_lock(uid: int) -> _asyncio.Lock:
     """Возвращает персональный Lock для пользователя uid."""
@@ -986,6 +989,19 @@ async def handle_successful_payment(message: Message):
     if payload == "artifact_case":
         from miner import STAR
         from database import get_user, save_user
+
+        # Проверяем сумму оплаты — защита от подмены инвойса
+        paid_amount = message.successful_payment.total_amount
+        if paid_amount != ARTIFACT_CASE_COST_STARS:
+            await bot.send_message(message.chat.id, "❌ Ошибка: сумма оплаты не совпадает.")
+            return
+
+        # Защита от replay-атаки: один charge_id обрабатывается ровно один раз
+        charge_id = message.successful_payment.telegram_payment_charge_id
+        if charge_id in _processed_charge_ids:
+            return
+        _processed_charge_ids.add(charge_id)
+
         uid = message.from_user.id
         lock = await _get_user_lock(uid)
         async with lock:
@@ -1040,6 +1056,21 @@ async def handle_successful_payment(message: Message):
             get_pickaxe_page, PICKAXES, TIER_LABELS, STAR
         )
         from database import get_user, save_user
+
+        # Проверяем сумму: должна совпадать с ценой кирки в Stars
+        from miner import PICKAXES as _PX
+        _pick_entry = _PX.get(pick_key)
+        paid_amount = message.successful_payment.total_amount
+        if _pick_entry and _pick_entry.get("cost_stars") and paid_amount != _pick_entry["cost_stars"]:
+            await bot.send_message(message.chat.id, "❌ Ошибка: сумма оплаты не совпадает.")
+            return
+
+        # Защита от replay-атаки
+        charge_id = message.successful_payment.telegram_payment_charge_id
+        if charge_id in _processed_charge_ids:
+            return
+        _processed_charge_ids.add(charge_id)
+
         uid = message.from_user.id
         lock = await _get_user_lock(uid)
         async with lock:
