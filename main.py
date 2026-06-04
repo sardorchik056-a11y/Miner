@@ -68,6 +68,10 @@ from shop import (
     open_case, activate_booster, sell_booster,
     use_xp_item, sell_xp_item,
     use_poison, activate_enh_boost, sell_enh_item,
+    # Артефакты
+    artifact_case_detail_text, artifact_case_keyboard,
+    artifact_collection_text, artifact_collection_keyboard,
+    open_artifact_case, ARTIFACT_CASE_COST_STARS, ARTIFACT_POOL_BY_KEY,
 )
 
 BOT_TOKEN = '8400110033:AAH9NyaOW4us1hhiLGVIr9EobgnsRaowWLo'
@@ -88,6 +92,9 @@ _user_locks_mutex = _asyncio.Lock()
 
 # Хранит message_id экрана кирки перед оплатой: uid -> (chat_id, message_id, pick_key)
 _pending_stars_msg: dict[int, tuple] = {}
+
+# Хранит message_id экрана кейса артефактов перед оплатой: uid -> (chat_id, message_id)
+_pending_artifact_msg: dict[int, tuple] = {}
 
 
 async def _get_user_lock(uid: int) -> _asyncio.Lock:
@@ -870,6 +877,39 @@ async def handle_callback(call: CallbackQuery):
             await edit(txt, kb)
             return
 
+        # ===== КЕЙС АРТЕФАКТОВ: экран информации =====
+        if cd == "artifact_case_info":
+            await edit(artifact_case_detail_text(data), artifact_case_keyboard())
+            return
+
+        # ===== КЕЙС АРТЕФАКТОВ: создать инвойс и обновить сообщение =====
+        if cd == "artifact_case_buy":
+            invoice_url = None
+            try:
+                invoice_url = await bot.create_invoice_link(
+                    title="Кейс Артефактов",
+                    description="Открой кейс и получи постоянный артефакт с бонусом навсегда!",
+                    payload="artifact_case",
+                    provider_token="",
+                    currency="XTR",
+                    prices=[LabeledPrice(label="Кейс Артефактов", amount=ARTIFACT_CASE_COST_STARS)],
+                )
+            except Exception as e:
+                print(f"Artifact invoice error: {e}")
+                await call.answer("❌ Ошибка при создании инвойса.", show_alert=True)
+                return
+            _pending_artifact_msg[call.from_user.id] = (
+                call.message.chat.id,
+                call.message.message_id,
+            )
+            await edit(artifact_case_detail_text(data), artifact_case_keyboard(invoice_url=invoice_url))
+            return
+
+        # ===== КЕЙС АРТЕФАКТОВ: коллекция =====
+        if cd == "artifact_collection":
+            await edit(artifact_collection_text(data), artifact_collection_keyboard())
+            return
+
         # ===== ОСТАЛЬНЫЕ РАЗДЕЛЫ =====
         responses = {
             "stats":    '<tg-emoji emoji-id="5231200819986047254">📊</tg-emoji> <b>СТАТИСТИКА</b>\n\n<blockquote><b>📝 Раздел в разработке...</b></blockquote>',
@@ -900,6 +940,58 @@ async def handle_pre_checkout(query: PreCheckoutQuery):
 @dp.message(F.successful_payment)
 async def handle_successful_payment(message: Message):
     payload = message.successful_payment.invoice_payload
+
+    # ===== ОПЛАТА: Кейс Артефактов =====
+    if payload == "artifact_case":
+        from miner import STAR
+        from database import get_user, save_user
+        uid = message.from_user.id
+        lock = await _get_user_lock(uid)
+        async with lock:
+            data = get_user(uid)
+            if not data:
+                return
+            ok, msg, chosen = open_artifact_case(data)
+            if ok:
+                save_user(data["id"], data)
+
+            # 1) Обновляем старое сообщение — убираем ссылку-инвойс
+            pending = _pending_artifact_msg.pop(uid, None)
+            if pending:
+                old_chat_id, old_msg_id = pending
+                try:
+                    await bot.edit_message_text(
+                        artifact_case_detail_text(data),
+                        chat_id=old_chat_id,
+                        message_id=old_msg_id,
+                        reply_markup=artifact_case_keyboard(),
+                        parse_mode="HTML"
+                    )
+                except Exception:
+                    pass
+
+            # 2) Сообщение об успехе
+            _effect_labels = {
+                "mine":   "к добыче руды",
+                "damage": "к урону по боссу",
+                "pets":   "к добыче питомцов",
+                "all":    "ко всем трём видам добычи",
+            }
+            effect_label = _effect_labels.get(chosen["effect"], "")
+            success_text = (
+                f'<tg-emoji emoji-id="5267500801240092311">⭐</tg-emoji> <b>Оплата прошла успешно!</b>\n'
+                f'━━━━━━━━━━━━━━━━━━━━\n\n'
+                f'<blockquote>'
+                f'<tg-emoji emoji-id="5442939099906325301">💎</tg-emoji> <b>Кейс Артефактов открыт!</b>\n'
+                f'<tg-emoji emoji-id="5397782960512444700">🎟</tg-emoji> <b>Артефакт: {chosen["name"]}</b>\n'
+                f'<tg-emoji emoji-id="5375338737028841420">🎟</tg-emoji> <b>Бонус: {chosen["multiplier"]}× {effect_label} навсегда</b>\n'
+                f'<tg-emoji emoji-id="5267500801240092311">🎟</tg-emoji> <b>Потрачено: {ARTIFACT_CASE_COST_STARS} {STAR}</b>'
+                f'</blockquote>\n\n'
+                f'<tg-emoji emoji-id="5206607081334906820">🎟</tg-emoji> <b>Артефакт добавлен в коллекцию!</b>'
+            )
+            await bot.send_message(message.chat.id, success_text, parse_mode="HTML")
+        return
+
     if payload.startswith("premium_pickaxe:"):
         pick_key = payload.split(":", 1)[1]
         from miner import (
