@@ -1031,12 +1031,25 @@ def artifact_case_detail_text(data: dict) -> str:
     opened = data.get("artifact_cases_opened", 0)
     owned  = data.get("artifacts", [])
 
+    _E_MINE   = "5201914481671682382"
+    _E_DMG    = "5373173798633752502"
+    _E_PETS   = "5208535779348864977"
+    _E_BONUS  = "5438496463044752972"
+
+    _EFFECT_ICONS = {"mine": _E_MINE, "damage": _E_DMG, "pets": _E_PETS, "all": _E_BONUS}
+
     def _ae(a):
         eid = a.get("emoji_id", "")
         return f'<tg-emoji emoji-id="{eid}">💎</tg-emoji>' if eid else "💎"
 
     def _row(a, pct):
-        return f'{_ae(a)} <b>{a["name"]}</b> — {a["multiplier"]}× {_ARTIFACT_EFFECT_LABELS.get(a["effect"], "")} ({pct}%)\n'
+        eff_icon_id = _EFFECT_ICONS.get(a["effect"], _E_BONUS)
+        eff_icon = f'<tg-emoji emoji-id="{eff_icon_id}">✨</tg-emoji>'
+        eff_label = _ARTIFACT_EFFECT_LABELS.get(a["effect"], "")
+        return (
+            f'{_ae(a)} <b>{a["name"]}</b> — '
+            f'{eff_icon} <b><i>{a["multiplier"]}× {eff_label}</i></b> <b>({pct}%)</b>\n'
+        )
 
     loot = "".join(_row(a, a["chance"]) for a in _ARTIFACT_POOL)
 
@@ -1045,7 +1058,7 @@ def artifact_case_detail_text(data: dict) -> str:
         f'{_pe("stats", "⭐")} <b>Цена: {ARTIFACT_CASE_COST_STARS} Telegram Stars</b></blockquote>\n'
         f'\n<blockquote><b>Возможный лут:</b>\n{loot}</blockquote>\n'
         f'\n<blockquote>'
-        f'{_pe("warn", "⚠️")} <b>Артефакты дают постоянный бонус навсегда!</b>\n'
+        f'<tg-emoji emoji-id="{_E_BONUS}">✨</tg-emoji> <b>Артефакты дают постоянный бонус навсегда!</b>\n'
         f'{_pe("warn", "⚠️")} <b>Дубликат — компенсация монетами.</b></blockquote>\n'
         f'\n<blockquote>{_pe("inv", "🎒")} <b>Открыто кейсов: {opened}</b>  |  '
         f'{_pe("stats", "💎")} <b>Коллекция: {len(owned)}/10</b></blockquote>'
@@ -1058,7 +1071,8 @@ def artifact_case_keyboard(invoice_url: str = None) -> InlineKeyboardMarkup:
         builder.row(InlineKeyboardButton(
             text=f"Открыть за {ARTIFACT_CASE_COST_STARS} ⭐",
             url=invoice_url,
-            icon_custom_emoji_id="5999336376342940892"
+            icon_custom_emoji_id="5999336376342940892",
+            style="success"
         ))
     else:
         builder.row(_btn(_E["stats"], f"Открыть за {ARTIFACT_CASE_COST_STARS} ⭐", "artifact_case_buy"))
@@ -1085,21 +1099,39 @@ def artifact_collection_text(data: dict) -> str:
     damage_mult = get_artifact_damage_multiplier(data)
     pets_mult   = get_artifact_pets_multiplier(data)
 
+    _E_MINE  = "5201914481671682382"
+    _E_DMG   = "5373173798633752502"
+    _E_PETS  = "5208535779348864977"
+    _E_BONUS = "5438496463044752972"
+    _EFFECT_ICONS = {"mine": _E_MINE, "damage": _E_DMG, "pets": _E_PETS, "all": _E_BONUS}
+
     artifact_lines = []
     for entry in owned:
         a = ARTIFACT_POOL_BY_KEY.get(entry["key"])
         if a:
             eid = a.get("emoji_id", "")
             ae  = f'<tg-emoji emoji-id="{eid}">💎</tg-emoji>' if eid else "💎"
+            eff_icon_id = _EFFECT_ICONS.get(a["effect"], _E_BONUS)
+            eff_icon = f'<tg-emoji emoji-id="{eff_icon_id}">✨</tg-emoji>'
             effect_label = _ARTIFACT_EFFECT_LABELS.get(a["effect"], "")
-            artifact_lines.append(f'{ae} <b>{a["name"]}</b> — {a["multiplier"]}× {effect_label}\n')
+            artifact_lines.append(
+                f'{ae} <b>{a["name"]}</b> — '
+                f'{eff_icon} <b><i>{a["multiplier"]}× {effect_label}</i></b>\n'
+            )
+
+    mine_icon  = f'<tg-emoji emoji-id="{_E_MINE}">⛏</tg-emoji>'
+    dmg_icon   = f'<tg-emoji emoji-id="{_E_DMG}">⚔️</tg-emoji>'
+    pets_icon  = f'<tg-emoji emoji-id="{_E_PETS}">🐾</tg-emoji>'
+    bonus_icon = f'<tg-emoji emoji-id="{_E_BONUS}">✨</tg-emoji>'
 
     return (
         f'<blockquote><tg-emoji emoji-id="5442939099906325301">💎</tg-emoji> '
         f'<b>МОЯ КОЛЛЕКЦИЯ ({len(owned)}/10)</b></blockquote>\n'
         f'\n<blockquote>'
-        f'{_pe("boost", "⚡")} <b>Итоговые бонусы:</b>\n'
-        f'<b>⛏ Руда: ×{mine_mult}  ⚔️ Босс: ×{damage_mult}  🐾 Питомцы: ×{pets_mult}</b>'
+        f'{bonus_icon} <b>Итоговые бонусы:</b>\n'
+        f'{mine_icon} <b>Руда: ×{mine_mult}</b>\n'
+        f'{dmg_icon} <b>Босс: ×{damage_mult}</b>\n'
+        f'{pets_icon} <b>Питомцы: ×{pets_mult}</b>'
         f'</blockquote>\n'
         f'\n<blockquote><b>Артефакты:</b>\n' + "".join(artifact_lines) + '</blockquote>'
     )
