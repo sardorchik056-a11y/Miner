@@ -609,6 +609,11 @@ def attack_boss(data: dict) -> dict:
     from shop import get_artifact_damage_multiplier
     art_dmg_mult = get_artifact_damage_multiplier(data)
 
+    # Множитель статуса к урону + бонус к крит-шансу
+    from status import get_status_multiplier as _status_dmg_mult, get_crit_chance_bonus as _status_crit_bonus
+    status_dmg_mult  = _status_dmg_mult(data)
+    status_crit_add  = _status_crit_bonus(data) / 100.0   # 0.15 или 0.25
+
     # Урон
     if data.get("infinite_dmg"):
         dmg  = state["boss_hp"]  # убивает с одного удара
@@ -616,10 +621,10 @@ def attack_boss(data: dict) -> dict:
     else:
         dmg = random.randint(sword["dmg_min"], sword["dmg_max"])
         crit = False
-        if random.random() < sword["crit_chance"]:
+        if random.random() < sword["crit_chance"] + status_crit_add:
             dmg  = int(sword["dmg_max"] * sword["crit_mult"])
             crit = True
-        dmg = int(dmg * enh_mult * art_dmg_mult)
+        dmg = int(dmg * enh_mult * art_dmg_mult * status_dmg_mult)
 
     hp_before = state["boss_hp"]
     hp_after  = max(0, hp_before - dmg)
