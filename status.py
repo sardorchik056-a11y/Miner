@@ -184,17 +184,17 @@ def status_main_text(data: dict) -> str:
     # Шапка с текущим статусом
     if active == "premium":
         current_line = (
-            f'{_pe("cur_status", "★")} <b>Текущий статус: Premium</b>\n'
+            f'{_pe("cur_status", "⭐")} <b>Текущий статус: Premium</b>\n'
             f'{_pe("timer", "⏱")} <b>Осталось: {_fmt_time_left(ends_at - _now_ts())}</b>'
         )
     elif active == "vip":
         current_line = (
-            f'{_pe("cur_status", "★")} <b>Текущий статус: VIP</b>\n'
+            f'{_pe("cur_status", "⭐")} <b>Текущий статус: VIP</b>\n'
             f'{_pe("timer", "⏱")} <b>Осталось: {_fmt_time_left(ends_at - _now_ts())}</b>'
         )
     else:
         current_line = (
-            f'{_pe("cur_status", "★")} <b>Текущий статус: Standart</b>\n'
+            f'{_pe("cur_status", "⭐")} <b>Текущий статус: Standart</b>\n'
             f'<b>Подпишись, чтобы получить привилегии</b>'
         )
 
