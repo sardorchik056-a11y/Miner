@@ -16,8 +16,9 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 STATUS_DURATION = 30 * 24 * 3600   # 30 дней в секундах
 
 # Стоимость в Telegram Stars
-VIP_COST_STARS     = 89
-PREMIUM_COST_STARS = 149
+VIP_COST_STARS        = 89
+PREMIUM_COST_STARS    = 149
+UPGRADE_COST_STARS    = 59   # улучшение VIP → Premium
 
 # Ключи ядов-бонусов (берём из shop.py: poison_1 = Гадюка, poison_2 = Кобра)
 VIP_BONUS_POISON_KEY     = "poison_1"   # Яд Гадюки
@@ -139,16 +140,29 @@ def get_luck_bonus(data: dict) -> bool:
 
 def activate_status(data: dict, tier: str) -> tuple[bool, str]:
     """
-    Активировать подписку. Оплата Stars уже прошла — просто выдаём.
+    Активировать / продлить / улучшить подписку.
     tier: 'vip' или 'premium'
+    - Тот же тир: продление (adds STATUS_DURATION к текущему ends_at)
+    - Другой тир (upgrade/downgrade): заменяет, срок с нуля
     Возвращает (ok, message_text)
     """
-    now     = _now_ts()
-    ends_at = now + STATUS_DURATION
+    now = _now_ts()
+    sd  = data.get("status_subscription")
+    current_tier    = sd.get("tier") if sd else None
+    current_ends_at = sd.get("ends_at", 0) if sd else 0
+
+    if current_tier == tier and current_ends_at > now:
+        # Продление: добавляем 30 дней к оставшемуся сроку
+        ends_at = current_ends_at + STATUS_DURATION
+        action_label = "продлён"
+    else:
+        # Новая активация или смена тира
+        ends_at = now + STATUS_DURATION
+        action_label = "активирован"
 
     data["status_subscription"] = {
-        "tier":     tier,
-        "ends_at":  ends_at,
+        "tier":      tier,
+        "ends_at":   ends_at,
         "bought_at": now,
     }
 
@@ -170,7 +184,7 @@ def activate_status(data: dict, tier: str) -> tuple[bool, str]:
             poison_msg = f'\n{_pe("warn", "⚠️")} <b>Инвентарь усилителей полон — яд не выдан.</b>'
 
     label = "VIP" if tier == "vip" else "Premium"
-    return True, f'{_pe("ok", "✅")} <b>Статус {label} активирован на 30 дней!</b>{poison_msg}'
+    return True, f'{_pe("ok", "✅")} <b>Статус {label} {action_label} на 30 дней!</b>{poison_msg}'
 
 
 # ────────────────────────────────────────────────────────────
@@ -184,17 +198,17 @@ def status_main_text(data: dict) -> str:
     # Шапка с текущим статусом
     if active == "premium":
         current_line = (
-            f'{_pe("cur_status", "⭐")} <b>Текущий статус: Premium</b>\n'
+            f'{_pe("cur_status", "★")} <b>Текущий статус: Premium</b>\n'
             f'{_pe("timer", "⏱")} <b>Осталось: {_fmt_time_left(ends_at - _now_ts())}</b>'
         )
     elif active == "vip":
         current_line = (
-            f'{_pe("cur_status", "⭐")} <b>Текущий статус: VIP</b>\n'
+            f'{_pe("cur_status", "★")} <b>Текущий статус: VIP</b>\n'
             f'{_pe("timer", "⏱")} <b>Осталось: {_fmt_time_left(ends_at - _now_ts())}</b>'
         )
     else:
         current_line = (
-            f'{_pe("cur_status", "⭐")} <b>Текущий статус: Standart</b>\n'
+            f'{_pe("cur_status", "★")} <b>Текущий статус: Standart</b>\n'
             f'<b>Подпишись, чтобы получить привилегии</b>'
         )
 
@@ -243,14 +257,14 @@ def status_vip_text(data: dict) -> str:
     if active == "vip":
         ends_at = get_status_ends_at(data)
         active_line = (
-            f'\n\n<blockquote>{_pe("ok", "✅")} <b>VIP уже активен!</b>\n'
+            f'\n\n<blockquote>{_pe("ok", "✅")} <b>VIP активен!</b>\n'
             f'{_pe("timer", "⏱")} <b>Осталось: {_fmt_time_left(ends_at - _now_ts())}</b>\n'
-            f'<b>Покупка продлит подписку ещё на 30 дней</b></blockquote>'
+            f'<b>Покупка продлит срок ещё на 30 дней</b></blockquote>'
         )
     elif active == "premium":
         active_line = (
-            f'\n\n<blockquote>{_pe("warn", "⚠️")} <b>У тебя уже активен Premium.</b>\n'
-            f'<b>Покупка VIP заменит его на 30 дней VIP.</b></blockquote>'
+            f'\n\n<blockquote>{_pe("warn", "⚠️")} <b>У тебя активен Premium — VIP недоступен.</b>\n'
+            f'<b>Более высокий статус нельзя заменить на низкий.</b></blockquote>'
         )
 
     return (
@@ -280,8 +294,33 @@ def status_vip_text(data: dict) -> str:
 
 
 def status_vip_keyboard(data: dict) -> InlineKeyboardMarkup:
+    active = get_active_status(data)
     builder = InlineKeyboardBuilder()
-    builder.row(_btn("star", f"Купить VIP — {VIP_COST_STARS} Stars", "status_buy_vip"))
+    if active == "premium":
+        # VIP заблокирован — кнопка неактивна
+        builder.row(InlineKeyboardButton(
+            text="🚫 Недоступно (активен Premium)",
+            callback_data="noop",
+        ))
+    elif active == "vip":
+        # Продление VIP + улучшение до Premium
+        builder.row(InlineKeyboardButton(
+            text=f"Продлить VIP — {VIP_COST_STARS} Stars",
+            callback_data="status_buy_vip",
+            icon_custom_emoji_id=_E["vip"]
+        ))
+        builder.row(InlineKeyboardButton(
+            text=f"Улучшить до Premium — {UPGRADE_COST_STARS} ⭐",
+            callback_data="status_upgrade_premium",
+            icon_custom_emoji_id=_E["premium"]
+        ))
+    else:
+        # Standart — обычная покупка
+        builder.row(InlineKeyboardButton(
+            text=f"Купить VIP — {VIP_COST_STARS} Stars",
+            callback_data="status_buy_vip",
+            icon_custom_emoji_id=_E["vip"]
+        ))
     builder.row(InlineKeyboardButton(
         text="Мои звёзды",
         url="tg://stars/",
@@ -297,14 +336,14 @@ def status_premium_text(data: dict) -> str:
     if active == "premium":
         ends_at = get_status_ends_at(data)
         active_line = (
-            f'\n\n<blockquote>{_pe("ok", "✅")} <b>Premium уже активен!</b>\n'
+            f'\n\n<blockquote>{_pe("ok", "✅")} <b>Premium активен!</b>\n'
             f'{_pe("timer", "⏱")} <b>Осталось: {_fmt_time_left(ends_at - _now_ts())}</b>\n'
-            f'<b>Покупка продлит подписку ещё на 30 дней</b></blockquote>'
+            f'<b>Покупка продлит срок ещё на 30 дней</b></blockquote>'
         )
     elif active == "vip":
         active_line = (
-            f'\n\n<blockquote>{_pe("warn", "⚠️")} <b>Сейчас активен VIP.</b>\n'
-            f'<b>Покупка Premium заменит его на 30 дней Premium.</b></blockquote>'
+            f'\n\n<blockquote>{_pe("ok", "✅")} <b>У тебя активен VIP.</b>\n'
+            f'<b>Можешь улучшить до Premium за {UPGRADE_COST_STARS} ⭐</b></blockquote>'
         )
 
     return (
@@ -334,8 +373,29 @@ def status_premium_text(data: dict) -> str:
 
 
 def status_premium_keyboard(data: dict) -> InlineKeyboardMarkup:
+    active = get_active_status(data)
     builder = InlineKeyboardBuilder()
-    builder.row(_btn("star", f"Купить Premium — {PREMIUM_COST_STARS} Stars", "status_buy_premium"))
+    if active == "vip":
+        # Улучшение VIP → Premium за 59 звёзд
+        builder.row(InlineKeyboardButton(
+            text=f"Улучшить до Premium — {UPGRADE_COST_STARS} ⭐",
+            callback_data="status_upgrade_premium",
+            icon_custom_emoji_id=_E["premium"]
+        ))
+    elif active == "premium":
+        # Продление Premium
+        builder.row(InlineKeyboardButton(
+            text=f"Продлить Premium — {PREMIUM_COST_STARS} Stars",
+            callback_data="status_buy_premium",
+            icon_custom_emoji_id=_E["premium"]
+        ))
+    else:
+        # Standart — обычная покупка
+        builder.row(InlineKeyboardButton(
+            text=f"Купить Premium — {PREMIUM_COST_STARS} Stars",
+            callback_data="status_buy_premium",
+            icon_custom_emoji_id=_E["premium"]
+        ))
     builder.row(InlineKeyboardButton(
         text="Мои звёзды",
         url="tg://stars/",
@@ -366,6 +426,24 @@ def status_premium_keyboard_invoice(invoice_url: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.row(InlineKeyboardButton(
         text=f"Купить Premium — {PREMIUM_COST_STARS} ⭐",
+        url=invoice_url,
+        icon_custom_emoji_id=_E["pay_btn"],
+        style="success"
+    ))
+    builder.row(InlineKeyboardButton(
+        text="Мои звёзды",
+        url="tg://stars/",
+        icon_custom_emoji_id=_E["star"]
+    ))
+    builder.row(_back_btn("status_premium_info", "Назад"))
+    return builder.as_markup()
+
+
+def status_upgrade_keyboard_invoice(invoice_url: str) -> InlineKeyboardMarkup:
+    """Клавиатура для апгрейда VIP → Premium за 59 звёзд."""
+    builder = InlineKeyboardBuilder()
+    builder.row(InlineKeyboardButton(
+        text=f"Улучшить до Premium — {UPGRADE_COST_STARS} ⭐",
         url=invoice_url,
         icon_custom_emoji_id=_E["pay_btn"],
         style="success"
