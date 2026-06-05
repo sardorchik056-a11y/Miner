@@ -143,10 +143,9 @@ def level_to_rank(level: int) -> str:
 
 
 def status_from_level(level: int) -> str:
-    if level < 10:  return "Standart"
-    if level < 25:  return "VIP"
-    if level < 50:  return "VIP+"
-    return "Premium"
+    # Оставлено для обратной совместимости, но в профиле теперь используется
+    # реальный статус из status.py (get_active_status)
+    return "Standart"
 
 
 def xp_bar(xp: int, xp_max: int, length: int = 10) -> str:
@@ -205,6 +204,19 @@ def profile_text(d: dict) -> str:
         bar_str  = xp_bar(xp, xp_max)
         xp_str   = f"<b>{xp:,}/{xp_max:,}</b>"
 
+    # Активный статус (VIP / Premium / Standart)
+    from status import get_active_status, get_status_ends_at, _fmt_time_left as _st_fmt, _now_ts as _st_now
+    _active_status = get_active_status(d)
+    _status_ends   = get_status_ends_at(d)
+    if _active_status == "premium":
+        _sleft       = _st_fmt(_status_ends - _st_now())
+        status_badge = f'<tg-emoji emoji-id="5197288647275071607">⭐</tg-emoji> <b>Premium</b> · <b>{_sleft}</b>'
+    elif _active_status == "vip":
+        _sleft       = _st_fmt(_status_ends - _st_now())
+        status_badge = f'<tg-emoji emoji-id="5438496463044752972">👑</tg-emoji> <b>VIP</b> · <b>{_sleft}</b>'
+    else:
+        status_badge = f'<tg-emoji emoji-id="5282843764451195532">🎟</tg-emoji> <b>Standart</b>'
+
     # Ускорители
     from shop import get_active_booster_info, get_active_xp_booster_info, get_active_enh_booster_info, _multiplier_label, _DUR_LABELS, _fmt_time_left, _now_ts
     active     = get_active_booster_info(d)
@@ -242,7 +254,7 @@ def profile_text(d: dict) -> str:
         f'</blockquote>'
         f'<blockquote>'
         f'<tg-emoji emoji-id="5415655814079723871">🎟</tg-emoji> <b>Ранг — {level_to_rank(level)}</b>\n'
-        f'<tg-emoji emoji-id="5438496463044752972">🎟</tg-emoji> <b>Статус — {status_from_level(level)}</b>\n'
+        f'<tg-emoji emoji-id="5438496463044752972">🎟</tg-emoji> <b>Статус — {status_badge}</b>\n'
         f'<tg-emoji emoji-id="5274055917766202507">🎟</tg-emoji> <b>Дней в проекте — {days}</b>\n'
         f'</blockquote>'
         f'<blockquote>'
