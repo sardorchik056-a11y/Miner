@@ -713,7 +713,8 @@ def use_poison(data: dict, instance_id: str, force: bool = False) -> tuple:
     if has_active and not force:
         return False, f"CONFIRM_REPLACE_POISON:{instance_id}"
     data["enh_inventory"] = [x for x in inv if x["instance_id"] != instance_id]
-    ends_at = _now_ts() + item["duration_sec"]
+    duration = item.get("duration_sec") or _DUR.get(item.get("dur_key", ""), 30 * 60)
+    ends_at = _now_ts() + duration
     data["active_poison"] = {
         "key":      item["key"],
         "name":     item["name"],
@@ -764,7 +765,8 @@ def activate_enh_boost(data: dict, instance_id: str, force: bool = False) -> tup
     if has_active and not force:
         return False, f"CONFIRM_REPLACE_ENH:{instance_id}"
     data["enh_inventory"] = [x for x in inv if x["instance_id"] != instance_id]
-    ends_at = _now_ts() + item["duration_sec"]
+    duration = item.get("duration_sec") or _DUR.get(item.get("dur_key", ""), 30 * 60)
+    ends_at = _now_ts() + duration
     data["active_enh_booster"] = {
         "key":        item["key"],
         "multiplier": item["multiplier"],
