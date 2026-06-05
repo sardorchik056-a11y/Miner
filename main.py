@@ -53,6 +53,14 @@ from hunt import (
     buy_sword, equip_sword, attack_boss,
 )
 
+
+from status import (
+    status_main_text, status_main_keyboard,
+    status_vip_text, status_vip_keyboard, status_vip_keyboard_invoice,
+    status_premium_text, status_premium_keyboard, status_premium_keyboard_invoice,
+    activate_status,
+    VIP_COST_STARS, PREMIUM_COST_STARS,
+)
 from shop import (
     cases_shop_text, cases_shop_keyboard,
     inventory_main_text, inventory_main_keyboard,
@@ -95,6 +103,9 @@ _pending_stars_msg: dict[int, tuple] = {}
 
 # Хранит message_id экрана кейса артефактов перед оплатой: uid -> (chat_id, message_id)
 _pending_artifact_msg: dict[int, tuple] = {}
+
+# Хранит message_id экрана статуса перед оплатой: uid -> (chat_id, message_id, tier)
+_pending_status_msg: dict[int, tuple] = {}
 
 # Защита от повторной обработки одного charge_id (replay-attack)
 _processed_charge_ids: set[str] = set()
@@ -954,10 +965,72 @@ async def handle_callback(call: CallbackQuery):
             await edit(artifact_collection_text(data), artifact_collection_keyboard())
             return
 
+        # ===== СТАТУС: главный экран =====
+        if cd == "status":
+            await edit(status_main_text(data), status_main_keyboard(data))
+            return
+
+        # ===== СТАТУС: карточка VIP =====
+        if cd == "status_vip_info":
+            await edit(status_vip_text(data), status_vip_keyboard(data))
+            return
+
+        # ===== СТАТУС: карточка Premium =====
+        if cd == "status_premium_info":
+            await edit(status_premium_text(data), status_premium_keyboard(data))
+            return
+
+        # ===== СТАТУС: купить VIP (создать инвойс) =====
+        if cd == "status_buy_vip":
+            invoice_url = None
+            try:
+                invoice_url = await bot.create_invoice_link(
+                    title="Статус VIP — 30 дней",
+                    description="×1.3 к добыче, +15% крит, удача в кейсах, Яд Гадюки в подарок",
+                    payload="status_vip",
+                    provider_token="",
+                    currency="XTR",
+                    prices=[LabeledPrice(label="VIP на 30 дней", amount=VIP_COST_STARS)],
+                )
+            except Exception as e:
+                print(f"VIP invoice error: {e}")
+                await call.answer("❌ Ошибка при создании инвойса.", show_alert=True)
+                return
+            _pending_status_msg[call.from_user.id] = (
+                call.message.chat.id,
+                call.message.message_id,
+                "vip",
+            )
+            await edit(status_vip_text(data), status_vip_keyboard_invoice(invoice_url))
+            return
+
+        # ===== СТАТУС: купить Premium (создать инвойс) =====
+        if cd == "status_buy_premium":
+            invoice_url = None
+            try:
+                invoice_url = await bot.create_invoice_link(
+                    title="Статус Premium — 30 дней",
+                    description="×1.6 к добыче, +25% крит, макс. удача, Яд Кобры в подарок",
+                    payload="status_premium",
+                    provider_token="",
+                    currency="XTR",
+                    prices=[LabeledPrice(label="Premium на 30 дней", amount=PREMIUM_COST_STARS)],
+                )
+            except Exception as e:
+                print(f"Premium invoice error: {e}")
+                await call.answer("❌ Ошибка при создании инвойса.", show_alert=True)
+                return
+            _pending_status_msg[call.from_user.id] = (
+                call.message.chat.id,
+                call.message.message_id,
+                "premium",
+            )
+            await edit(status_premium_text(data), status_premium_keyboard_invoice(invoice_url))
+            return
+
         # ===== ОСТАЛЬНЫЕ РАЗДЕЛЫ =====
         responses = {
             "stats":    '<tg-emoji emoji-id="5231200819986047254">📊</tg-emoji> <b>СТАТИСТИКА</b>\n\n<blockquote><b>📝 Раздел в разработке...</b></blockquote>',
-            "status":   '<tg-emoji emoji-id="5438496463044752972">📌</tg-emoji> <b>СТАТУС</b>\n\n<blockquote><b>📝 Раздел в разработке...</b></blockquote>',
             "exchange": '<tg-emoji emoji-id="5402186569006210455">💱</tg-emoji> <b>БИРЖА</b>\n\n<blockquote><b>📝 Раздел в разработке...</b></blockquote>',
             "leaders":  '<tg-emoji emoji-id="5440539497383087970">🏆</tg-emoji> <b>ЛИДЕРЫ</b>\n\n<blockquote><b>📝 Раздел в разработке...</b></blockquote>',
             "settings": '<tg-emoji emoji-id="5341715473882955310">⚙️</tg-emoji> <b>НАСТРОЙКИ</b>\n\n<blockquote><b>📝 Раздел в разработке...</b></blockquote>',
@@ -1117,8 +1190,97 @@ async def handle_successful_payment(message: Message):
                 parse_mode="HTML"
             )
 
+    # ===== ОПЛАТА: Статус VIP =====
+    if payload == "status_vip":
+        from database import get_user, save_user
+        paid_amount = message.successful_payment.total_amount
+        if paid_amount != VIP_COST_STARS:
+            await bot.send_message(message.chat.id, "❌ Ошибка: сумма оплаты не совпадает.")
+            return
+        charge_id = message.successful_payment.telegram_payment_charge_id
+        if charge_id in _processed_charge_ids:
+            return
+        _processed_charge_ids.add(charge_id)
+        uid = message.from_user.id
+        lock = await _get_user_lock(uid)
+        async with lock:
+            data = get_user(uid)
+            if not data:
+                return
+            ok, msg = activate_status(data, "vip")
+            if ok:
+                save_user(data["id"], data)
+            # Обновляем старое сообщение
+            pending = _pending_status_msg.pop(uid, None)
+            if pending:
+                old_chat_id, old_msg_id, _ = pending
+                try:
+                    await bot.edit_message_text(
+                        status_vip_text(data),
+                        chat_id=old_chat_id,
+                        message_id=old_msg_id,
+                        reply_markup=status_vip_keyboard(data),
+                        parse_mode="HTML"
+                    )
+                except Exception:
+                    pass
+            success_text = (
+                f'<tg-emoji emoji-id="5267500801240092311">⭐</tg-emoji> <b>Оплата прошла успешно!</b>\n'
+                f'━━━━━━━━━━━━━━━━━━━━\n\n'
+                f'<blockquote>'
+                f'<tg-emoji emoji-id="5438496463044752972">👑</tg-emoji> <b>Статус VIP активирован на 30 дней!</b>\n'
+                f'<tg-emoji emoji-id="5197371802136892976">⛏</tg-emoji> <b>×1.3 к добыче · +15% крит · Удача в кейсах</b>\n'
+                f'<tg-emoji emoji-id="5348570868752595928">⭐</tg-emoji> <b>Потрачено: {VIP_COST_STARS} Stars</b>'
+                f'</blockquote>'
+            )
+            await bot.send_message(message.chat.id, success_text, parse_mode="HTML")
+        return
 
-# ===== ФОНОВЫЕ ЗАДАЧИ =====
+    # ===== ОПЛАТА: Статус Premium =====
+    if payload == "status_premium":
+        from database import get_user, save_user
+        paid_amount = message.successful_payment.total_amount
+        if paid_amount != PREMIUM_COST_STARS:
+            await bot.send_message(message.chat.id, "❌ Ошибка: сумма оплаты не совпадает.")
+            return
+        charge_id = message.successful_payment.telegram_payment_charge_id
+        if charge_id in _processed_charge_ids:
+            return
+        _processed_charge_ids.add(charge_id)
+        uid = message.from_user.id
+        lock = await _get_user_lock(uid)
+        async with lock:
+            data = get_user(uid)
+            if not data:
+                return
+            ok, msg = activate_status(data, "premium")
+            if ok:
+                save_user(data["id"], data)
+            # Обновляем старое сообщение
+            pending = _pending_status_msg.pop(uid, None)
+            if pending:
+                old_chat_id, old_msg_id, _ = pending
+                try:
+                    await bot.edit_message_text(
+                        status_premium_text(data),
+                        chat_id=old_chat_id,
+                        message_id=old_msg_id,
+                        reply_markup=status_premium_keyboard(data),
+                        parse_mode="HTML"
+                    )
+                except Exception:
+                    pass
+            success_text = (
+                f'<tg-emoji emoji-id="5267500801240092311">⭐</tg-emoji> <b>Оплата прошла успешно!</b>\n'
+                f'━━━━━━━━━━━━━━━━━━━━\n\n'
+                f'<blockquote>'
+                f'<tg-emoji emoji-id="5197288647275071607">⭐</tg-emoji> <b>Статус Premium активирован на 30 дней!</b>\n'
+                f'<tg-emoji emoji-id="5197371802136892976">⛏</tg-emoji> <b>×1.6 к добыче · +25% крит · Макс. удача</b>\n'
+                f'<tg-emoji emoji-id="5348570868752595928">⭐</tg-emoji> <b>Потрачено: {PREMIUM_COST_STARS} Stars</b>'
+                f'</blockquote>'
+            )
+            await bot.send_message(message.chat.id, success_text, parse_mode="HTML")
+        return
 
 async def _pets_loop():
     """Фоновая задача: уведомления и доход питомцев.
