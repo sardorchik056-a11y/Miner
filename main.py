@@ -438,6 +438,7 @@ async def cmd_getstatus(message: Message):
 
 
 
+@dp.message(Command("start", "menu"))
 async def send_welcome(message: Message):
     get_or_create_user(message.from_user)
     await message.answer(
