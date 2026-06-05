@@ -726,7 +726,8 @@ def collect_mine(data: dict) -> tuple:
     if new_campaigns == 0:
         return prog, ""
     from shop import get_active_booster_multiplier, get_active_booster_info, _multiplier_label, get_artifact_mine_multiplier
-    multiplier = get_active_booster_multiplier(data) * get_artifact_mine_multiplier(data)
+    from status import get_status_multiplier as _status_mine_mult
+    multiplier = get_active_booster_multiplier(data) * get_artifact_mine_multiplier(data) * _status_mine_mult(data)
     pick_key = data.get("pickaxe", "wood_1")
     results  = {}
     for _ in range(new_campaigns):
