@@ -244,6 +244,12 @@ def get_pending_income(data):
         art_mult = get_artifact_pets_multiplier(data)
     except Exception:
         art_mult = 1.0
+    # Множитель статуса к добыче питомцов
+    try:
+        from status import get_status_multiplier as _status_pets_mult
+        status_mult = _status_pets_mult(data)
+    except Exception:
+        status_mult = 1.0
     result  = []
     for pk in owned:
         last = incomes.get(pk, now)
@@ -251,7 +257,7 @@ def get_pending_income(data):
             pet = PETS_BY_KEY.get(pk)
             if not pet:
                 continue
-            amount = int(random.randint(pet["income_min"], pet["income_max"]) * art_mult)
+            amount = int(random.randint(pet["income_min"], pet["income_max"]) * art_mult * status_mult)
             result.append((pk, amount))
             incomes[pk] = now
     return result
