@@ -387,7 +387,57 @@ async def cmd_updamage(message: Message):
 
 
 
-@dp.message(Command("start", "menu"))
+@dp.message(Command("getstatus"))
+async def cmd_getstatus(message: Message):
+    if message.from_user.id not in ADMIN_IDS:
+        return
+
+    parts = message.text.strip().split()
+    # /getstatus <username|id> <vip|pr>
+    if len(parts) != 3 or parts[2].lower() not in ("vip", "pr", "premium"):
+        await message.reply(
+            "❌ Неверный формат.\nИспользование: <code>/getstatus username|id vip|pr</code>",
+            parse_mode="HTML"
+        )
+        return
+
+    target_raw = parts[1].lstrip("@")
+    tier_arg   = parts[2].lower()
+    tier       = "premium" if tier_arg in ("pr", "premium") else "vip"
+
+    from database import get_all_users, save_user as _save
+    all_users = get_all_users()
+
+    if target_raw.lstrip("-").isdigit():
+        found = next((u for u in all_users if u["id"] == int(target_raw)), None)
+    else:
+        found = next(
+            (u for u in all_users if (u.get("username") or "").lower() == target_raw.lower()),
+            None
+        )
+
+    if not found:
+        await message.reply(
+            f"❌ Пользователь <code>{target_raw}</code> не найден в базе.",
+            parse_mode="HTML"
+        )
+        return
+
+    ok, msg = activate_status(found, tier)
+    if ok:
+        _save(found["id"], found)
+
+    name  = found.get("first_name") or found.get("username") or str(found["id"])
+    label = "VIP" if tier == "vip" else "Premium"
+    await message.reply(
+        f'✅ <b>Статус {label} выдан!</b>\n\n'
+        f'<blockquote>👤 Игрок: <b>{name}</b> (<code>{found["id"]}</code>)\n'
+        f'📅 Срок: <b>30 дней</b></blockquote>',
+        parse_mode="HTML"
+    )
+
+
+
 async def send_welcome(message: Message):
     get_or_create_user(message.from_user)
     await message.answer(
