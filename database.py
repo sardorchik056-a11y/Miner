@@ -210,12 +210,12 @@ def profile_text(d: dict) -> str:
     _status_ends   = get_status_ends_at(d)
     if _active_status == "premium":
         _sleft       = _st_fmt(_status_ends - _st_now())
-        status_badge = f'<tg-emoji emoji-id="5197288647275071607">⭐</tg-emoji> <b>Premium</b> · <b>{_sleft}</b>'
+        status_badge = f'<tg-emoji emoji-id="5427168083074628963">⭐</tg-emoji> <b>Premium</b> · <b>{_sleft}</b>'
     elif _active_status == "vip":
         _sleft       = _st_fmt(_status_ends - _st_now())
-        status_badge = f'<tg-emoji emoji-id="5438496463044752972">👑</tg-emoji> <b>VIP</b> · <b>{_sleft}</b>'
+        status_badge = f'<tg-emoji emoji-id="5325547803936572038">👑</tg-emoji> <b>VIP</b> · <b>{_sleft}</b>'
     else:
-        status_badge = f'<tg-emoji emoji-id="5282843764451195532">🎟</tg-emoji> <b>Standart</b>'
+        status_badge = f'<tg-emoji emoji-id="5397916757333654639">🎟</tg-emoji> <b>Standart</b>'
 
     # Ускорители
     from shop import get_active_booster_info, get_active_xp_booster_info, get_active_enh_booster_info, _multiplier_label, _DUR_LABELS, _fmt_time_left, _now_ts
