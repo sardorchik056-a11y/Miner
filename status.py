@@ -16,8 +16,8 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 STATUS_DURATION = 30 * 24 * 3600   # 30 дней в секундах
 
 # Стоимость в Telegram Stars
-VIP_COST_STARS     = 69
-PREMIUM_COST_STARS = 129
+VIP_COST_STARS     = 89
+PREMIUM_COST_STARS = 149
 
 # Ключи ядов-бонусов (берём из shop.py: poison_1 = Гадюка, poison_2 = Кобра)
 VIP_BONUS_POISON_KEY     = "poison_1"   # Яд Гадюки
@@ -28,24 +28,25 @@ PREMIUM_BONUS_POISON_KEY = "poison_2"   # Яд Кобры
 # ────────────────────────────────────────────────────────────
 
 _E = {
-    "vip":       "5438496463044752972",   # корона / статус
-    "premium":   "5197288647275071607",   # премиум звезда
-    "standart":  "5282843764451195532",   # базовый
-    "mine":      "5197371802136892976",   # шахта
-    "hunt":      "5424972470023104089",   # охота
-    "pets":      "5337047059180566409",   # питомцы
-    "crit":      "5256047523620995497",   # крит
-    "luck":      "5442939099906325301",   # удача
-    "poison":    "5456584142286250164",   # яд
-    "star":      "5348570868752595928",   # звезда Telegram
-    "timer":     "5382194935057372936",   # таймер
-    "ok":        "5206607081334906820",   # галочка
-    "warn":      "5240241223632954241",   # предупреждение
-    "back":      "6039539366177541657",   # назад
-    "coin":      "5199552030615558774",   # монета
-    "arrow":     "5427168083074628963",   # стрелка
-    "boost":     "5438571934210082705",   # молния
-    "calendar":  "5440621591387980068",   # таймер/календарь
+    "vip":        "5325547803936572038",   # корона VIP
+    "premium":    "5427168083074628963",   # звезда Premium
+    "standart":   "5397916757333654639",   # базовый Standart
+    "cur_status": "5201691993775818138",   # текущий статус (в профиле)
+    "pay_btn":    "5262643974912355126",   # эмодзи в кнопке оплаты
+    "mine":       "5197371802136892976",   # шахта
+    "hunt":       "5424972470023104089",   # охота
+    "pets":       "5337047059180566409",   # питомцы
+    "crit":       "5256047523620995497",   # крит
+    "luck":       "5442939099906325301",   # удача
+    "poison":     "5456584142286250164",   # яд
+    "star":       "5348570868752595928",   # звезда Telegram
+    "timer":      "5382194935057372936",   # таймер
+    "ok":         "5206607081334906820",   # галочка
+    "warn":       "5240241223632954241",   # предупреждение
+    "back":       "6039539366177541657",   # назад
+    "coin":       "5199552030615558774",   # монета
+    "boost":      "5438571934210082705",   # молния
+    "calendar":   "5440621591387980068",   # таймер/календарь
 }
 
 
@@ -183,17 +184,17 @@ def status_main_text(data: dict) -> str:
     # Шапка с текущим статусом
     if active == "premium":
         current_line = (
-            f'{_pe("premium", "⭐")} <b>Текущий статус: Premium</b>\n'
+            f'{_pe("cur_status", "★")} <b>Текущий статус: Premium</b>\n'
             f'{_pe("timer", "⏱")} <b>Осталось: {_fmt_time_left(ends_at - _now_ts())}</b>'
         )
     elif active == "vip":
         current_line = (
-            f'{_pe("vip", "👑")} <b>Текущий статус: VIP</b>\n'
+            f'{_pe("cur_status", "★")} <b>Текущий статус: VIP</b>\n'
             f'{_pe("timer", "⏱")} <b>Осталось: {_fmt_time_left(ends_at - _now_ts())}</b>'
         )
     else:
         current_line = (
-            f'{_pe("standart", "🎟")} <b>Текущий статус: Standart</b>\n'
+            f'{_pe("cur_status", "★")} <b>Текущий статус: Standart</b>\n'
             f'<b>Подпишись, чтобы получить привилегии</b>'
         )
 
@@ -347,9 +348,10 @@ def status_premium_keyboard(data: dict) -> InlineKeyboardMarkup:
 def status_vip_keyboard_invoice(invoice_url: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.row(InlineKeyboardButton(
-        text=f"Оплатить {VIP_COST_STARS} Stars",
+        text=f"Купить VIP — {VIP_COST_STARS} ⭐",
         url=invoice_url,
-        icon_custom_emoji_id=_E["star"]
+        icon_custom_emoji_id=_E["pay_btn"],
+        style="success"
     ))
     builder.row(InlineKeyboardButton(
         text="Мои звёзды",
@@ -363,9 +365,10 @@ def status_vip_keyboard_invoice(invoice_url: str) -> InlineKeyboardMarkup:
 def status_premium_keyboard_invoice(invoice_url: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.row(InlineKeyboardButton(
-        text=f"Оплатить {PREMIUM_COST_STARS} Stars",
+        text=f"Купить Premium — {PREMIUM_COST_STARS} ⭐",
         url=invoice_url,
-        icon_custom_emoji_id=_E["star"]
+        icon_custom_emoji_id=_E["pay_btn"],
+        style="success"
     ))
     builder.row(InlineKeyboardButton(
         text="Мои звёзды",
