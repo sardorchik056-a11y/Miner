@@ -432,7 +432,7 @@ def leaders_keyboard(category: str, period: str) -> InlineKeyboardMarkup:
     # ── Назад ──
     builder.row(InlineKeyboardButton(
         text="Назад",
-        callback_data="menu",
+        callback_data="back_to_menu",
         icon_custom_emoji_id=_E["back"],
     ))
 
