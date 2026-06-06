@@ -51,6 +51,19 @@ from hunt import (
     boss_attack_text, boss_attack_keyboard,
     boss_strike_result_text, boss_strike_keyboard,
     buy_sword, equip_sword, attack_boss,
+    get_boss_state,
+    BOSSES_BY_KEY as _BOSSES_BY_KEY,
+)
+
+from leaders import (
+    init_leaders_db,
+    record_boss_hit,
+    leaders_text,
+    leaders_keyboard,
+    leaders_main_text,
+    leaders_main_keyboard,
+    CATEGORIES as _LEADERS_CATEGORIES,
+    PERIODS    as _LEADERS_PERIODS,
 )
 
 
@@ -975,6 +988,20 @@ async def handle_callback(call: CallbackQuery):
                 return
             if result.get("boss_killed") or result.get("hit"):
                 save_user(data["id"], data)
+                # ── Запись статистики для лидерборда ──
+                try:
+                    _boss_state = get_boss_state()
+                    _boss_key   = _boss_state.get("boss_key", "unknown")
+                    record_boss_hit(
+                        uid        = user.id,
+                        username   = user.username or "",
+                        first_name = user.first_name or "",
+                        boss_key   = _boss_key,
+                        damage     = result.get("dmg", 0),
+                        killed     = bool(result.get("boss_killed")),
+                    )
+                except Exception as _le:
+                    print(f"[leaders] record_boss_hit error: {_le}")
             txt = boss_strike_result_text(data, result)
             kb  = boss_strike_keyboard(data)
             if result.get("crit"):
@@ -1110,10 +1137,28 @@ async def handle_callback(call: CallbackQuery):
             return
 
 
+        # ===== ЛИДЕРЫ: главный экран =====
+        if cd == "leaders":
+            await edit(leaders_main_text(viewer_uid=user.id), leaders_main_keyboard())
+            return
+
+        # ===== ЛИДЕРЫ: переключение категории / периода =====
+        # Формат: leaders_{category}_{period}
+        if cd.startswith("leaders_"):
+            parts = cd.split("_", 2)  # ["leaders", category, period]
+            if len(parts) == 3:
+                _lcat, _lper = parts[1], parts[2]
+                if _lcat in _LEADERS_CATEGORIES and _lper in _LEADERS_PERIODS:
+                    await edit(
+                        leaders_text(_lcat, _lper, viewer_uid=user.id),
+                        leaders_keyboard(_lcat, _lper)
+                    )
+                    return
+
+        # ===== ЗАГЛУШКИ (в разработке) =====
         responses = {
             "stats":    '<tg-emoji emoji-id="5231200819986047254">📊</tg-emoji> <b>СТАТИСТИКА</b>\n\n<blockquote><b>📝 Раздел в разработке...</b></blockquote>',
             "exchange": '<tg-emoji emoji-id="5402186569006210455">💱</tg-emoji> <b>БИРЖА</b>\n\n<blockquote><b>📝 Раздел в разработке...</b></blockquote>',
-            "leaders":  '<tg-emoji emoji-id="5440539497383087970">🏆</tg-emoji> <b>ЛИДЕРЫ</b>\n\n<blockquote><b>📝 Раздел в разработке...</b></blockquote>',
             "settings": '<tg-emoji emoji-id="5341715473882955310">⚙️</tg-emoji> <b>НАСТРОЙКИ</b>\n\n<blockquote><b>📝 Раздел в разработке...</b></blockquote>',
         }
         text = responses.get(cd, "❓ Неизвестная команда")
@@ -1542,8 +1587,9 @@ async def _poison_loop():
 async def main():
     logging.basicConfig(level=logging.INFO)
 
-    init_db()  # создаёт таблицу при первом запуске
-    init_hunt_db()  # создаёт таблицу боссов
+    init_db()          # создаёт таблицу при первом запуске
+    init_hunt_db()     # создаёт таблицу боссов
+    init_leaders_db()  # создаёт таблицу статистики боссов для лидерборда
 
     # ── Миграция: добавляем поля питомцев для старых пользователей ──
     from database import get_all_users, save_user as _save_mig
