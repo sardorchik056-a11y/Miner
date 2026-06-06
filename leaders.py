@@ -360,7 +360,7 @@ def leaders_text(category: str, period: str, viewer_uid: int | None = None) -> s
             10: "5382322671679708881",
         }
         if place in _PLACE_EMOJI:
-            place_str = _tg(_PLACE_EMOJI[place], str(place))
+            place_str = _tg(_PLACE_EMOJI[place], "🏅")
         else:
             place_str = f"<b>{place}.</b>"
 
