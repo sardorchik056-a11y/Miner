@@ -92,6 +92,22 @@ _DUR_LABELS = {
     "48h":   "48 часов",
 }
 
+_DUR_LABELS_EN = {
+    "5min":  "5 min",
+    "10min": "10 min",
+    "30min": "30 min",
+    "1h":    "1 hour",
+    "2h":    "2 hours",
+    "4h":    "4 hours",
+    "6h":    "6 hours",
+    "10h":   "10 hours",
+    "24h":   "24 hours",
+    "48h":   "48 hours",
+}
+
+def _dur_label(dur_key: str, lang: str = "ru") -> str:
+    return (_DUR_LABELS_EN if lang == "en" else _DUR_LABELS).get(dur_key, dur_key)
+
 # ============================================================
 #  ПУЛ ОБЫЧНОГО КЕЙСА
 # ============================================================
@@ -374,43 +390,72 @@ def _multiplier_label(mult: float) -> str:
     return f"{s}×"
 
 
-def _booster_name(b: dict) -> str:
-    return f"Ускоритель {_multiplier_label(b['multiplier'])} на {_DUR_LABELS[b['dur_key']]}"
+def _booster_name(b: dict, lang: str = "ru") -> str:
+    dur = _dur_label(b['dur_key'], lang)
+    if lang == "en":
+        return f"Booster {_multiplier_label(b['multiplier'])} for {dur}"
+    return f"Ускоритель {_multiplier_label(b['multiplier'])} на {dur}"
 
 
-def _xp_item_name(item: dict) -> str:
+def _xp_item_name(item: dict, lang: str = "ru") -> str:
     if item["type"] == "xp_instant":
         return f"{_pe('xp_instant', '✨')} {_fmt_num(item['xp'])} XP"
     mult = _multiplier_label(item["multiplier"])
-    dur  = _DUR_LABELS[item["dur_key"]]
+    dur  = _dur_label(item["dur_key"], lang)
+    if lang == "en":
+        return f"{_pe('xp_boost', '🔮')} XP booster {mult} for {dur}"
     return f"{_pe('xp_boost', '🔮')} XP-ускоритель {mult} на {dur}"
 
 
-def _enh_item_name(item: dict) -> str:
+def _enh_item_name(item: dict, lang: str = "ru") -> str:
     if item["type"] == "poison":
         dmg = _fmt_num(item["damage"])
-        return f'{_pe("poison", "☠️")} {item["name"]} — {dmg} урона'
+        _poison_names_en = {
+            "Яд Гадюки":       "Viper Venom",
+            "Яд Кобры":        "Cobra Venom",
+            "Яд Чёрной Мамбы": "Black Mamba Venom",
+            "Яд Василиска":    "Basilisk Venom",
+            "Яд Левиафана":    "Leviathan Venom",
+        }
+        pname = _poison_names_en.get(item["name"], item["name"]) if lang == "en" else item["name"]
+        dmg_label = "dmg" if lang == "en" else "урона"
+        return f'{_pe("poison", "☠️")} {pname} — {dmg} {dmg_label}'
     mult = _multiplier_label(item["multiplier"])
-    dur  = _DUR_LABELS[item["dur_key"]]
+    dur  = _dur_label(item["dur_key"], lang)
+    if lang == "en":
+        return f'{_pe("enh_boost", "⚡")} Damage booster {mult} for {dur}'
     return f'{_pe("enh_boost", "⚡")} Усилитель {mult} на {dur}'
 
 
-def _enh_item_name_plain(item: dict) -> str:
+def _enh_item_name_plain(item: dict, lang: str = "ru") -> str:
     """Без HTML-тегов — для текста кнопок клавиатуры."""
     if item["type"] == "poison":
         dmg = _fmt_num(item["damage"])
-        return f'{item["name"]} — {dmg} урона'
+        _poison_names_en = {
+            "Яд Гадюки":       "Viper Venom",
+            "Яд Кобры":        "Cobra Venom",
+            "Яд Чёрной Мамбы": "Black Mamba Venom",
+            "Яд Василиска":    "Basilisk Venom",
+            "Яд Левиафана":    "Leviathan Venom",
+        }
+        pname = _poison_names_en.get(item["name"], item["name"]) if lang == "en" else item["name"]
+        dmg_label = "dmg" if lang == "en" else "урона"
+        return f'{pname} — {dmg} {dmg_label}'
     mult = _multiplier_label(item["multiplier"])
-    dur  = _DUR_LABELS[item["dur_key"]]
+    dur  = _dur_label(item["dur_key"], lang)
+    if lang == "en":
+        return f'Damage booster {mult} for {dur}'
     return f'Усилитель {mult} на {dur}'
 
 
-def _xp_item_name_plain(item: dict) -> str:
+def _xp_item_name_plain(item: dict, lang: str = "ru") -> str:
     """Без HTML-тегов — для текста кнопок клавиатуры."""
     if item["type"] == "xp_instant":
         return f'{_fmt_num(item["xp"])} XP'
     mult = _multiplier_label(item["multiplier"])
-    dur  = _DUR_LABELS[item["dur_key"]]
+    dur  = _dur_label(item["dur_key"], lang)
+    if lang == "en":
+        return f'XP booster {mult} for {dur}'
     return f'XP-ускоритель {mult} на {dur}'
 
 
@@ -418,16 +463,18 @@ def _now_ts() -> float:
     return datetime.now(timezone.utc).timestamp()
 
 
-def _fmt_time_left(seconds: float) -> str:
+def _fmt_time_left(seconds: float, lang: str = "ru") -> str:
     seconds = int(seconds)
     if seconds <= 0:
-        return "истёк"
+        return "expired" if lang == "en" else "истёк"
     h, rem = divmod(seconds, 3600)
     m, s   = divmod(rem, 60)
-    if h > 0:
-        return f"{h}ч {m:02d}м"
-    if m > 0:
-        return f"{m}м {s:02d}с"
+    if lang == "en":
+        if h > 0:  return f"{h}h {m:02d}m"
+        if m > 0:  return f"{m}m {s:02d}s"
+        return f"{s}s"
+    if h > 0:  return f"{h}ч {m:02d}м"
+    if m > 0:  return f"{m}м {s:02d}с"
     return f"{s}с"
 
 
@@ -1141,7 +1188,7 @@ def artifact_collection_keyboard() -> InlineKeyboardMarkup:
     return builder.as_markup()
 
 
-def inventory_main_text(data: dict) -> str:
+def inventory_main_text(data: dict, lang: str = "ru") -> str:
     b_inv    = data.get("boosters_inventory", [])
     xp_inv   = data.get("xp_inventory", [])
     enh_inv  = data.get("enh_inventory", [])
@@ -1153,20 +1200,35 @@ def inventory_main_text(data: dict) -> str:
     xp_active_str  = ""
     enh_active_str = ""
     if active:
-        left = _fmt_time_left(active["ends_at"] - _now_ts())
+        left = _fmt_time_left(active["ends_at"] - _now_ts(), lang)
         mult = _multiplier_label(active["multiplier"])
-        b_active_str = f"\n{_pe('boost', '⚡')} <b>Активен: {mult} — ⏱ {left}</b>"
+        b_active_str = f"\n{_pe('boost', '⚡')} <b>{'Active' if lang == 'en' else 'Активен'}: {mult} — ⏱ {left}</b>"
     if xp_act:
-        left = _fmt_time_left(xp_act["ends_at"] - _now_ts())
+        left = _fmt_time_left(xp_act["ends_at"] - _now_ts(), lang)
         mult = _multiplier_label(xp_act["multiplier"])
-        xp_active_str = f"\n{_pe('xp_boost', '🔮')} <b>Активен: ×{mult} XP — ⏱ {left}</b>"
+        xp_active_str = f"\n{_pe('xp_boost', '🔮')} <b>{'Active' if lang == 'en' else 'Активен'}: ×{mult} XP — ⏱ {left}</b>"
     if enh_act:
-        left = _fmt_time_left(enh_act["ends_at"] - _now_ts())
+        left = _fmt_time_left(enh_act["ends_at"] - _now_ts(), lang)
         mult = _multiplier_label(enh_act["multiplier"])
-        enh_active_str += f'\n<tg-emoji emoji-id="5256047523620995497">⚡</tg-emoji> <b>Усилитель: ×{mult} — ⏱ {left}</b>'
+        lbl = "Booster" if lang == "en" else "Усилитель"
+        enh_active_str += f'\n<tg-emoji emoji-id="5256047523620995497">⚡</tg-emoji> <b>{lbl}: ×{mult} — ⏱ {left}</b>'
     if poison:
-        left = _fmt_time_left(poison["ends_at"] - _now_ts())
-        enh_active_str += f'\n<tg-emoji emoji-id="5456584142286250164">☠️</tg-emoji> <b>Яд: {poison["name"]} — ⏱ {left}</b>'
+        left = _fmt_time_left(poison["ends_at"] - _now_ts(), lang)
+        _poison_names_en = {
+            "Яд Гадюки": "Viper Venom", "Яд Кобры": "Cobra Venom",
+            "Яд Чёрной Мамбы": "Black Mamba Venom", "Яд Василиска": "Basilisk Venom",
+            "Яд Левиафана": "Leviathan Venom",
+        }
+        pname = _poison_names_en.get(poison["name"], poison["name"]) if lang == "en" else poison["name"]
+        enh_active_str += f'\n<tg-emoji emoji-id="5456584142286250164">☠️</tg-emoji> <b>{"Poison" if lang == "en" else "Яд"}: {pname} — ⏱ {left}</b>'
+
+    if lang == "en":
+        return (
+            f"<blockquote>{_pe('inv', '🎒')} <b>INVENTORY</b></blockquote>\n"
+            f"\n<blockquote>{_pe('boost', '⚡')} <b>Pickaxe boosters</b>  <b>[{len(b_inv)}/{MAX_INVENTORY}]</b>{b_active_str}</blockquote>\n"
+            f"\n<blockquote>{_pe('xp_boost', '🔮')} <b>XP items</b>  <b>[{len(xp_inv)}/{MAX_XP_INVENTORY}]</b>{xp_active_str}</blockquote>\n"
+            f'\n<blockquote><tg-emoji emoji-id="5256047523620995497">⚡</tg-emoji> <b>Damage boosters & poisons</b>  <b>[{len(enh_inv)}/{MAX_ENH_INVENTORY}]</b>{enh_active_str}</blockquote>'
+        )
     return (
         f"<blockquote>{_pe('inv', '🎒')} <b>ИНВЕНТАРЬ</b></blockquote>\n"
         f"\n<blockquote>{_pe('boost', '⚡')} <b>Ускорители кирки</b>  <b>[{len(b_inv)}/{MAX_INVENTORY}]</b>{b_active_str}</blockquote>\n"
@@ -1175,48 +1237,71 @@ def inventory_main_text(data: dict) -> str:
     )
 
 
-def inventory_main_keyboard() -> InlineKeyboardMarkup:
+def inventory_main_keyboard(lang: str = "ru") -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    builder.row(_btn(_E["boost"],    "Ускорители кирки", "inv_boosters"))
-    builder.row(_btn(_E["xp_boost"], "XP-предметы",      "inv_xp"))
-    builder.row(_btn(_E["enh_case"], "Усилители и яды",  "inv_enh"))
-    builder.row(_back_btn("profile", "Назад в профиль"))
+    if lang == "en":
+        builder.row(_btn(_E["boost"],    "Pickaxe boosters", "inv_boosters"))
+        builder.row(_btn(_E["xp_boost"], "XP items",         "inv_xp"))
+        builder.row(_btn(_E["enh_case"], "Boosters & poisons","inv_enh"))
+        builder.row(_back_btn("profile", "Back to profile"))
+    else:
+        builder.row(_btn(_E["boost"],    "Ускорители кирки", "inv_boosters"))
+        builder.row(_btn(_E["xp_boost"], "XP-предметы",      "inv_xp"))
+        builder.row(_btn(_E["enh_case"], "Усилители и яды",  "inv_enh"))
+        builder.row(_back_btn("profile", "Назад в профиль"))
     return builder.as_markup()
 
 
-def boosters_inventory_text(data: dict) -> str:
+def boosters_inventory_text(data: dict, lang: str = "ru") -> str:
     inv    = data.get("boosters_inventory", [])
     active = get_active_booster_info(data)
-    lines = [f"<blockquote>{_pe('boost', '⚡')} <b>УСКОРИТЕЛИ КИРКИ</b>\n"]
-    if active:
-        left = _fmt_time_left(active["ends_at"] - _now_ts())
-        mult = _multiplier_label(active["multiplier"])
-        dur  = _DUR_LABELS[active["dur_key"]]
-        lines.append(
-            f"{_pe('ok', '✅')} <b>Активен: {mult} на {dur}</b>\n"
-            f"{_pe('timer', '⏱')} <b>Осталось: {left}</b>"
-        )
+    if lang == "en":
+        lines = [f"<blockquote>{_pe('boost', '⚡')} <b>PICKAXE BOOSTERS</b>\n"]
+        if active:
+            left = _fmt_time_left(active["ends_at"] - _now_ts(), lang)
+            mult = _multiplier_label(active["multiplier"])
+            dur  = _dur_label(active["dur_key"], lang)
+            lines.append(f"{_pe('ok', '✅')} <b>Active: {mult} for {dur}</b>\n{_pe('timer', '⏱')} <b>Left: {left}</b>")
+        else:
+            lines.append(f"{_pe('cancel', '❌')} <b>No active booster.</b>")
+        lines.append("</blockquote>")
+        if not inv:
+            lines.append(f"\n<blockquote>{_pe('case', '📦')} <b>Inventory empty. Open a Booster case!</b></blockquote>")
+        else:
+            inv_lines = [f"\n<blockquote><b>In inventory ({len(inv)}/{MAX_INVENTORY}):</b>"]
+            for i, item in enumerate(inv, 1):
+                price = get_sell_price(item)
+                inv_lines.append(f"\n<b>{i}. {_booster_name(item, lang)}</b>\n{_pe('coin', '💰')} <b>{_fmt_num(price)}</b>")
+            inv_lines.append("</blockquote>")
+            lines.extend(inv_lines)
     else:
-        lines.append(f"{_pe('cancel', '❌')} <b>Нет активного ускорителя.</b>")
-    lines.append("</blockquote>")
-    if not inv:
-        lines.append(f"\n<blockquote>{_pe('case', '📦')} <b>Инвентарь пуст. Открой Кейс ускорителей!</b></blockquote>")
-    else:
-        inv_lines = [f"\n<blockquote><b>В инвентаре ({len(inv)}/{MAX_INVENTORY}):</b>"]
-        for i, item in enumerate(inv, 1):
-            price = get_sell_price(item)
-            inv_lines.append(f"\n<b>{i}. {_booster_name(item)}</b>\n{_pe('coin', '💰')} <b>{_fmt_num(price)}</b>")
-        inv_lines.append("</blockquote>")
-        lines.extend(inv_lines)
+        lines = [f"<blockquote>{_pe('boost', '⚡')} <b>УСКОРИТЕЛИ КИРКИ</b>\n"]
+        if active:
+            left = _fmt_time_left(active["ends_at"] - _now_ts(), lang)
+            mult = _multiplier_label(active["multiplier"])
+            dur  = _dur_label(active["dur_key"], lang)
+            lines.append(f"{_pe('ok', '✅')} <b>Активен: {mult} на {dur}</b>\n{_pe('timer', '⏱')} <b>Осталось: {left}</b>")
+        else:
+            lines.append(f"{_pe('cancel', '❌')} <b>Нет активного ускорителя.</b>")
+        lines.append("</blockquote>")
+        if not inv:
+            lines.append(f"\n<blockquote>{_pe('case', '📦')} <b>Инвентарь пуст. Открой Кейс ускорителей!</b></blockquote>")
+        else:
+            inv_lines = [f"\n<blockquote><b>В инвентаре ({len(inv)}/{MAX_INVENTORY}):</b>"]
+            for i, item in enumerate(inv, 1):
+                price = get_sell_price(item)
+                inv_lines.append(f"\n<b>{i}. {_booster_name(item, lang)}</b>\n{_pe('coin', '💰')} <b>{_fmt_num(price)}</b>")
+            inv_lines.append("</blockquote>")
+            lines.extend(inv_lines)
     return "".join(lines)
 
 
-def boosters_inventory_keyboard(data: dict) -> InlineKeyboardMarkup:
+def boosters_inventory_keyboard(data: dict, lang: str = "ru") -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     inv = data.get("boosters_inventory", [])
     for item in inv[:MAX_INVENTORY]:
-        builder.row(_btn(_E["boost"], _booster_name(item), f'boost_info_{item["instance_id"]}'))
-    builder.row(_back_btn("profile_boosters", "Инвентарь"))
+        builder.row(_btn(_E["boost"], _booster_name(item, lang), f'boost_info_{item["instance_id"]}'))
+    builder.row(_back_btn("profile_boosters", "Inventory" if lang == "en" else "Инвентарь"))
     return builder.as_markup()
 
 
