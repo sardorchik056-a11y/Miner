@@ -693,6 +693,7 @@ def duration_detail_keyboard(data: dict, dur_key: str, lang: str = "ru") -> Inli
 # ============================================================
 
 def sell_all_ores(data: dict, lang: str = "ru") -> tuple:
+    from lang import t
     total = 0
     lines = []
     for ore in ORES:
@@ -703,115 +704,89 @@ def sell_all_ores(data: dict, lang: str = "ru") -> tuple:
             lines.append(f"<blockquote><b>{_ore_name(ore, lang)}: {qty} (≈ {_fmt_num(earned)} {COIN})</b></blockquote>")
             data["ores"][ore["key"]] = 0
     data["balance"] = data.get("balance", 0) + total
-    empty_msg = "Nothing to sell" if lang == "en" else "Нечего продавать"
-    report = "\n".join(lines) if lines else f"  {empty_msg}"
+    report = "\n".join(lines) if lines else f"  {t(lang, 'mine_sell_nothing')}"
     return total, report
 
 
 def buy_pickaxe(data: dict, pick_key: str, lang: str = "ru") -> tuple:
+    from lang import t
     if pick_key not in PICKAXES:
-        msg = "❌ Unknown pickaxe." if lang == "en" else "❌ Неизвестная кирка."
-        return False, msg
+        return False, t(lang, "pick_unknown")
     p = PICKAXES[pick_key]
     if p["currency"] == "stars":
-        msg = "❌ This pickaxe is only available for Telegram Stars!" if lang == "en" else "❌ Эта кирка покупается только за звёзды Telegram!"
-        return False, msg
+        return False, t(lang, "pick_stars_only")
     owned = data.setdefault("owned_pickaxes", ["wood_1"])
     if pick_key in owned:
-        msg = "You already own this pickaxe!" if lang == "en" else "У тебя уже есть эта кирка!"
-        return False, msg
+        return False, t(lang, "pick_already_owned")
     if p["cost"] == 0:
         owned.append(pick_key)
-        msg = f"✅ Got {p['name']} (free)!" if lang == "en" else f"✅ Получена {p['name']} (бесплатно)!"
-        return True, msg
+        return True, t(lang, "pick_free_ok").format(name=p["name"])
     if data["balance"] < p["cost"]:
-        msg = (f"❌ Not enough coins! Need: {_fmt_num(p['cost'])} {COIN}" if lang == "en"
-               else f"❌ Недостаточно монет! Нужно: {_fmt_num(p['cost'])} {COIN}")
-        return False, msg
+        return False, t(lang, "pick_no_coins").format(cost=f"{_fmt_num(p['cost'])} {COIN}")
     data["balance"] -= p["cost"]
     owned.append(pick_key)
-    msg = (f"✅ Bought {p['name']}! Spent: {_fmt_num(p['cost'])} {COIN}" if lang == "en"
-           else f"✅ Куплена {p['name']}! Потрачено: {_fmt_num(p['cost'])} {COIN}")
-    return True, msg
+    return True, t(lang, "pick_bought").format(name=p["name"], cost=f"{_fmt_num(p['cost'])} {COIN}")
 
 
 def grant_premium_pickaxe(data: dict, pick_key: str, lang: str = "ru") -> tuple:
+    from lang import t
     if pick_key not in PICKAXES:
-        msg = "❌ Unknown pickaxe." if lang == "en" else "❌ Неизвестная кирка."
-        return False, msg
+        return False, t(lang, "pick_unknown")
     p     = PICKAXES[pick_key]
     owned = data.setdefault("owned_pickaxes", ["wood_1"])
     if pick_key in owned:
-        msg = "You already own this pickaxe!" if lang == "en" else "У тебя уже есть эта кирка!"
-        return False, msg
+        return False, t(lang, "pick_already_owned")
     owned.append(pick_key)
     stars = p.get("cost_stars", 0)
-    if lang == "en":
-        msg = (
-            f"⭐ <b>Thank you for your support!</b>\n"
-            f"Received pickaxe <b>{p['name']}</b> for {stars:,} {STAR} stars\n"
-            f"({p['dig_min']:,}–{p['dig_max']:,} hits per campaign)!"
-        )
-    else:
-        msg = (
-            f"⭐ <b>Спасибо за поддержку!</b>\n"
-            f"Получена кирка <b>{p['name']}</b> за {stars:,} {STAR} звёзд\n"
-            f"({p['dig_min']:,}–{p['dig_max']:,} ударов за кампанию)!"
-        )
+    msg = (
+        f"{t(lang, 'pick_premium_thanks')}\n"
+        f"{t(lang, 'pick_premium_got').format(name=p['name'], stars=f'{stars:,}')}\n"
+        f"({p['dig_min']:,}–{p['dig_max']:,} {t(lang, 'pick_premium_hits')})!"
+    )
     return True, msg
 
 
 def select_pickaxe(data: dict, pick_key: str, lang: str = "ru") -> tuple:
+    from lang import t
     owned = data.get("owned_pickaxes", ["wood_1"])
     if pick_key not in owned:
-        msg = "❌ Buy this pickaxe first!" if lang == "en" else "❌ Сначала купи эту кирку!"
-        return False, msg
+        return False, t(lang, "pick_not_owned")
     if data["mine_start"] is not None and not data["mine_collected"]:
-        msg = "❌ Cannot change pickaxe during mining!" if lang == "en" else "❌ Нельзя менять кирку во время добычи!"
-        return False, msg
+        return False, t(lang, "pick_no_change_mining")
     data["pickaxe"] = pick_key
-    msg = (f"✅ Selected {PICKAXES[pick_key]['name']}" if lang == "en"
-           else f"✅ Выбрана {PICKAXES[pick_key]['name']}")
-    return True, msg
+    return True, t(lang, "pick_selected").format(name=PICKAXES[pick_key]["name"])
 
 
 def buy_duration(data: dict, dur_key: str, lang: str = "ru") -> tuple:
+    from lang import t
     if dur_key not in DURATIONS:
-        msg = "❌ Unknown duration." if lang == "en" else "❌ Неизвестная длительность."
-        return False, msg
+        return False, t(lang, "dur_unknown")
     d     = DURATIONS[dur_key]
     owned = data.setdefault("owned_durations", ["5min"])
     if dur_key in owned:
-        msg = "Already purchased!" if lang == "en" else "Уже куплено!"
-        return False, msg
+        return False, t(lang, "dur_already_owned")
     if data["balance"] < d["cost"]:
-        msg = (f"❌ Not enough coins! Need: {_fmt_num(d['cost'])} {COIN}" if lang == "en"
-               else f"❌ Недостаточно монет! Нужно: {_fmt_num(d['cost'])} {COIN}")
-        return False, msg
+        return False, t(lang, "dur_no_coins").format(cost=f"{_fmt_num(d['cost'])} {COIN}")
     data["balance"] -= d["cost"]
     owned.append(dur_key)
     dur_lbl = _dur_label(d, lang)
-    msg = (f"✅ Unlocked: {dur_lbl}! Spent: {_fmt_num(d['cost'])} {COIN}" if lang == "en"
-           else f"✅ Открыто: {d['label']}! Потрачено: {_fmt_num(d['cost'])} {COIN}")
-    return True, msg
+    return True, t(lang, "dur_bought").format(label=dur_lbl, cost=f"{_fmt_num(d['cost'])} {COIN}")
 
 
 def select_duration(data: dict, dur_key: str, lang: str = "ru") -> tuple:
+    from lang import t
     owned = data.get("owned_durations", ["5min"])
     if dur_key not in owned and DURATIONS.get(dur_key, {}).get("cost", 1) != 0:
-        msg = "❌ Buy this duration first!" if lang == "en" else "❌ Сначала купи эту длительность!"
-        return False, msg
+        return False, t(lang, "dur_not_owned")
     if data["mine_start"] is not None and not data["mine_collected"]:
-        msg = "❌ Cannot change duration during mining!" if lang == "en" else "❌ Нельзя менять длительность во время добычи!"
-        return False, msg
+        return False, t(lang, "dur_no_change_mining")
     data["mine_duration_key"] = dur_key
     dur_lbl = _dur_label(DURATIONS[dur_key], lang)
-    msg = (f"✅ Duration selected: {dur_lbl}" if lang == "en"
-           else f"✅ Выбрана длительность: {DURATIONS[dur_key]['label']}")
-    return True, msg
+    return True, t(lang, "dur_selected").format(label=dur_lbl)
 
 
 def collect_mine(data: dict, lang: str = "ru") -> tuple:
+    from lang import t
     prog          = calc_mine_progress(data)
     new_campaigns = prog["new_campaigns"]
     if new_campaigns == 0:
@@ -839,24 +814,18 @@ def collect_mine(data: dict, lang: str = "ru") -> tuple:
             loot_lines.append(f"<blockquote><b>{ore_name}: {qty} (≈ {_fmt_num(worth)} {COIN})</b></blockquote>")
         loot = "\n".join(loot_lines)
     else:
-        loot = "<b>Nothing found 😔</b>" if lang == "en" else "<b>Ничего не нашли 😔</b>"
+        loot = f"<b>{t(lang, 'mine_collect_nothing')}</b>"
     bar = progress_bar(prog["percent"])
     booster_line = ""
     active = get_active_booster_info(data)
     if active:
         mult_label = _multiplier_label(active["multiplier"])
-        booster_label = f"Booster {mult_label} active" if lang == "en" else f"Ускоритель {mult_label} активен"
+        booster_label = f"{t(lang, 'mine_booster_active')} {mult_label} {t(lang, 'mine_booster_active_sfx')}"
         booster_line = f'<tg-emoji emoji-id="5438571934210082705">⚡</tg-emoji> <b>{booster_label}</b>\n'
-    if lang == "en":
-        _result_title = "Mining result"
-        _campaigns_lbl = "Campaigns"
-        _session_done = "<b>✅ Session complete!</b>"
-        _still_running = f"<b>⏳ Mine is running. Time left: {fmt_time(prog['time_left'], lang)}</b>"
-    else:
-        _result_title = "Результат добычи"
-        _campaigns_lbl = "Кампаний"
-        _session_done = "<b>✅ Сессия завершена!</b>"
-        _still_running = f"<b>⏳ Шахта работает. Осталось: {fmt_time(prog['time_left'], lang)}</b>"
+    _result_title   = t(lang, "mine_collect_title")
+    _campaigns_lbl  = t(lang, "mine_collect_campaigns")
+    _session_done   = f"<b>{t(lang, 'mine_collect_done')}</b>"
+    _still_running  = f"<b>⏳ {t(lang, 'mine_collect_running')} {fmt_time(prog['time_left'], lang)}</b>"
     result_text = (
         f'<tg-emoji emoji-id="5197371802136892976">🎟</tg-emoji> <b>{_result_title}</b>\n'
         f"━━━━━━━━━━━━━━━━━━━━\n"
