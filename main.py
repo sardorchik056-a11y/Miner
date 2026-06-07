@@ -1154,7 +1154,7 @@ async def handle_callback(call: CallbackQuery):
 
         # ===== ЛИДЕРЫ: главный экран =====
         if cd == "leaders":
-            await edit(leaders_main_text(viewer_uid=user.id), leaders_main_keyboard())
+            await edit(leaders_main_text(viewer_uid=user.id, lang=lang), leaders_main_keyboard(lang))
             return
 
         # ===== ЛИДЕРЫ: переключение категории / периода =====
@@ -1165,8 +1165,8 @@ async def handle_callback(call: CallbackQuery):
                 _lcat, _lper = parts[1], parts[2]
                 if _lcat in _LEADERS_CATEGORIES and _lper in _LEADERS_PERIODS:
                     await edit(
-                        leaders_text(_lcat, _lper, viewer_uid=user.id),
-                        leaders_keyboard(_lcat, _lper)
+                        leaders_text(_lcat, _lper, viewer_uid=user.id, lang=lang),
+                        leaders_keyboard(_lcat, _lper, lang)
                     )
                     return
 
