@@ -53,15 +53,15 @@ MAX_LEVEL = 150
 
 # ---------- РУДЫ ----------
 ORES = [
-    {"name": "🪨 Камень",  "key": "stone",    "chance": 75.00, "weight": 500, "price": 50},
-    {"name": '<tg-emoji emoji-id="5773638078321135255">🖤</tg-emoji> Уголь',   "key": "coal",     "chance": 30.00, "weight": 200, "price": 85},
-    {"name": '<tg-emoji emoji-id="5339390195768774311">🟤</tg-emoji> Медь',    "key": "copper",   "chance": 20.00, "weight": 120, "price": 125},
-    {"name": '<tg-emoji emoji-id="5206502799528976649">⚙️</tg-emoji> Железо',  "key": "iron",     "chance":  8.00, "weight":  60, "price": 280},
-    {"name": '<tg-emoji emoji-id="5445256208992718797">🌕</tg-emoji> Золото',  "key": "gold",     "chance":  3.00, "weight":  20, "price": 800},
-    {"name": '<tg-emoji emoji-id="5201914481671682382">💎</tg-emoji> Алмаз',   "key": "diamond",  "chance":  1.00, "weight":   8, "price": 5000},
-    {"name": '<tg-emoji emoji-id="5217620305194800391">🔮</tg-emoji> Мифрил',  "key": "mithril",  "chance":  0.10, "weight":   3, "price": 45000},
-    {"name": '<tg-emoji emoji-id="5447225730670813734">☢️</tg-emoji> Уран',    "key": "uranium",  "chance":  0.04, "weight":   2, "price": 150000},
-    {"name": '<tg-emoji emoji-id="5314686299796427450">💜</tg-emoji> Аметист', "key": "amethyst", "chance":  0.01, "weight":   1, "price": 500000},
+    {"name": "🪨 Камень",  "name_en": "🪨 Stone",    "key": "stone",    "chance": 75.00, "weight": 500, "price": 50},
+    {"name": '<tg-emoji emoji-id="5773638078321135255">🖤</tg-emoji> Уголь',   "name_en": '<tg-emoji emoji-id="5773638078321135255">🖤</tg-emoji> Coal',    "key": "coal",     "chance": 30.00, "weight": 200, "price": 85},
+    {"name": '<tg-emoji emoji-id="5339390195768774311">🟤</tg-emoji> Медь',    "name_en": '<tg-emoji emoji-id="5339390195768774311">🟤</tg-emoji> Copper',  "key": "copper",   "chance": 20.00, "weight": 120, "price": 125},
+    {"name": '<tg-emoji emoji-id="5206502799528976649">⚙️</tg-emoji> Железо',  "name_en": '<tg-emoji emoji-id="5206502799528976649">⚙️</tg-emoji> Iron',    "key": "iron",     "chance":  8.00, "weight":  60, "price": 280},
+    {"name": '<tg-emoji emoji-id="5445256208992718797">🌕</tg-emoji> Золото',  "name_en": '<tg-emoji emoji-id="5445256208992718797">🌕</tg-emoji> Gold',    "key": "gold",     "chance":  3.00, "weight":  20, "price": 800},
+    {"name": '<tg-emoji emoji-id="5201914481671682382">💎</tg-emoji> Алмаз',   "name_en": '<tg-emoji emoji-id="5201914481671682382">💎</tg-emoji> Diamond',  "key": "diamond",  "chance":  1.00, "weight":   8, "price": 5000},
+    {"name": '<tg-emoji emoji-id="5217620305194800391">🔮</tg-emoji> Мифрил',  "name_en": '<tg-emoji emoji-id="5217620305194800391">🔮</tg-emoji> Mithril',  "key": "mithril",  "chance":  0.10, "weight":   3, "price": 45000},
+    {"name": '<tg-emoji emoji-id="5447225730670813734">☢️</tg-emoji> Уран',    "name_en": '<tg-emoji emoji-id="5447225730670813734">☢️</tg-emoji> Uranium',  "key": "uranium",  "chance":  0.04, "weight":   2, "price": 150000},
+    {"name": '<tg-emoji emoji-id="5314686299796427450">💜</tg-emoji> Аметист', "name_en": '<tg-emoji emoji-id="5314686299796427450">💜</tg-emoji> Amethyst', "key": "amethyst", "chance":  0.01, "weight":   1, "price": 500000},
 ]
 ORES_BY_KEY = {o["key"]: o for o in ORES}
 
@@ -154,16 +154,16 @@ TIER_LABELS = {
 }
 
 DURATIONS = {
-    "5min":  {"label": "5 мин",    "campaigns": 1,   "cost": 0},
-    "10min": {"label": "10 мин",   "campaigns": 2,   "cost": 25_000},
-    "15min": {"label": "15 мин",   "campaigns": 3,   "cost": 75_000},
-    "30min": {"label": "30 мин",   "campaigns": 6,   "cost": 500_000},
-    "45min": {"label": "45 мин",   "campaigns": 9,   "cost": 1_000_000},
-    "1h":    {"label": "1 час",    "campaigns": 12,  "cost": 1_500_000},
-    "2h":    {"label": "2 часа",   "campaigns": 24,  "cost": 5_000_000},
-    "4h":    {"label": "4 часа",   "campaigns": 48,  "cost": 50_000_000},
-    "12h":   {"label": "12 часов", "campaigns": 144, "cost": 350_000_000},
-    "24h":   {"label": "24 часа",  "campaigns": 288, "cost": 950_000_000},
+    "5min":  {"label": "5 мин",    "label_en": "5 min",    "campaigns": 1,   "cost": 0},
+    "10min": {"label": "10 мин",   "label_en": "10 min",   "campaigns": 2,   "cost": 25_000},
+    "15min": {"label": "15 мин",   "label_en": "15 min",   "campaigns": 3,   "cost": 75_000},
+    "30min": {"label": "30 мин",   "label_en": "30 min",   "campaigns": 6,   "cost": 500_000},
+    "45min": {"label": "45 мин",   "label_en": "45 min",   "campaigns": 9,   "cost": 1_000_000},
+    "1h":    {"label": "1 час",    "label_en": "1 hour",   "campaigns": 12,  "cost": 1_500_000},
+    "2h":    {"label": "2 часа",   "label_en": "2 hours",  "campaigns": 24,  "cost": 5_000_000},
+    "4h":    {"label": "4 часа",   "label_en": "4 hours",  "campaigns": 48,  "cost": 50_000_000},
+    "12h":   {"label": "12 часов", "label_en": "12 hours", "campaigns": 144, "cost": 350_000_000},
+    "24h":   {"label": "24 часа",  "label_en": "24 hours", "campaigns": 288, "cost": 950_000_000},
 }
 DURATIONS_ORDER = ["5min", "10min", "15min", "30min", "45min", "1h", "2h", "4h", "12h", "24h"]
 
@@ -179,13 +179,31 @@ def now_ts() -> float:
     return datetime.now(timezone.utc).timestamp()
 
 
-def fmt_time(seconds: int) -> str:
+def _ore_name(ore: dict, lang: str = "ru") -> str:
+    """Return ore display name in the requested language."""
+    if lang == "en":
+        return ore.get("name_en", ore["name"])
+    return ore["name"]
+
+
+def _dur_label(dur: dict, lang: str = "ru") -> str:
+    """Return duration label in the requested language."""
+    if lang == "en":
+        return dur.get("label_en", dur["label"])
+    return dur["label"]
+
+
+def fmt_time(seconds: int, lang: str = "ru") -> str:
     if seconds <= 0:
-        return "0с"
+        return "0s" if lang == "en" else "0с"
     m, s = divmod(int(seconds), 60)
     if m >= 60:
         h, m = divmod(m, 60)
+        if lang == "en":
+            return f"{h}h {m}m {s}s"
         return f"{h}ч {m}м {s}с"
+    if lang == "en":
+        return f"{m}m {s}s"
     return f"{m}м {s}с"
 
 
@@ -245,12 +263,12 @@ def add_xp(data: dict, amount: int):
             break
 
 
-def _fmt_cost(pick_key: str) -> str:
+def _fmt_cost(pick_key: str, lang: str = "ru") -> str:
     p = PICKAXES[pick_key]
     if p["currency"] == "stars":
-        return f"{p['cost_stars']} {STAR} звёзд"
+        return f"{p['cost_stars']} {STAR} " + ("stars" if lang == "en" else "звёзд")
     if p["cost"] == 0:
-        return "Бесплатно"
+        return "Free" if lang == "en" else "Бесплатно"
     return f"{_fmt_num(p['cost'])} {COIN}"
 
 
@@ -314,22 +332,24 @@ def calc_mine_progress(data: dict) -> dict:
     }
 
 
-def ore_inventory_text(data: dict, short: bool = False) -> str:
+def ore_inventory_text(data: dict, short: bool = False, lang: str = "ru") -> str:
     lines = []
     for ore in ORES:
         qty = data["ores"].get(ore["key"], 0)
         if qty > 0:
             worth = qty * ore["price"]
-            lines.append(f"<b>{ore['name']}: {qty}</b> <b>(≈ {_fmt_num(worth)} {COIN})</b>")
+            lines.append(f"<b>{_ore_name(ore, lang)}: {qty}</b> <b>(≈ {_fmt_num(worth)} {COIN})</b>")
     if not lines:
-        return "<b>Инвентарь пуст</b>"
+        return "<b>Inventory empty</b>" if lang == "en" else "<b>Инвентарь пуст</b>"
     if short and len(lines) > 3:
-        return "\n".join(lines[:3]) + "\n<b><i>...и ещё</i></b>"
+        more = "...and more" if lang == "en" else "...и ещё"
+        return "\n".join(lines[:3]) + f"\n<b><i>{more}</i></b>"
     return "\n".join(lines)
 
 
-def inventory_screen_text(data: dict) -> str:
-    lines = [f'<tg-emoji emoji-id="5445221832074483553">🎟</tg-emoji> <b>Инвентарь</b>\n━━━━━━━━━━━━━━━━━━━━\n']
+def inventory_screen_text(data: dict, lang: str = "ru") -> str:
+    title   = "Inventory" if lang == "en" else "Инвентарь"
+    lines = [f'<tg-emoji emoji-id="5445221832074483553">🎟</tg-emoji> <b>{title}</b>\n━━━━━━━━━━━━━━━━━━━━\n']
     has_ores = False
     total_value = 0
     for ore in ORES:
@@ -338,11 +358,12 @@ def inventory_screen_text(data: dict) -> str:
             has_ores = True
             worth = qty * ore["price"]
             total_value += worth
-            lines.append(f"<blockquote><b>{ore['name']}: {qty} (≈ {_fmt_num(worth)} {COIN})</b></blockquote>")
+            lines.append(f"<blockquote><b>{_ore_name(ore, lang)}: {qty} (≈ {_fmt_num(worth)} {COIN})</b></blockquote>")
     if not has_ores:
-        lines.append("<b>Инвентарь пуст</b>")
+        lines.append("<b>Inventory empty</b>" if lang == "en" else "<b>Инвентарь пуст</b>")
     else:
-        lines.append(f'\n<tg-emoji emoji-id="5303214794336125778">🎟</tg-emoji> <b>Итого: {_fmt_num(total_value)} {COIN}</b>')
+        total_lbl = "Total" if lang == "en" else "Итого"
+        lines.append(f'\n<tg-emoji emoji-id="5303214794336125778">🎟</tg-emoji> <b>{total_lbl}: {_fmt_num(total_value)} {COIN}</b>')
     return "\n".join(lines)
 
 
@@ -350,41 +371,67 @@ def inventory_screen_text(data: dict) -> str:
 #  ТЕКСТЫ ЭКРАНОВ
 # ============================================================
 
-def mine_text(data: dict) -> str:
+def mine_text(data: dict, lang: str = "ru") -> str:
     pick_key = data.get("pickaxe", "wood_1")
     pick     = PICKAXES[pick_key]
     dur_key  = data.get("mine_duration_key", "5min")
     dur      = DURATIONS[dur_key]
+    if lang == "en":
+        _title     = "Mine"
+        _selected  = "Selected"
+        _duration  = "Duration"
+        _inventory = "Inventory"
+        _press_start = 'Press <tg-emoji emoji-id="5906727823355156804">🎟</tg-emoji> <b>Start</b> to begin mining!'
+        _campaigns = "Campaigns"
+        _progress  = "Progress"
+        _finished  = '<tg-emoji emoji-id="5206607081334906820">🎟</tg-emoji> <b>Mining complete!</b>'
+        _running   = '<tg-emoji emoji-id="5341498088408234504">🎟</tg-emoji> <b>Mining in progress...</b>'
+    else:
+        _title     = "Шахта"
+        _selected  = "Выбрано"
+        _duration  = "Длительность"
+        _inventory = "Инвентарь"
+        _press_start = 'Нажми <tg-emoji emoji-id="5906727823355156804">🎟</tg-emoji> <b>Запустить</b> чтобы начать добычу!'
+        _campaigns = "Кампаний"
+        _progress  = "Прогресс"
+        _finished  = '<tg-emoji emoji-id="5206607081334906820">🎟</tg-emoji> <b>Добыча завершена!</b>'
+        _running   = '<tg-emoji emoji-id="5341498088408234504">🎟</tg-emoji> <b>Идёт добыча...</b>'
+
+    dur_lbl = _dur_label(dur, lang)
     if data["mine_start"] is None or data["mine_collected"]:
         return (
-            '<tg-emoji emoji-id="5197371802136892976">🎟</tg-emoji> <b>Шахта</b>\n'
+            f'<tg-emoji emoji-id="5197371802136892976">🎟</tg-emoji> <b>{_title}</b>\n'
             "━━━━━━━━━━━━━━━━━━━━\n\n"
-            f'<tg-emoji emoji-id="5397782960512444700">🎟</tg-emoji> <b>Выбрано: {pick["name"]}</b>\n'
-            f'<tg-emoji emoji-id="5440621591387980068">🎟</tg-emoji> <b>Длительность: {dur["label"]}</b>\n\n'
-            f'<blockquote><tg-emoji emoji-id="5445221832074483553">🎟</tg-emoji> <b>Инвентарь:</b>\n{ore_inventory_text(data, short=True)}</blockquote>\n\n'
-            'Нажми <tg-emoji emoji-id="5906727823355156804">🎟</tg-emoji> <b>Запустить</b> чтобы начать добычу!'
+            f'<tg-emoji emoji-id="5397782960512444700">🎟</tg-emoji> <b>{_selected}: {pick["name"]}</b>\n'
+            f'<tg-emoji emoji-id="5440621591387980068">🎟</tg-emoji> <b>{_duration}: {dur_lbl}</b>\n\n'
+            f'<blockquote><tg-emoji emoji-id="5445221832074483553">🎟</tg-emoji> <b>{_inventory}:</b>\n{ore_inventory_text(data, short=True, lang=lang)}</blockquote>\n\n'
+            f'{_press_start}'
         )
     prog   = calc_mine_progress(data)
     bar    = progress_bar(prog["percent"])
-    status = (
-        '<tg-emoji emoji-id="5206607081334906820">🎟</tg-emoji> <b>Добыча завершена!</b>'
-        if prog["finished"]
-        else '<tg-emoji emoji-id="5341498088408234504">🎟</tg-emoji> <b>Идёт добыча...</b>'
-    )
+    status = _finished if prog["finished"] else _running
     return (
-        '<tg-emoji emoji-id="5197371802136892976">🎟</tg-emoji> <b>Шахта</b>\n'
+        f'<tg-emoji emoji-id="5197371802136892976">🎟</tg-emoji> <b>{_title}</b>\n'
         "━━━━━━━━━━━━━━━━━━━━\n\n"
-        f'<tg-emoji emoji-id="5397782960512444700">🎟</tg-emoji> <b>Выбрано: {pick["name"]}</b>\n'
-        f'<tg-emoji emoji-id="5375338737028841420">🎟</tg-emoji> <b>Кампаний: {prog["campaigns_done"]}/{prog["total_campaigns"]}</b>\n\n'
-        f'<tg-emoji emoji-id="5231200819986047254">🎟</tg-emoji> <b>Прогресс:</b>\n{bar}\n\n'
+        f'<tg-emoji emoji-id="5397782960512444700">🎟</tg-emoji> <b>{_selected}: {pick["name"]}</b>\n'
+        f'<tg-emoji emoji-id="5375338737028841420">🎟</tg-emoji> <b>{_campaigns}: {prog["campaigns_done"]}/{prog["total_campaigns"]}</b>\n\n'
+        f'<tg-emoji emoji-id="5231200819986047254">🎟</tg-emoji> <b>{_progress}:</b>\n{bar}\n\n'
         f"{status}\n\n"
-        f'<blockquote><tg-emoji emoji-id="5445221832074483553">🎟</tg-emoji> <b>Инвентарь:</b>\n{ore_inventory_text(data, short=True)}</blockquote>'
+        f'<blockquote><tg-emoji emoji-id="5445221832074483553">🎟</tg-emoji> <b>{_inventory}:</b>\n{ore_inventory_text(data, short=True, lang=lang)}</blockquote>'
     )
 
 
-def workshop_text(data: dict, page: int = 0) -> str:
+def workshop_text(data: dict, page: int = 0, lang: str = "ru") -> str:
     current    = data.get("pickaxe", "wood_1")
-    page_label = WORKSHOP_PAGE_LABELS[page]
+    if lang == "en":
+        return (
+            '<tg-emoji emoji-id="5278702045883292456">🎟</tg-emoji> <b>Workshop</b>\n'
+            "━━━━━━━━━━━━━━━━━━━━\n\n"
+            f'<blockquote><tg-emoji emoji-id="5278467510604160626">🎟</tg-emoji> <b>Balance: {_fmt_num(data["balance"])}{COIN}</b>\n'
+            f'<tg-emoji emoji-id="5397782960512444700">🎟</tg-emoji> <b>Selected: {current}lvl</b>\n'
+            f'<tg-emoji emoji-id="5444856076954520455">🎟</tg-emoji> <b>Page: {page + 1}/{WORKSHOP_TOTAL_PAGES}</b></blockquote>\n\n'
+            "<b>Choose an item below:</b>"
+        )
     return (
         '<tg-emoji emoji-id="5278702045883292456">🎟</tg-emoji> <b>Мастерская</b>\n'
         "━━━━━━━━━━━━━━━━━━━━\n\n"
@@ -395,10 +442,41 @@ def workshop_text(data: dict, page: int = 0) -> str:
     )
 
 
-def pickaxe_detail_text(data: dict, pick_key: str) -> str:
+def pickaxe_detail_text(data: dict, pick_key: str, lang: str = "ru") -> str:
     p     = PICKAXES[pick_key]
     owned = data.get("owned_pickaxes", ["wood_1"])
     tier  = TIER_LABELS.get(p.get("tier", ""), "")
+    if lang == "en":
+        if pick_key == data.get("pickaxe", "wood_1"):
+            status = "✅ Selected"
+        elif pick_key in owned:
+            status = "🔘 (not active)"
+        elif p["currency"] == "stars":
+            status = f"⭐ for stars — {p['cost_stars']} {STAR}"
+        else:
+            status = "❌ Not purchased"
+        if p["currency"] == "stars":
+            coins_line = f"  {COIN} For coins: <b>unavailable</b>\n"
+            stars_line = f"  {STAR} For stars: <b>{p['cost_stars']:,} stars</b>\n"
+        elif p["cost"] == 0:
+            coins_line = f"  {COIN} For coins: <b>Free</b>\n"
+            stars_line = f"  {STAR} For stars: <b>Free</b>\n"
+        else:
+            stars = p.get("cost_stars", 0)
+            coins_line = f"  {COIN} For coins: <b>{_fmt_num(p['cost'])}</b>\n"
+            stars_line = f"  {STAR} For stars: <b>{stars:,} stars</b>\n"
+        return (
+            f"<b>{p['name']}</b>\n"
+            "━━━━━━━━━━━━━━━━━━━━\n\n"
+            f'<blockquote><tg-emoji emoji-id="5278467510604160626">🎟</tg-emoji> <b>Balance: {_fmt_num(data["balance"])}</b>\n'
+            f"<b>Name: {p['name']}</b>\n"
+            f"<b>Tier: {tier}</b>\n"
+            f"<b>Every 5 min: {p['dig_min']:,}–{p['dig_max']:,}</b></blockquote>\n\n"
+            f'<blockquote><tg-emoji emoji-id="5287231198098117669">🎟</tg-emoji> <b>Prices:</b>\n'
+            f"{coins_line}"
+            f"{stars_line}\n</blockquote>"
+            f"<b>Status: {status}</b>"
+        )
     if pick_key == data.get("pickaxe", "wood_1"):
         status = "✅Выбрано"
     elif pick_key in owned:
@@ -431,11 +509,20 @@ def pickaxe_detail_text(data: dict, pick_key: str) -> str:
     )
 
 
-def duration_shop_text(data: dict) -> str:
+def duration_shop_text(data: dict, lang: str = "ru") -> str:
     cur_key    = data.get("mine_duration_key", "5min")
-    cur_label  = DURATIONS[cur_key]["label"]
+    cur_label  = _dur_label(DURATIONS[cur_key], lang)
     owned_durs = data.get("owned_durations", ["5min"])
     owned_cnt  = len([k for k in DURATIONS_ORDER if k in owned_durs])
+    if lang == "en":
+        return (
+            '<tg-emoji emoji-id="5440621591387980068">🎟</tg-emoji> <b>Session Duration</b>\n'
+            "━━━━━━━━━━━━━━━━━━━━\n\n"
+            f'<blockquote><tg-emoji emoji-id="5278467510604160626">🎟</tg-emoji> <b>Balance: {_fmt_num(data["balance"])}{COIN}</b>\n'
+            f'<tg-emoji emoji-id="5456140674028019486">🎟</tg-emoji> <b>Active: {cur_label}</b>\n'
+            f'<tg-emoji emoji-id="5296369303661067030">🎟</tg-emoji> <b>Unlocked: {owned_cnt}/{len(DURATIONS_ORDER)}</b></blockquote>\n\n'
+            "<b>Select for details:</b>"
+        )
     return (
         '<tg-emoji emoji-id="5440621591387980068">🎟</tg-emoji> <b>Длительность сессии</b>\n'
         "━━━━━━━━━━━━━━━━━━━━\n\n"
