@@ -399,13 +399,22 @@ _HUNT_QUOTES = [
 #  БОССЫ
 # ─────────────────────────────────────────
 BOSS_MAX_HP      = 10_000_000
-BOSS_KILL_REWARD = 5_000_000
 BOSS_RESPAWN_SEC = 2 * 3600   # 2 часа после смерти — следующий босс
 
 # HP следующего босса в зависимости от скорости убийства предыдущего
-BOSS_HP_FAST   = 150_000_000  # убит за ≤ 5 минут
-BOSS_HP_MEDIUM =  50_000_000  # убит за 5–30 минут
+BOSS_HP_FAST   = 150_000_000  # убит за <= 5 минут
+BOSS_HP_MEDIUM =  50_000_000  # убит за 5-30 минут
 BOSS_HP_SLOW   =  10_000_000  # убит за > 30 минут (обычный)
+
+def _reward_for_hp(max_hp: int) -> int:
+    """Награда за убийство босса зависит от его максимального HP."""
+    if max_hp >= 100_000_000:   # 150 млн
+        return 25_000_000
+    if max_hp >= 50_000_000:    # 50-100 млн
+        return 15_000_000
+    return 5_000_000            # 10 млн (обычный)
+
+BOSS_KILL_REWARD = 5_000_000   # дефолт для отображения в UI (обычный босс)
 
 BOSSES = [
     {
@@ -767,8 +776,9 @@ def attack_boss(data: dict) -> dict:
         state["boss_died_at"]      = died_at
         state["boss_kill_duration"] = kill_duration
         result["boss_killed"]      = True
-        result["reward"]           = BOSS_KILL_REWARD
-        data["balance"] = data.get("balance", 0) + BOSS_KILL_REWARD
+        _kill_reward = _reward_for_hp(state.get("boss_max_hp", BOSS_MAX_HP))
+        result["reward"]           = _kill_reward
+        data["balance"] = data.get("balance", 0) + _kill_reward
 
     _save_boss_state(state)
     return result
@@ -1356,7 +1366,7 @@ def boss_attack_text(data: dict, lang: str = "ru") -> str:
             f'{_tg(_E["crit"], "⭐")} <b>Crit: 5% × {sword["crit_mult"]:.0f} of max damage</b>'
             f'</blockquote>\n\n'
             f'<blockquote>'
-            f'{_tg(_E["trophy"], "🏆")} <b>Kill reward: {_fmt(BOSS_KILL_REWARD)} {_tg(_E["coin"], "💰")}</b>'
+            f'{_tg(_E["trophy"], "🏆")} <b>Kill reward: {_fmt(_reward_for_hp(max_hp))} {_tg(_E["coin"], "💰")}</b>'
             f'</blockquote>'
             f'{enh_line}'
             f'{art_dmg_line}'
@@ -1375,7 +1385,7 @@ def boss_attack_text(data: dict, lang: str = "ru") -> str:
         f'{_tg(_E["crit"], "⭐")} <b>Крит: 5% × {sword["crit_mult"]:.0f} от макс. урона</b>'
         f'</blockquote>\n\n'
         f'<blockquote>'
-        f'{_tg(_E["trophy"], "🏆")} <b>Награда за убийство: {_fmt(BOSS_KILL_REWARD)} {_tg(_E["coin"], "💰")}</b>'
+        f'{_tg(_E["trophy"], "🏆")} <b>Награда за убийство: {_fmt(_reward_for_hp(max_hp))} {_tg(_E["coin"], "💰")}</b>'
         f'</blockquote>'
         f'{enh_line}'
         f'{art_dmg_line}'
@@ -1481,7 +1491,7 @@ def boss_strike_result_text(data: dict, result: dict, lang: str = "ru") -> str:
             f'{_tg(_E["hp"], "❤️")} <b>HP:</b> {_fmt_digits(hp_after)} / {_fmt_digits(max_hp)} <b>({pct:.1f}%)</b>'
             f'</blockquote>\n\n'
             f'<blockquote>'
-            f'{_tg(_E["trophy"], "🏆")} <b>Kill reward: {_fmt(BOSS_KILL_REWARD)} {_tg(_E["coin"], "💰")}</b>'
+            f'{_tg(_E["trophy"], "🏆")} <b>Kill reward: {_fmt(_reward_for_hp(max_hp))} {_tg(_E["coin"], "💰")}</b>'
             f'</blockquote>'
         )
     return (
@@ -1495,7 +1505,7 @@ def boss_strike_result_text(data: dict, result: dict, lang: str = "ru") -> str:
         f'{_tg(_E["hp"], "❤️")} <b>HP:</b> {_fmt_digits(hp_after)} / {_fmt_digits(max_hp)} <b>({pct:.1f}%)</b>'
         f'</blockquote>\n\n'
         f'<blockquote>'
-        f'{_tg(_E["trophy"], "🏆")} <b>Награда за убийство: {_fmt(BOSS_KILL_REWARD)} {_tg(_E["coin"], "💰")}</b>'
+        f'{_tg(_E["trophy"], "🏆")} <b>Награда за убийство: {_fmt(_reward_for_hp(max_hp))} {_tg(_E["coin"], "💰")}</b>'
         f'</blockquote>'
     )
 
