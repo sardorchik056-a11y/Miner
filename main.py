@@ -902,7 +902,7 @@ async def handle_callback(call: CallbackQuery):
 
         # ===== ПИТОМЦЫ: главный экран =====
         if cd == "pets" or cd == "pets_page_0":
-            await edit(pets_main_text(data), pets_main_keyboard(data, 0))
+            await edit(pets_main_text(data, lang), pets_main_keyboard(data, 0, lang))
             return
 
         if cd.startswith("pets_page_"):
@@ -910,7 +910,7 @@ async def handle_callback(call: CallbackQuery):
                 page = int(cd.removeprefix("pets_page_"))
             except ValueError:
                 page = 0
-            await edit(pets_main_text(data), pets_main_keyboard(data, page))
+            await edit(pets_main_text(data, lang), pets_main_keyboard(data, page, lang))
             return
 
         # ===== ПИТОМЦЫ: карточка =====
@@ -918,24 +918,23 @@ async def handle_callback(call: CallbackQuery):
             pk   = cd.removeprefix("pet_info_")
             idx  = next((i for i, p in enumerate(PETS) if p["key"] == pk), 0)
             page = idx // 5
-            await edit(pet_detail_text(data, pk), pet_detail_keyboard(data, pk, page))
+            await edit(pet_detail_text(data, pk, lang), pet_detail_keyboard(data, pk, page, lang))
             return
 
         # ===== ПИТОМЦЫ: покупка =====
         if cd.startswith("pet_buy_"):
             pk      = cd.removeprefix("pet_buy_")
-            ok, msg = buy_pet(data, pk)
+            ok, msg = buy_pet(data, pk, lang)
             if ok:
                 save_user(data["id"], data)
-                await call.answer("✅ Питомец куплен!", show_alert=False)
+                await call.answer("✅", show_alert=False)
             else:
-                # Ошибки короткие — strip HTML-тегов для alert
                 import re
                 plain = re.sub(r'<[^>]+>', '', msg)
                 await call.answer(plain[:200], show_alert=True)
             idx  = next((i for i, p in enumerate(PETS) if p["key"] == pk), 0)
             page = idx // 5
-            await edit(pet_detail_text(data, pk), pet_detail_keyboard(data, pk, page))
+            await edit(pet_detail_text(data, pk, lang), pet_detail_keyboard(data, pk, page, lang))
             return
 
         # ===== ОХОТА: главный экран =====
