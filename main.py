@@ -939,59 +939,59 @@ async def handle_callback(call: CallbackQuery):
 
         # ===== ОХОТА: главный экран =====
         if cd == "hunt":
-            await edit(hunt_main_text(data), hunt_main_keyboard(data))
+            await edit(hunt_main_text(data, lang), hunt_main_keyboard(data, lang))
             return
 
         # ===== ОХОТА: магазин мечей =====
         if cd == "hunt_shop_swords":
-            await edit(sword_shop_text(data, 0), sword_shop_keyboard(data, 0))
+            await edit(sword_shop_text(data, 0, lang), sword_shop_keyboard(data, 0, lang))
             return
 
         # ===== ОХОТА: пагинация магазина мечей =====
         if cd.startswith("sword_shop_page_"):
             page = int(cd.removeprefix("sword_shop_page_"))
             await call.answer()
-            await edit(sword_shop_text(data, page), sword_shop_keyboard(data, page))
+            await edit(sword_shop_text(data, page, lang), sword_shop_keyboard(data, page, lang))
             return
 
         # ===== ОХОТА: мои мечи =====
         if cd == "hunt_my_swords":
-            await edit(my_swords_text(data), my_swords_keyboard(data))
+            await edit(my_swords_text(data, lang), my_swords_keyboard(data, lang))
             return
 
         # ===== ОХОТА: карточка меча =====
         if cd.startswith("sword_info_"):
             sk = cd.removeprefix("sword_info_")
-            await edit(sword_detail_text(data, sk), sword_detail_keyboard(data, sk))
+            await edit(sword_detail_text(data, sk, lang), sword_detail_keyboard(data, sk, lang))
             return
 
         # ===== ОХОТА: купить меч =====
         if cd.startswith("sword_buy_"):
             sk = cd.removeprefix("sword_buy_")
-            ok, msg = buy_sword(data, sk)
+            ok, msg = buy_sword(data, sk, lang)
             if ok:
                 save_user(data["id"], data)
-                await call.answer("✅ Меч куплен!", show_alert=False)
+                await call.answer(_plain(msg), show_alert=False)
             else:
                 import re as _re2
                 plain = _re2.sub(r'<[^>]+>', '', msg)
                 await call.answer(plain[:200], show_alert=True)
-            await edit(sword_detail_text(data, sk), sword_detail_keyboard(data, sk))
+            await edit(sword_detail_text(data, sk, lang), sword_detail_keyboard(data, sk, lang))
             return
 
         # ===== ОХОТА: экипировать меч =====
         if cd.startswith("sword_equip_"):
             sk = cd.removeprefix("sword_equip_")
-            ok, msg = equip_sword(data, sk)
+            ok, msg = equip_sword(data, sk, lang)
             if ok:
                 save_user(data["id"], data)
-                await call.answer("✅ Экипировано!", show_alert=False)
-            await edit(my_swords_text(data), my_swords_keyboard(data))
+                await call.answer(_plain(msg), show_alert=False)
+            await edit(my_swords_text(data, lang), my_swords_keyboard(data, lang))
             return
 
         # ===== ОХОТА: экран атаки босса =====
         if cd == "hunt_boss":
-            await edit(boss_attack_text(data), boss_attack_keyboard(data))
+            await edit(boss_attack_text(data, lang), boss_attack_keyboard(data, lang))
             return
 
         # ===== ОХОТА: удар по боссу =====
@@ -1017,10 +1017,10 @@ async def handle_callback(call: CallbackQuery):
                     )
                 except Exception as _le:
                     print(f"[leaders] record_boss_hit error: {_le}")
-            txt = boss_strike_result_text(data, result)
-            kb  = boss_strike_keyboard(data)
+            txt = boss_strike_result_text(data, result, lang)
+            kb  = boss_strike_keyboard(data, lang)
             if result.get("crit"):
-                await call.answer("⭐ КРИТИЧЕСКИЙ УДАР!", show_alert=False)
+                await call.answer("⭐ CRITICAL HIT!" if lang == "en" else "⭐ КРИТИЧЕСКИЙ УДАР!", show_alert=False)
             else:
                 await call.answer()
             await edit(txt, kb)
