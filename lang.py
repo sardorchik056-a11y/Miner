@@ -117,3 +117,29 @@ def t(lang: str, key: str) -> str:
 def get_lang(data: dict) -> str:
     """Получить язык из данных пользователя."""
     return data.get("lang", "ru")
+
+
+# ── Профиль ──
+_STRINGS.update({
+    "profile_rank":    {"ru": "Ранг",           "en": "Rank"},
+    "profile_status":  {"ru": "Статус",         "en": "Status"},
+    "profile_days":    {"ru": "Дней в проекте", "en": "Days in project"},
+    "profile_level":   {"ru": "Уровень",        "en": "Level"},
+    "profile_xp":      {"ru": "Опыт",           "en": "XP"},
+    "profile_balance": {"ru": "Баланс",         "en": "Balance"},
+    "profile_anon":    {"ru": "Аноним",         "en": "Anonymous"},
+
+    "rank_novice":  {"ru": "Новичок", "en": "Novice"},
+    "rank_skilled": {"ru": "Опытный", "en": "Skilled"},
+    "rank_pro":     {"ru": "Профи",   "en": "Pro"},
+    "rank_master":  {"ru": "Мастер",  "en": "Master"},
+    "rank_expert":  {"ru": "Эксперт", "en": "Expert"},
+    "rank_elite":   {"ru": "Элита",   "en": "Elite"},
+    "rank_legend":  {"ru": "Легенда", "en": "Legend"},
+
+    "boost_pickaxe":   {"ru": "Кирка",      "en": "Pickaxe"},
+    "boost_xp":        {"ru": "XP",         "en": "XP"},
+    "boost_enhancer":  {"ru": "Усилитель",  "en": "Enhancer"},
+    "boost_active":    {"ru": "Активные бусты", "en": "Active boosts"},
+    "boost_on":        {"ru": "на",         "en": "for"},
+})
