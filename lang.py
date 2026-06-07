@@ -277,3 +277,30 @@ _STRINGS.update({
     "dur_no_change_mining":  {"ru": "❌ Нельзя менять длительность во время добычи!", "en": "❌ Cannot change duration during mining!"},
     "dur_selected":          {"ru": "✅ Выбрана длительность: {label}", "en": "✅ Duration selected: {label}"},
 })
+
+# ── Питомцы ──
+_STRINGS.update({
+    "pets_title":         {"ru": "ПИТОМЦЫ",              "en": "PETS"},
+    "pets_count":         {"ru": "Твои питомцы",         "en": "Your pets"},
+    "pets_none":          {"ru": "У тебя пока нет питомцев.", "en": "You don't have any pets yet."},
+    "pets_none_hint":     {"ru": "Купи первого — и он начнёт приносить монеты!", "en": "Buy your first one — and it will start bringing coins!"},
+    "pets_notify_hint":   {"ru": "Каждая выплата сопровождается сообщением от питомца.", "en": "Every payout comes with a message from your pet."},
+    "pets_btn_back":      {"ru": "Назад",                "en": "Back"},
+    "pets_btn_buy":       {"ru": "Купить",               "en": "Buy"},
+
+    "pet_owned":          {"ru": "Питомец у тебя есть!",  "en": "You own this pet!"},
+    "pet_not_owned":      {"ru": "Не куплен",             "en": "Not purchased"},
+    "pet_ready":          {"ru": "Готов к выплате прямо сейчас!", "en": "Ready to pay out right now!"},
+    "pet_next_payout":    {"ru": "Следующая выплата через:", "en": "Next payout in:"},
+    "pet_feature":        {"ru": "Особенность:",          "en": "Feature:"},
+    "pet_income_label":   {"ru": "Доход каждые 12 часов:", "en": "Income every 12 hours:"},
+    "pet_price_label":    {"ru": "Цена:",                 "en": "Price:"},
+
+    "pet_not_found":      {"ru": "❌ Питомец не найден.", "en": "❌ Pet not found."},
+    "pet_already_owned":  {"ru": "❌ Этот питомец уже у тебя есть!", "en": "❌ You already own this pet!"},
+    "pet_no_coins":       {"ru": "❌ Недостаточно монет! Нужно: {cost}", "en": "❌ Not enough coins! Need: {cost}"},
+    "pet_bought_title":   {"ru": "{name} теперь твой питомец!", "en": "{name} is now your pet!"},
+    "pet_bought_hint":    {"ru": "Он уже отправился в шахту и скоро принесёт первые монеты.", "en": "It has already headed to the mine and will bring the first coins soon."},
+    "pet_bought_timer":   {"ru": "Первая выплата через 12 часов.", "en": "First payout in 12 hours."},
+    "pet_income_msg":     {"ru": "Принёс тебе: +{amount}", "en": "Brought you: +{amount}"},
+})
