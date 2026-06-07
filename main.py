@@ -729,18 +729,18 @@ async def handle_callback(call: CallbackQuery):
         if cd.startswith("pick_info_"):
             pick_key = cd.removeprefix("pick_info_")
             page     = get_pickaxe_page(pick_key)
-            await edit(pickaxe_detail_text(data, pick_key), pickaxe_detail_keyboard(data, pick_key, page))
+            await edit(pickaxe_detail_text(data, pick_key, lang), pickaxe_detail_keyboard(data, pick_key, page, lang))
             return
 
         # ===== КИРКИ: купить за монеты =====
         if cd.startswith("pick_buy_") and not cd.startswith("pick_buy_stars_"):
             pick_key = cd.removeprefix("pick_buy_")
-            ok, msg  = buy_pickaxe(data, pick_key)
-            await call.answer(msg, show_alert=True)
+            ok, msg  = buy_pickaxe(data, pick_key, lang)
+            await call.answer(_plain(msg), show_alert=True)
             if ok:
                 save_user(data["id"], data)
             page = get_pickaxe_page(pick_key)
-            await edit(pickaxe_detail_text(data, pick_key), pickaxe_detail_keyboard(data, pick_key, page))
+            await edit(pickaxe_detail_text(data, pick_key, lang), pickaxe_detail_keyboard(data, pick_key, page, lang))
             return
 
         # ===== КИРКИ: купить за звёзды (экран подтверждения + инвойс-кнопка) =====
@@ -748,7 +748,7 @@ async def handle_callback(call: CallbackQuery):
             pick_key = cd.removeprefix("pick_buy_stars_")
             p        = PICKAXES.get(pick_key)
             if not p:
-                await call.answer("❌ Неизвестная кирка.", show_alert=True)
+                await call.answer(t(lang, "pick_unknown"), show_alert=True)
                 return
             page = get_pickaxe_page(pick_key)
             # Создаём ссылку на инвойс и сразу вставляем в кнопку
@@ -778,100 +778,100 @@ async def handle_callback(call: CallbackQuery):
         # ===== КИРКИ: выбрать =====
         if cd.startswith("pick_select_"):
             pick_key = cd.removeprefix("pick_select_")
-            ok, msg  = select_pickaxe(data, pick_key)
-            await call.answer(msg, show_alert=True)
+            ok, msg  = select_pickaxe(data, pick_key, lang)
+            await call.answer(_plain(msg), show_alert=True)
             if ok:
                 save_user(data["id"], data)
             page = get_pickaxe_page(pick_key)
-            await edit(pickaxe_detail_text(data, pick_key), pickaxe_detail_keyboard(data, pick_key, page))
+            await edit(pickaxe_detail_text(data, pick_key, lang), pickaxe_detail_keyboard(data, pick_key, page, lang))
             return
 
         # ===== ДЛИТЕЛЬНОСТИ: просмотр карточки =====
         if cd.startswith("dur_info_"):
             dur_key = cd.removeprefix("dur_info_")
-            await edit(duration_detail_text(data, dur_key), duration_detail_keyboard(data, dur_key))
+            await edit(duration_detail_text(data, dur_key, lang), duration_detail_keyboard(data, dur_key, lang))
             return
 
         # ===== ДЛИТЕЛЬНОСТИ: купить =====
         if cd.startswith("dur_buy_"):
             dur_key = cd.removeprefix("dur_buy_")
-            ok, msg = buy_duration(data, dur_key)
-            await call.answer(msg, show_alert=True)
+            ok, msg = buy_duration(data, dur_key, lang)
+            await call.answer(_plain(msg), show_alert=True)
             if ok:
                 save_user(data["id"], data)
-            await edit(duration_detail_text(data, dur_key), duration_detail_keyboard(data, dur_key))
+            await edit(duration_detail_text(data, dur_key, lang), duration_detail_keyboard(data, dur_key, lang))
             return
 
         # ===== ДЛИТЕЛЬНОСТИ: выбрать =====
         if cd.startswith("dur_select_"):
             dur_key = cd.removeprefix("dur_select_")
-            ok, msg = select_duration(data, dur_key)
-            await call.answer(msg, show_alert=True)
+            ok, msg = select_duration(data, dur_key, lang)
+            await call.answer(_plain(msg), show_alert=True)
             if ok:
                 save_user(data["id"], data)
-            await edit(duration_detail_text(data, dur_key), duration_detail_keyboard(data, dur_key))
+            await edit(duration_detail_text(data, dur_key, lang), duration_detail_keyboard(data, dur_key, lang))
             return
 
         # ===== ШАХТА =====
         if cd == "mine":
-            await edit(mine_text(data), mine_keyboard(data))
+            await edit(mine_text(data, lang), mine_keyboard(data, lang))
             return
 
         if cd == "mine_start":
             if data["mine_start"] is not None and not data["mine_collected"]:
-                await call.answer("⛏️ Шахта уже работает!", show_alert=True)
+                await call.answer(t(lang, "mine_already_running"), show_alert=True)
                 return
             data["mine_start"]          = now_ts()
             data["mine_campaigns_done"] = 0
             data["mine_collected"]      = False
             save_user(data["id"], data)
-            await edit(mine_text(data), mine_keyboard(data))
+            await edit(mine_text(data, lang), mine_keyboard(data, lang))
             return
 
         if cd == "mine_refresh":
-            await edit(mine_text(data), mine_keyboard(data))
+            await edit(mine_text(data, lang), mine_keyboard(data, lang))
             return
 
         if cd == "mine_collect":
             if data["mine_start"] is None:
-                await call.answer("Сначала запусти шахту!", show_alert=True)
+                await call.answer(t(lang, "mine_start_first"), show_alert=True)
                 return
-            prog, result_text = collect_mine(data)
+            prog, result_text = collect_mine(data, lang)
             if not result_text:
-                await call.answer("⏳ Ещё ни одной кампании не завершено!", show_alert=True)
+                await call.answer(t(lang, "mine_no_campaigns"), show_alert=True)
                 return
             save_user(data["id"], data)
-            await edit(result_text, mine_keyboard(data))
+            await edit(result_text, mine_keyboard(data, lang))
             return
 
         if cd == "mine_sell_screen":
-            await edit(sell_screen_text(data), sell_keyboard())
+            await edit(sell_screen_text(data, lang), sell_keyboard(data, lang))
             return
 
         if cd == "mine_sell_all":
-            total, report = sell_all_ores(data)
+            total, report = sell_all_ores(data, lang)
             if total == 0:
-                await call.answer("Нечего продавать!", show_alert=True)
+                await call.answer(t(lang, "mine_sell_nothing"), show_alert=True)
                 return
             save_user(data["id"], data)
             sell_text = (
-                f'<tg-emoji emoji-id="5206607081334906820">🎟</tg-emoji> <b>Успешно!</b>\n'
+                f'<tg-emoji emoji-id="5206607081334906820">🎟</tg-emoji> <b>{t(lang, "mine_sell_success")}</b>\n'
                 f"━━━━━━━━━━━━━━━━━━━━\n\n"
                 f"{report}\n\n"
-                f'<tg-emoji emoji-id="5429651785352501917">🎟</tg-emoji> <b>Итого получено: {total:,}</b> <tg-emoji emoji-id="5199552030615558774">🎟</tg-emoji>\n'
-                f'<tg-emoji emoji-id="5278467510604160626">🎟</tg-emoji> <b>Баланс: {data["balance"]:,}</b> <tg-emoji emoji-id="5199552030615558774">🎟</tg-emoji>'
+                f'<tg-emoji emoji-id="5429651785352501917">🎟</tg-emoji> <b>{t(lang, "mine_sell_earned")}: {total:,}</b> <tg-emoji emoji-id="5199552030615558774">🎟</tg-emoji>\n'
+                f'<tg-emoji emoji-id="5278467510604160626">🎟</tg-emoji> <b>{t(lang, "mine_balance_lbl")}: {data["balance"]:,}</b> <tg-emoji emoji-id="5199552030615558774">🎟</tg-emoji>'
             )
-            await edit(sell_text, mine_keyboard(data))
+            await edit(sell_text, mine_keyboard(data, lang))
             return
 
         # ===== ИНВЕНТАРЬ =====
         if cd == "mine_inventory":
-            await edit(inventory_screen_text(data), inventory_keyboard())
+            await edit(inventory_screen_text(data, lang), inventory_keyboard(data, lang))
             return
 
         # ===== МАСТЕРСКАЯ (с поддержкой страниц) =====
         if cd == "mine_workshop" or cd == "mine_workshop_0":
-            await edit(workshop_text(data, 0), workshop_keyboard(data, 0))
+            await edit(workshop_text(data, 0, lang), workshop_keyboard(data, 0, lang))
             return
 
         if cd.startswith("mine_workshop_"):
@@ -879,11 +879,11 @@ async def handle_callback(call: CallbackQuery):
                 page = int(cd.removeprefix("mine_workshop_"))
             except ValueError:
                 page = 0
-            await edit(workshop_text(data, page), workshop_keyboard(data, page))
+            await edit(workshop_text(data, page, lang), workshop_keyboard(data, page, lang))
             return
 
         if cd == "mine_duration_shop":
-            await edit(duration_shop_text(data), duration_shop_keyboard(data))
+            await edit(duration_shop_text(data, lang), duration_shop_keyboard(data, lang))
             return
 
         # ===== НАЗАД В МЕНЮ =====
