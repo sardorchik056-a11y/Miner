@@ -56,6 +56,11 @@ from hunt import (
 )
 
 from stats import init_stats_db, track_user, stats_text, stats_keyboard
+from settings import (
+    settings_text, settings_keyboard,
+    lang_choose_text, lang_choose_keyboard, lang_choose_keyboard_start,
+)
+from lang import t, get_lang
 
 from leaders import (
     init_leaders_db,
@@ -147,50 +152,43 @@ EMOJI_PETS     = "5337047059180566409"
 EMOJI_LEADERS  = "5440539497383087970"
 EMOJI_SETTINGS = "5341715473882955310"
 
-WELCOME_TEXT = """<blockquote><b><tg-emoji emoji-id="5197288647275071607">🎟</tg-emoji>TGStellar</b> — <b>современная игровая зона, где ты можешь отвлечься от повседневных забот и полностью погрузиться в атмосферу спокойствия и развлечений.</b></blockquote>
-
-<blockquote><b><tg-emoji emoji-id="5222079954421818267">🎟</tg-emoji>Это пространство, где время проходит незаметно, а каждая деталь делает игру комфортной и увлекательной</b></blockquote>
-
-<tg-emoji emoji-id="5357069174512303778">🎟</tg-emoji><b><a href="https://t.me/tgstelar_chat">Тех. поддержка</a> | <a href="https://t.me/tgstelar_news">Новости</a> | <a href="https://t.me/tgstelar_support">Наш чат</a></b>"""
-
-
 def _back_btn(callback: str, label: str = "Назад") -> InlineKeyboardButton:
     return InlineKeyboardButton(text=label, callback_data=callback, icon_custom_emoji_id=EMOJI_BACK)
 
 
-def main_menu_keyboard() -> InlineKeyboardMarkup:
+def main_menu_keyboard(lang: str = "ru") -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.row(
-        InlineKeyboardButton(text="Профиль",    callback_data="profile",  icon_custom_emoji_id=EMOJI_PROFILE),
-        InlineKeyboardButton(text="Статистика", callback_data="stats",    icon_custom_emoji_id=EMOJI_STATS),
-        InlineKeyboardButton(text="Кейсы",      callback_data="shop_cases", icon_custom_emoji_id="5442939099906325301"),
+        InlineKeyboardButton(text=t(lang, "btn_profile"),  callback_data="profile",    icon_custom_emoji_id=EMOJI_PROFILE),
+        InlineKeyboardButton(text=t(lang, "btn_stats"),    callback_data="stats",      icon_custom_emoji_id=EMOJI_STATS),
+        InlineKeyboardButton(text=t(lang, "btn_cases"),    callback_data="shop_cases", icon_custom_emoji_id="5442939099906325301"),
     )
-    builder.row(InlineKeyboardButton(text=" Шахта ", callback_data="mine", icon_custom_emoji_id=EMOJI_MINE))
+    builder.row(InlineKeyboardButton(text=t(lang, "btn_mine"), callback_data="mine", icon_custom_emoji_id=EMOJI_MINE))
     builder.row(
-        InlineKeyboardButton(text="Охота",  callback_data="hunt",   icon_custom_emoji_id=EMOJI_HUNT),
-        InlineKeyboardButton(text="Статус", callback_data="status", icon_custom_emoji_id=EMOJI_STATUS),
+        InlineKeyboardButton(text=t(lang, "btn_hunt"),   callback_data="hunt",   icon_custom_emoji_id=EMOJI_HUNT),
+        InlineKeyboardButton(text=t(lang, "btn_status"), callback_data="status", icon_custom_emoji_id=EMOJI_STATUS),
     )
-    builder.row(InlineKeyboardButton(text="Питомцы", callback_data="pets", icon_custom_emoji_id=EMOJI_PETS))
+    builder.row(InlineKeyboardButton(text=t(lang, "btn_pets"), callback_data="pets", icon_custom_emoji_id=EMOJI_PETS))
     builder.row(
-        InlineKeyboardButton(text="Лидеры",    callback_data="leaders",  icon_custom_emoji_id=EMOJI_LEADERS),
-        InlineKeyboardButton(text="Настройки", callback_data="settings", icon_custom_emoji_id=EMOJI_SETTINGS),
+        InlineKeyboardButton(text=t(lang, "btn_leaders"),  callback_data="leaders",  icon_custom_emoji_id=EMOJI_LEADERS),
+        InlineKeyboardButton(text=t(lang, "btn_settings"), callback_data="settings", icon_custom_emoji_id=EMOJI_SETTINGS),
     )
     return builder.as_markup()
 
 
-def profile_keyboard() -> InlineKeyboardMarkup:
+def profile_keyboard(lang: str = "ru") -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.row(InlineKeyboardButton(
-        text="Инвентарь", callback_data="profile_boosters",
+        text=t(lang, "btn_inventory"), callback_data="profile_boosters",
         icon_custom_emoji_id="5445221832074483553"
     ))
-    builder.row(_back_btn("back_to_menu", "Назад"))
+    builder.row(_back_btn("back_to_menu", t(lang, "btn_back")))
     return builder.as_markup()
 
 
-def back_button() -> InlineKeyboardMarkup:
+def back_button(lang: str = "ru") -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    builder.row(_back_btn("back_to_menu", "Назад"))
+    builder.row(_back_btn("back_to_menu", t(lang, "btn_back")))
     return builder.as_markup()
 
 
@@ -456,13 +454,26 @@ async def cmd_getstatus(message: Message):
 
 @dp.message(Command("start", "menu"))
 async def send_welcome(message: Message):
+    from database import _load_raw
+    existing = _load_raw(message.from_user.id)
     u = get_or_create_user(message.from_user)
     track_user(message.from_user.id)
+
+    # Новый пользователь — сначала выбор языка
+    if existing is None:
+        await message.answer(
+            lang_choose_text("ru"),
+            parse_mode="HTML",
+            reply_markup=lang_choose_keyboard_start(),
+        )
+        return
+
+    lang = get_lang(u)
     await message.answer(
-        WELCOME_TEXT,
+        t(lang, "welcome"),
         parse_mode="HTML",
         disable_web_page_preview=True,
-        reply_markup=main_menu_keyboard()
+        reply_markup=main_menu_keyboard(lang),
     )
 
 
@@ -479,6 +490,7 @@ async def handle_callback(call: CallbackQuery):
     async with lock:
         data = get_or_create_user(user)
         track_user(user.id)
+        lang = get_lang(data)
 
         async def edit(text, kb, md="HTML"):
             try:
@@ -501,7 +513,7 @@ async def handle_callback(call: CallbackQuery):
 
         # ===== ПРОФИЛЬ =====
         if cd == "profile":
-            await edit(profile_text(data), profile_keyboard())
+            await edit(profile_text(data), profile_keyboard(lang))
             return
 
         # ===== МАГАЗИН =====
@@ -878,10 +890,10 @@ async def handle_callback(call: CallbackQuery):
         if cd == "back_to_menu":
             try:
                 await call.message.edit_text(
-                    WELCOME_TEXT,
+                    t(lang, "welcome"),
                     parse_mode="HTML",
                     disable_web_page_preview=True,
-                    reply_markup=main_menu_keyboard()
+                    reply_markup=main_menu_keyboard(lang)
                 )
             except Exception as e:
                 if "message is not modified" not in str(e):
@@ -1161,21 +1173,55 @@ async def handle_callback(call: CallbackQuery):
 
         # ===== СТАТИСТИКА =====
         if cd == "stats":
-            await edit(stats_text(), stats_keyboard())
+            await edit(stats_text(lang), stats_keyboard(lang))
+            await call.answer()
+            return
+
+        # ===== НАСТРОЙКИ =====
+        if cd == "settings":
+            await edit(settings_text(data), settings_keyboard(data))
+            await call.answer()
+            return
+
+        # ===== НАСТРОЙКИ: смена языка (из настроек) =====
+        if cd == "settings_lang":
+            await edit(lang_choose_text(lang), lang_choose_keyboard())
+            await call.answer()
+            return
+
+        if cd in ("set_lang_ru", "set_lang_en"):
+            new_lang = "ru" if cd == "set_lang_ru" else "en"
+            data["lang"] = new_lang
+            save_user(data["id"], data)
+            alert = "🇷🇺 Язык установлен: Русский" if new_lang == "ru" else "🇬🇧 Language set: English"
+            await call.answer(alert, show_alert=True)
+            await edit(settings_text(data), settings_keyboard(data))
+            return
+
+        # ===== ВЫБОР ЯЗЫКА ПРИ СТАРТЕ =====
+        if cd in ("start_lang_ru", "start_lang_en"):
+            new_lang = "ru" if cd == "start_lang_ru" else "en"
+            data["lang"] = new_lang
+            save_user(data["id"], data)
+            await call.message.edit_text(
+                t(new_lang, "welcome"),
+                parse_mode="HTML",
+                disable_web_page_preview=True,
+                reply_markup=main_menu_keyboard(new_lang),
+            )
             await call.answer()
             return
 
         # ===== ЗАГЛУШКИ (в разработке) =====
         responses = {
-            "exchange": '<tg-emoji emoji-id="5402186569006210455">💱</tg-emoji> <b>БИРЖА</b>\n\n<blockquote><b>📝 Раздел в разработке...</b></blockquote>',
-            "settings": '<tg-emoji emoji-id="5341715473882955310">⚙️</tg-emoji> <b>НАСТРОЙКИ</b>\n\n<blockquote><b>📝 Раздел в разработке...</b></blockquote>',
+            "exchange": f'<tg-emoji emoji-id="5402186569006210455">💱</tg-emoji> <b>{"БИРЖА" if lang == "ru" else "EXCHANGE"}</b>\n\n<blockquote><b>{t(lang, "in_development")}</b></blockquote>',
         }
-        text = responses.get(cd, "❓ Неизвестная команда")
+        text = responses.get(cd, t(lang, "unknown_cmd"))
         try:
             await call.message.edit_text(
                 text,
                 parse_mode="HTML",
-                reply_markup=back_button()
+                reply_markup=back_button(lang)
             )
         except Exception as e:
             if "message is not modified" not in str(e):
