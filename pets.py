@@ -48,7 +48,7 @@ def _tg(eid, fb):
     return f'<tg-emoji emoji-id="{eid}">{fb}</tg-emoji>'
 def _btn(eid, label, cb): 
     return InlineKeyboardButton(text=label, callback_data=cb, icon_custom_emoji_id=eid)
-def _back_btn(cb, label="Назад"): 
+def _back_btn(cb, label="Назад"):
     return InlineKeyboardButton(text=label, callback_data=cb, icon_custom_emoji_id=_E["back"])
 
 def _fmt(n): 
@@ -60,46 +60,79 @@ def _now_ts():
 PET_INCOME_INTERVAL = 12 * 3600
 PAGE_SIZE = 5
 
+_PETS_MENU_TEXTS_EN = [
+    "Your pets are already underground — digging, trying, bringing coins.",
+    "Every pet is a miner with their own personality. Some even have complaints.",
+    "The more pets, the more noise in the mine. And more coins too.",
+    "Pets don't sleep. Pets work. Especially the mole — he doesn't understand what night is.",
+    "They say the hamster found a golden vein and hid it in his cheek. Couldn't verify.",
+    "The beaver has already drawn next week's plan. The gnome hasn't read it but earned more.",
+    "The raccoon found something again. Won't say where. But the coins are real.",
+    "The wolf held a meeting. Everyone attended. Voluntarily. Almost.",
+    "Croc is on shift again. He's always on shift. No one checked if he ever left.",
+    "The Crystal Gnome sees through stone. Won't say what exactly. Delivers coins on time.",
+]
+
 PETS = [
-    {"key":"hamster","name":"Шахтёр Хомяк","emoji":"🐹",
+    {"key":"hamster","name":"Hamster Miner","name_en":"Hamster Miner","emoji":"🐹",
      "desc":"<b>Неутомимый малыш с кирочкой.</b>\n<b>Всегда прячет находки за щеками.</b>",
-     "price":500_000,"rarity":"Обычный","bonus":"<b>Таскает камни и мелочёвку</b>",
+     "desc_en":"<b>A tireless little guy with a pickaxe.</b>\n<b>Always stashes finds in his cheeks.</b>",
+     "price":500_000,"rarity":"Обычный","rarity_en":"Common",
+     "bonus":"<b>Таскает камни и мелочёвку</b>","bonus_en":"<b>Hauls stones and small finds</b>",
      "income_min":15_000,"income_max":50_000},
-    {"key":"toad","name":"Болотный Жабакоп","emoji":"🐸",
+    {"key":"toad","name":"Болотный Жабакоп","name_en":"Swamp Toadforeman","emoji":"🐸",
      "desc":"<b>Прораб с болота.</b>\n<b>Любит сырые тоннели и считает каждый булыжник.</b>",
-     "price":2_500_000,"rarity":"Необычный","bonus":"<b>Чует медь и уголь лучше других</b>",
+     "desc_en":"<b>A foreman from the swamp.</b>\n<b>Loves damp tunnels and counts every cobblestone.</b>",
+     "price":2_500_000,"rarity":"Необычный","rarity_en":"Uncommon",
+     "bonus":"<b>Чует медь и уголь лучше других</b>","bonus_en":"<b>Sniffs out copper and coal better than anyone</b>",
      "income_min":45_000,"income_max":150_000},
-    {"key":"beaver","name":"Бобёр Прораб","emoji":"🦫",
+    {"key":"beaver","name":"Бобёр Прораб","name_en":"Beaver Foreman","emoji":"🦫",
      "desc":"<b>Строит тоннели быстрее всех.</b>\n<b>Без чертежей не работает.</b>",
-     "price":7_000_000,"rarity":"Необычный","bonus":"<b>Укрепляет тоннели — меньше обвалов</b>",
+     "desc_en":"<b>Builds tunnels faster than anyone.</b>\n<b>Won't work without blueprints.</b>",
+     "price":7_000_000,"rarity":"Необычный","rarity_en":"Uncommon",
+     "bonus":"<b>Укрепляет тоннели — меньше обвалов</b>","bonus_en":"<b>Reinforces tunnels — fewer cave-ins</b>",
      "income_min":105_000,"income_max":325_000},
-    {"key":"mole","name":"Крот на Энергетиках","emoji":"🦔",
+    {"key":"mole","name":"Крот на Энергетиках","name_en":"Energy Drink Mole","emoji":"🦔",
      "desc":"<b>Выпил пятую банку — и уже на глубине 500 метров.</b>\n<b>Спать не планирует.</b>",
-     "price":25_000_000,"rarity":"Редкий","bonus":"<b>Копает в 2 раза быстрее ночью</b>",
+     "desc_en":"<b>Downed his fifth can — already 500 meters deep.</b>\n<b>Has no plans to sleep.</b>",
+     "price":25_000_000,"rarity":"Редкий","rarity_en":"Rare",
+     "bonus":"<b>Копает в 2 раза быстрее ночью</b>","bonus_en":"<b>Digs twice as fast at night</b>",
      "income_min":510_000,"income_max":735_000},
-    {"key":"raccoon","name":"Енот Мародёр","emoji":"🦝",
+    {"key":"raccoon","name":"Енот Мародёр","name_en":"Raccoon Looter","emoji":"🦝",
      "desc":"<b>Найдёт что угодно где угодно.</b>\n<b>Но сначала сам решит — отдавать или нет.</b>",
-     "price":65_000_000,"rarity":"Редкий","bonus":"<b>Шанс найти потерянные ресурсы</b>",
+     "desc_en":"<b>Finds anything, anywhere.</b>\n<b>But decides for himself whether to hand it over.</b>",
+     "price":65_000_000,"rarity":"Редкий","rarity_en":"Rare",
+     "bonus":"<b>Шанс найти потерянные ресурсы</b>","bonus_en":"<b>Chance to find lost resources</b>",
      "income_min":850_000,"income_max":1_500_000},
-    {"key":"wolf","name":"Волк Бригадир","emoji":"🐺",
+    {"key":"wolf","name":"Волк Бригадир","name_en":"Wolf Crew Boss","emoji":"🐺",
      "desc":"<b>Держит всю шахту в страхе.</b>\n<b>Без его команды никто не копает.</b>",
-     "price":120_000_000,"rarity":"Эпический","bonus":"<b>Бонус к добыче железа и золота</b>",
+     "desc_en":"<b>Keeps the entire mine in fear.</b>\n<b>Nobody digs without his orders.</b>",
+     "price":120_000_000,"rarity":"Эпический","rarity_en":"Epic",
+     "bonus":"<b>Бонус к добыче железа и золота</b>","bonus_en":"<b>Bonus to iron and gold mining</b>",
      "income_min":2_500_000,"income_max":4_000_000},
-    {"key":"lion","name":"Лев Колека","emoji":"🦁",
+    {"key":"lion","name":"Лев Колека","name_en":"Lion Colleague","emoji":"🦁",
      "desc":"<b>Говорит что просто колека.</b>\n<b>Но все знают — он тут главный.</b>",
-     "price":300_000_000,"rarity":"Эпический","bonus":"<b>Повышает шанс редких руд</b>",
+     "desc_en":"<b>Says he's just a colleague.</b>\n<b>But everyone knows — he's the boss.</b>",
+     "price":300_000_000,"rarity":"Эпический","rarity_en":"Epic",
+     "bonus":"<b>Повышает шанс редких руд</b>","bonus_en":"<b>Increases rare ore chance</b>",
      "income_min":7_000_000,"income_max":18_000_000},
-    {"key":"bear","name":"Хромой Медведь","emoji":"🐻",
+    {"key":"bear","name":"Хромой Медведь","name_en":"Limping Bear","emoji":"🐻",
      "desc":"<b>Хромает, но не сдаётся.</b>\n<b>За смену выносит столько, сколько другие за неделю.</b>",
-     "price":700_000_000,"rarity":"Легендарный","bonus":"<b>Удваивает добычу тяжёлых руд</b>",
+     "desc_en":"<b>Limps but never gives up.</b>\n<b>Hauls in one shift what others do in a week.</b>",
+     "price":700_000_000,"rarity":"Легендарный","rarity_en":"Legendary",
+     "bonus":"<b>Удваивает добычу тяжёлых руд</b>","bonus_en":"<b>Doubles heavy ore yield</b>",
      "income_min":24_000_000,"income_max":50_000_000},
-    {"key":"croc","name":"Крокодил Гена","emoji":"🐊",
+    {"key":"croc","name":"Крокодил Гена","name_en":"Croc Gena","emoji":"🐊",
      "desc":"<b>Пришёл из подземной реки в 1987 году.</b>\n<b>Никто не сказал уходить. Он остался.</b>",
-     "price":1_500_000_000,"rarity":"Легендарный","bonus":"<b>Зубами дробит породу — открывает скрытые жилы</b>",
+     "desc_en":"<b>Came from an underground river in 1987.</b>\n<b>Nobody told him to leave. He stayed.</b>",
+     "price":1_500_000_000,"rarity":"Легендарный","rarity_en":"Legendary",
+     "bonus":"<b>Зубами дробит породу — открывает скрытые жилы</b>","bonus_en":"<b>Crushes rock with his teeth — reveals hidden veins</b>",
      "income_min":60_000_000,"income_max":90_000_000},
-    {"key":"gnome","name":"Кристальный Гном","emoji":"💎",
+    {"key":"gnome","name":"Кристальный Гном","name_en":"Crystal Gnome","emoji":"💎",
      "desc":"<b>Соткан из чистого кристалла.</b>\n<b>Видит сквозь породу. Находит то, чего не существует.</b>",
-     "price":5_000_000_000,"rarity":"Мифический","bonus":"<b>Находит мифрил, уран и аметист</b>",
+     "desc_en":"<b>Woven from pure crystal.</b>\n<b>Sees through stone. Finds what doesn't exist.</b>",
+     "price":5_000_000_000,"rarity":"Мифический","rarity_en":"Mythic",
+     "bonus":"<b>Находит мифрил, уран и аметист</b>","bonus_en":"<b>Finds mithril, uranium and amethyst</b>",
      "income_min":150_000_000,"income_max":300_000_000},
 ]
 
@@ -215,23 +248,24 @@ def get_owned_pets(data):
 def has_pet(data, pet_key):
     return pet_key in get_owned_pets(data)
 
-def buy_pet(data, pet_key):
+def buy_pet(data, pet_key, lang: str = "ru"):
+    from lang import t
     if pet_key not in PETS_BY_KEY:
-        return False, "<b>❌ Питомец не найден.</b>"
+        return False, t(lang, "pet_not_found")
     if has_pet(data, pet_key):
-        return False, "<b>❌ Этот питомец уже у тебя есть!</b>"
+        return False, t(lang, "pet_already_owned")
     pet = PETS_BY_KEY[pet_key]
     if data.get("balance", 0) < pet["price"]:
-        return False, f'<b>❌ Недостаточно монет! Нужно: {_fmt(pet["price"])} {_tg(_E["coin"], "💰")}</b>'
+        return False, t(lang, "pet_no_coins").format(cost=f'{_fmt(pet["price"])} {_tg(_E["coin"], "💰")}')
     data["balance"] -= pet["price"]
     data.setdefault("owned_pets", []).append(pet_key)
     now = _now_ts()
     data.setdefault("pet_last_notify", {})[pet_key] = now
     data.setdefault("pet_last_income", {})[pet_key] = now
     return True, (
-        f'{_tg(_E_OWNED, "✅")} <b>{pet["name"]} теперь твой питомец!</b>\n\n'
-        f'{_tg(_E["chest"], "🎒")} <b>Он уже отправился в шахту и скоро принесёт первые монеты.</b>\n'
-        f'{_tg(_E["timer"], "⏱")} <b>Первая выплата через 12 часов.</b>'
+        f'{_tg(_E_OWNED, "✅")} <b>{t(lang, "pet_bought_title").format(name=pet["name"])}</b>\n\n'
+        f'{_tg(_E["chest"], "🎒")} <b>{t(lang, "pet_bought_hint")}</b>\n'
+        f'{_tg(_E["timer"], "⏱")} <b>{t(lang, "pet_bought_timer")}</b>'
     )
 
 def get_pending_income(data):
@@ -275,11 +309,12 @@ def get_pending_notifications(data):
                 notifs[pk] = incomes.get(pk, 0)
     return result
 
-def pet_income_text(pet_key, amount, notification):
+def pet_income_text(pet_key, amount, notification, lang: str = "ru"):
+    from lang import t
     return (
         f'<blockquote>{notification}</blockquote>\n\n'
         f'<blockquote>'
-        f'{_tg("5427168083074628963", "➡️")} <b>Принёс тебе: +{_fmt(amount)} {_tg(_E["coin"], "💰")}</b>'
+        f'{_tg("5427168083074628963", "➡️")} <b>{t(lang, "pet_income_msg").format(amount=_fmt(amount))} {_tg(_E["coin"], "💰")}</b>'
         f'</blockquote>'
     )
 
@@ -297,67 +332,70 @@ _PETS_MENU_TEXTS = [
     "Кристальный Гном видит сквозь породу. Что именно — не рассказывает. Монеты приносит исправно.",
 ]
 
-def pets_main_text(data):
+def pets_main_text(data, lang: str = "ru"):
+    from lang import t
     owned = get_owned_pets(data)
     count = len(owned)
     total = len(PETS)
 
     header = (
         f'<blockquote>'
-        f'{_tg(_E["paw"], "🐾")} <b>ПИТОМЦЫ</b>\n'
-        f'<b>Твои питомцы: {count} / {total}</b>'
+        f'{_tg(_E["paw"], "🐾")} <b>{t(lang, "pets_title")}</b>\n'
+        f'<b>{t(lang, "pets_count")}: {count} / {total}</b>'
         f'</blockquote>\n\n'
     )
 
     if not owned:
         pets_block = (
             f'<blockquote>'
-            f'{_tg(_E["lock"], "🔒")} <b>У тебя пока нет питомцев.</b>\n'
-            f'<b>Купи первого — и он начнёт приносить монеты!</b>'
+            f'{_tg(_E["lock"], "🔒")} <b>{t(lang, "pets_none")}</b>\n'
+            f'<b>{t(lang, "pets_none_hint")}</b>'
             f'</blockquote>\n\n'
         )
     else:
         pets_block = ""
 
-    random_quote = random.choice(_PETS_MENU_TEXTS)
+    random_quote = random.choice(_PETS_MENU_TEXTS if lang == "ru" else _PETS_MENU_TEXTS_EN)
     footer = (
         f'<blockquote>'
         f'<tg-emoji emoji-id="5443038326535759644">🎟</tg-emoji> <b>{random_quote}</b>\n\n'
-        f'{_tg(_E["alert"], "💡")} <b>Каждая выплата сопровождается сообщением от питомца.</b>'
+        f'{_tg(_E["alert"], "💡")} <b>{t(lang, "pets_notify_hint")}</b>'
         f'</blockquote>'
     )
     return header + pets_block + footer
 
-def pets_main_keyboard(data, page=0) -> InlineKeyboardMarkup:
+def pets_main_keyboard(data, page=0, lang: str = "ru") -> InlineKeyboardMarkup:
+    from lang import t
     builder   = InlineKeyboardBuilder()
     start     = page * PAGE_SIZE
     chunk     = PETS[start:start + PAGE_SIZE]
 
     for pet in chunk:
-        pet_eid = _PET_EMOJI.get(pet["key"], "")
+        pet_eid  = _PET_EMOJI.get(pet["key"], "")
+        pet_name = pet.get("name_en", pet["name"]) if lang == "en" else pet["name"]
         if has_pet(data, pet["key"]):
             if pet_eid:
                 builder.row(InlineKeyboardButton(
-                    text=pet["name"],
+                    text=pet_name,
                     callback_data=f'pet_info_{pet["key"]}',
                     icon_custom_emoji_id=pet_eid,
                     style="success"
                 ))
             else:
                 builder.row(InlineKeyboardButton(
-                    text=pet["name"],
+                    text=pet_name,
                     callback_data=f'pet_info_{pet["key"]}',
                     style="success"
                 ))
         elif pet_eid:
             builder.row(InlineKeyboardButton(
-                text=pet["name"],
+                text=pet_name,
                 callback_data=f'pet_info_{pet["key"]}',
                 icon_custom_emoji_id=pet_eid
             ))
         else:
             builder.row(InlineKeyboardButton(
-                text=pet["name"],
+                text=pet_name,
                 callback_data=f'pet_info_{pet["key"]}'
             ))
 
@@ -375,60 +413,63 @@ def pets_main_keyboard(data, page=0) -> InlineKeyboardMarkup:
     if nav_btns:
         builder.row(*nav_btns)
 
-    builder.row(_back_btn("back_to_menu", "Назад"))
-
+    builder.row(_back_btn("back_to_menu", t(lang, "btn_back")))
     return builder.as_markup()
 
-def pet_detail_text(data, pet_key):
+def pet_detail_text(data, pet_key, lang: str = "ru"):
+    from lang import t
     pet = PETS_BY_KEY.get(pet_key)
     if not pet:
-        return "<b>❌ Питомец не найден.</b>"
+        return f"<b>{t(lang, 'pet_not_found')}</b>"
     owned    = has_pet(data, pet_key)
     pet_eid  = _PET_EMOJI.get(pet_key, "")
     pet_icon = _tg(pet_eid, pet["emoji"]) if pet_eid else pet["emoji"]
+    pet_name = pet.get("name_en", pet["name"]) if lang == "en" else pet["name"]
+    pet_desc = pet.get("desc_en", pet["desc"]) if lang == "en" else pet["desc"]
+    pet_bonus= pet.get("bonus_en", pet["bonus"]) if lang == "en" else pet["bonus"]
+    pet_rar  = pet.get("rarity_en", pet["rarity"]) if lang == "en" else pet["rarity"]
     if owned:
-        status = f'{_tg(_E_OWNED, "✅")} <b>Питомец у тебя есть!</b>'
+        status = f'{_tg(_E_OWNED, "✅")} <b>{t(lang, "pet_owned")}</b>'
         diff   = _now_ts() - data.get("pet_last_income", {}).get(pet_key, 0)
         if diff >= PET_INCOME_INTERVAL:
-            income_line = f'{_tg(_E["alert"], "💡")} <b>Готов к выплате прямо сейчас!</b>'
+            income_line = f'{_tg(_E["alert"], "💡")} <b>{t(lang, "pet_ready")}</b>'
         else:
             rem = PET_INCOME_INTERVAL - diff
             h, m = rem // 3600, (rem % 3600) // 60
-            income_line = f'{_tg(_E["timer"], "⏱")} <b>Следующая выплата через: {h}ч {m}м</b>'
+            income_line = f'{_tg(_E["timer"], "⏱")} <b>{t(lang, "pet_next_payout")} {h}h {m}m</b>' if lang == "en" else f'{_tg(_E["timer"], "⏱")} <b>{t(lang, "pet_next_payout")} {h}ч {m}м</b>'
         timing_block = f'\n<blockquote>{income_line}</blockquote>'
     else:
-        status       = f'{_tg(_E["lock"], "🔒")} <b>Не куплен</b>'
+        status       = f'{_tg(_E["lock"], "🔒")} <b>{t(lang, "pet_not_owned")}</b>'
         timing_block = ""
     return (
         f'<blockquote>'
-        f'<b>{pet_icon} {pet["name"]}</b>\n'
-        f'<b>{pet["rarity"]}</b>'
+        f'<b>{pet_icon} {pet_name}</b>\n'
+        f'<b>{pet_rar}</b>'
         f'</blockquote>\n\n'
         f'<blockquote>'
-        f'{_tg(_E["arrow"], "➡️")} <b>Особенность:</b> {pet["bonus"]}\n\n'
-        f'{pet["desc"]}'
+        f'{_tg(_E["arrow"], "➡️")} <b>{t(lang, "pet_feature")}</b> {pet_bonus}\n\n'
+        f'{pet_desc}'
         f'</blockquote>\n\n'
         f'<blockquote>'
-        f'{_tg(_E["income"], "💰")} <b>Доход каждые 12 часов:</b>\n'
+        f'{_tg(_E["income"], "💰")} <b>{t(lang, "pet_income_label")}</b>\n'
         f'<b>{_fmt(pet["income_min"])} — {_fmt(pet["income_max"])} {_tg(_E["coin"], "💰")}</b>\n\n'
-        f'{_tg(_E["price"], "🏷️")} <b>Цена: {_fmt(pet["price"])} {_tg(_E["coin"], "💰")}</b>\n'
+        f'{_tg(_E["price"], "🏷️")} <b>{t(lang, "pet_price_label")} {_fmt(pet["price"])} {_tg(_E["coin"], "💰")}</b>\n'
         f'{status}'
         f'</blockquote>'
         f'{timing_block}'
     )
 
-def pet_detail_keyboard(data, pet_key, page=None) -> InlineKeyboardMarkup:
+def pet_detail_keyboard(data, pet_key, page=None, lang: str = "ru") -> InlineKeyboardMarkup:
+    from lang import t
     builder = InlineKeyboardBuilder()
-    # Если страница не передана, вычисляем её автоматически
     if page is None:
         page = _get_pet_page(pet_key)
-    
     if not has_pet(data, pet_key):
         builder.button(
-            text="Купить",
+            text=t(lang, "pets_btn_buy"),
             callback_data=f"pet_buy_{pet_key}",
             icon_custom_emoji_id=_E["coin"]
         )
         builder.adjust(1)
-    builder.row(_back_btn(f"pets_page_{page}", "Назад"))
+    builder.row(_back_btn(f"pets_page_{page}", t(lang, "btn_back")))
     return builder.as_markup()
