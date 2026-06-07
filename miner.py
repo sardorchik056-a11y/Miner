@@ -533,27 +533,64 @@ def duration_shop_text(data: dict, lang: str = "ru") -> str:
     )
 
 
-def duration_detail_text(data: dict, dur_key: str) -> str:
+def duration_detail_text(data: dict, dur_key: str, lang: str = "ru") -> str:
     d          = DURATIONS[dur_key]
+    dur_lbl    = _dur_label(d, lang)
     owned_durs = data.get("owned_durations", ["5min"])
+    if lang == "en":
+        if dur_key == data.get("mine_duration_key", "5min"):
+            status = "✅ Active"
+        elif dur_key in owned_durs:
+            status = "🔘 (not active)"
+        else:
+            status = "❌ Not purchased"
+        price_str = _fmt_num(d["cost"]) if d["cost"] else "Free"
+        return (
+            f'<tg-emoji emoji-id="5440621591387980068">🎟</tg-emoji> <b>Duration — {dur_lbl}</b>\n'
+            "━━━━━━━━━━━━━━━━━━━━\n\n"
+            f'<tg-emoji emoji-id="5278467510604160626">🎟</tg-emoji> <b>Balance: {_fmt_num(data["balance"])}{COIN}</b>\n\n'
+            f'<tg-emoji emoji-id="5382194935057372936">🎟</tg-emoji> <b>Session time: {dur_lbl}</b>\n'
+            f'<tg-emoji emoji-id="5330320040883411678">🎟</tg-emoji> <b>Price: {price_str}{COIN}</b>\n'
+            f'<tg-emoji emoji-id="5438496463044752972">🎟</tg-emoji> <b>Status: {status}</b>'
+        )
     if dur_key == data.get("mine_duration_key", "5min"):
         status = "✅ Активна"
     elif dur_key in owned_durs:
         status = "🔘(не активна)"
     else:
         status = "❌Не куплена"
+    price_str = _fmt_num(d["cost"]) if d["cost"] else "Бесплатно"
     return (
         f'<tg-emoji emoji-id="5440621591387980068">🎟</tg-emoji> <b>Длительность — {d["label"]}</b>\n'
         "━━━━━━━━━━━━━━━━━━━━\n\n"
         f'<tg-emoji emoji-id="5278467510604160626">🎟</tg-emoji> <b>Баланс: {_fmt_num(data["balance"])}{COIN}</b>\n\n'
         f'<tg-emoji emoji-id="5382194935057372936">🎟</tg-emoji> <b>Время сессии: {d["label"]}</b>\n'
-        f'<tg-emoji emoji-id="5330320040883411678">🎟</tg-emoji> <b>Цена: {_fmt_num(d["cost"]) if d["cost"] else "Бесплатно"}{COIN}</b>\n'
+        f'<tg-emoji emoji-id="5330320040883411678">🎟</tg-emoji> <b>Цена: {price_str}{COIN}</b>\n'
         f'<tg-emoji emoji-id="5438496463044752972">🎟</tg-emoji> <b>Статус: {status}</b>'
     )
 
 
-def sell_screen_text(data: dict) -> str:
+def sell_screen_text(data: dict, lang: str = "ru") -> str:
     has_ores = any(data["ores"].get(o["key"], 0) > 0 for o in ORES)
+    if lang == "en":
+        if not has_ores:
+            return (
+                f'<tg-emoji emoji-id="5429518319243775957">🎟</tg-emoji> <b>Sell</b>\n'
+                "━━━━━━━━━━━━━━━━━━━━\n\n"
+                '<tg-emoji emoji-id="5445221832074483553">🎟</tg-emoji> <b>Inventory is empty — nothing to sell!</b>\n\n'
+                "<b>Start mining to collect ores.</b>"
+            )
+        lines = [f'<tg-emoji emoji-id="5429518319243775957">🎟</tg-emoji> <b>Sell</b>\n━━━━━━━━━━━━━━━━━━━━\n\n<tg-emoji emoji-id="5305699699204837855">🎟</tg-emoji> <b>Buyer prices:</b>\n']
+        total_value = 0
+        for ore in ORES:
+            qty = data["ores"].get(ore["key"], 0)
+            if qty > 0:
+                worth = qty * ore["price"]
+                total_value += worth
+                lines.append(f"<blockquote><b>{_ore_name(ore, lang)}: {qty} (≈ {_fmt_num(worth)} {COIN})</b></blockquote>")
+        lines.append(f'\n<tg-emoji emoji-id="5278467510604160626">🎟</tg-emoji> <b>Balance: {_fmt_num(data["balance"])}</b>')
+        lines.append(f'\n<b>Total to sell: {_fmt_num(total_value)} {COIN}</b>')
+        return "\n".join(lines)
     if not has_ores:
         return (
             f'<tg-emoji emoji-id="5429518319243775957">🎟</tg-emoji> <b>Продажа</b>\n'
@@ -586,52 +623,73 @@ def _back_btn(callback: str, label: str = "Назад") -> InlineKeyboardButton:
     return InlineKeyboardButton(text=label, callback_data=callback, icon_custom_emoji_id=EMOJI_BACK)
 
 
-def mine_keyboard(data: dict) -> InlineKeyboardMarkup:
+def mine_keyboard(data: dict, lang: str = "ru") -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     is_running  = data["mine_start"] is not None and not data["mine_collected"]
     is_finished = False
     if is_running:
         prog        = calc_mine_progress(data)
         is_finished = prog["finished"]
+    if lang == "en":
+        _start    = "Start"
+        _collect  = "Collect loot"
+        _refresh  = "Refresh"
+        _partial  = "Collect"
+        _sell     = "Sell"
+        _inv      = "Inventory"
+        _workshop = "Workshop"
+        _duration = "Duration"
+        _back     = "Back"
+    else:
+        _start    = "Запустить"
+        _collect  = "Забрать добычу"
+        _refresh  = "Обновить"
+        _partial  = "Забрать"
+        _sell     = "Продать"
+        _inv      = "Инвентарь"
+        _workshop = "Мастерская"
+        _duration = "Длительность"
+        _back     = "Назад"
     if not is_running:
-        builder.row(_prem_btn(EMOJI_BTN_START, "Запустить", "mine_start"))
+        builder.row(_prem_btn(EMOJI_BTN_START, _start, "mine_start"))
     elif is_finished:
-        builder.row(_prem_btn(EMOJI_BTN_COLLECT, "Забрать добычу", "mine_collect"))
+        builder.row(_prem_btn(EMOJI_BTN_COLLECT, _collect, "mine_collect"))
     else:
         builder.row(
-            _prem_btn(EMOJI_BTN_REFRESH, "Обновить", "mine_refresh"),
-            _prem_btn(EMOJI_BTN_COLLECT_PART, "Забрать", "mine_collect"),
+            _prem_btn(EMOJI_BTN_REFRESH, _refresh, "mine_refresh"),
+            _prem_btn(EMOJI_BTN_COLLECT_PART, _partial, "mine_collect"),
         )
     has_ores = any(data["ores"].get(o["key"], 0) > 0 for o in ORES)
     if has_ores:
         builder.row(
-            _prem_btn(EMOJI_BTN_SELL, "Продать",   "mine_sell_screen"),
-            _prem_btn(EMOJI_BTN_INV,  "Инвентарь", "mine_inventory"),
+            _prem_btn(EMOJI_BTN_SELL, _sell,  "mine_sell_screen"),
+            _prem_btn(EMOJI_BTN_INV,  _inv,   "mine_inventory"),
         )
     else:
-        builder.row(_prem_btn(EMOJI_BTN_INV, "Инвентарь", "mine_inventory"))
+        builder.row(_prem_btn(EMOJI_BTN_INV, _inv, "mine_inventory"))
     builder.row(
-        _prem_btn(EMOJI_BTN_WORKSHOP, "Мастерская",   "mine_workshop_0"),
-        _prem_btn(EMOJI_BTN_DURATION, "Длительность", "mine_duration_shop"),
+        _prem_btn(EMOJI_BTN_WORKSHOP, _workshop, "mine_workshop_0"),
+        _prem_btn(EMOJI_BTN_DURATION, _duration, "mine_duration_shop"),
     )
-    builder.row(_back_btn("back_to_menu", "Назад"))
+    builder.row(_back_btn("back_to_menu", _back))
     return builder.as_markup()
 
 
-def inventory_keyboard() -> InlineKeyboardMarkup:
+def inventory_keyboard(lang: str = "ru") -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    builder.row(_back_btn("mine", "Назад"))
+    builder.row(_back_btn("mine", "Back" if lang == "en" else "Назад"))
     return builder.as_markup()
 
 
-def sell_keyboard() -> InlineKeyboardMarkup:
+def sell_keyboard(lang: str = "ru") -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    builder.row(_prem_btn(EMOJI_BTN_SELL_ALL, "Продать всё", "mine_sell_all"))
-    builder.row(_back_btn("mine", "Назад"))
+    label = "Sell all" if lang == "en" else "Продать всё"
+    builder.row(_prem_btn(EMOJI_BTN_SELL_ALL, label, "mine_sell_all"))
+    builder.row(_back_btn("mine", "Back" if lang == "en" else "Назад"))
     return builder.as_markup()
 
 
-def workshop_keyboard(data: dict, page: int = 0) -> InlineKeyboardMarkup:
+def workshop_keyboard(data: dict, page: int = 0, lang: str = "ru") -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     current = data.get("pickaxe", "wood_1")
     owned   = data.get("owned_pickaxes", ["wood_1"])
@@ -658,64 +716,85 @@ def workshop_keyboard(data: dict, page: int = 0) -> InlineKeyboardMarkup:
         nav_row.append(_prem_btn(EMOJI_BTN_PAGE_NEXT, f"{page + 2}", f"mine_workshop_{page + 1}"))
     if nav_row:
         builder.row(*nav_row)
-    builder.row(_back_btn("mine", "Назад"))
+    builder.row(_back_btn("mine", "Back" if lang == "en" else "Назад"))
     return builder.as_markup()
 
 
-def pickaxe_detail_keyboard(data: dict, pick_key: str, page: int = -1) -> InlineKeyboardMarkup:
+def pickaxe_detail_keyboard(data: dict, pick_key: str, page: int = -1, lang: str = "ru") -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     p     = PICKAXES[pick_key]
     owned = data.get("owned_pickaxes", ["wood_1"])
     if page < 0:
         page = get_pickaxe_page(pick_key)
+    if lang == "en":
+        _already_active = "Already active"
+        _select         = "Select"
+        _coins_unavail  = "Coins unavailable"
+        _free           = "Free"
+        _back_lbl       = "Back"
+    else:
+        _already_active = "Уже активна"
+        _select         = "Выбрать"
+        _coins_unavail  = "Монеты недоступны"
+        _free           = "Бесплатно"
+        _back_lbl       = "Назад"
     if pick_key == data.get("pickaxe", "wood_1"):
-        builder.row(_prem_btn(EMOJI_BTN_ACTIVE, "Уже активна", "noop"))
+        builder.row(_prem_btn(EMOJI_BTN_ACTIVE, _already_active, "noop"))
     elif pick_key in owned:
-        builder.row(_prem_btn(EMOJI_BTN_SELECT, "Выбрать", f"pick_select_{pick_key}"))
+        builder.row(_prem_btn(EMOJI_BTN_SELECT, _select, f"pick_select_{pick_key}"))
     elif p["currency"] == "stars":
-        builder.row(_prem_btn(EMOJI_BTN_NO_COINS, "Монеты недоступны", "noop"))
+        builder.row(_prem_btn(EMOJI_BTN_NO_COINS, _coins_unavail, "noop"))
         builder.row(_prem_btn(EMOJI_BTN_BUY_STARS, f"{p['cost_stars']:,} ", f"pick_buy_stars_{pick_key}"))
     elif p["cost"] == 0:
-        builder.row(_prem_btn(EMOJI_BTN_FREE, "Бесплатно", f"pick_buy_{pick_key}"))
-        builder.row(_prem_btn(EMOJI_BTN_FREE, "Бесплатно", f"pick_buy_stars_{pick_key}"))
+        builder.row(_prem_btn(EMOJI_BTN_FREE, _free, f"pick_buy_{pick_key}"))
+        builder.row(_prem_btn(EMOJI_BTN_FREE, _free, f"pick_buy_stars_{pick_key}"))
     else:
         cost_stars = p.get("cost_stars", 0)
         builder.row(_prem_btn(EMOJI_BTN_BUY_COINS, f"{_fmt_num(p['cost'])} ", f"pick_buy_{pick_key}"))
         builder.row(_prem_btn(EMOJI_BTN_BUY_STARS, f"{cost_stars:,} ", f"pick_buy_stars_{pick_key}"))
-    builder.row(_back_btn(f"mine_workshop_{page}", " Назад"))
+    builder.row(_back_btn(f"mine_workshop_{page}", f" {_back_lbl}"))
     return builder.as_markup()
 
 
-def duration_shop_keyboard(data: dict) -> InlineKeyboardMarkup:
+def duration_shop_keyboard(data: dict, lang: str = "ru") -> InlineKeyboardMarkup:
     builder    = InlineKeyboardBuilder()
     current    = data.get("mine_duration_key", "5min")
     owned_durs = data.get("owned_durations", ["5min"])
     buttons    = []
     for key in DURATIONS_ORDER:
-        d = DURATIONS[key]
+        d     = DURATIONS[key]
+        label = _dur_label(d, lang)
         if key == current:
-            buttons.append(InlineKeyboardButton(text=d["label"], callback_data=f"dur_info_{key}", icon_custom_emoji_id=EMOJI_SELECTED))
+            buttons.append(InlineKeyboardButton(text=label, callback_data=f"dur_info_{key}", icon_custom_emoji_id=EMOJI_SELECTED))
         elif key in owned_durs:
-            buttons.append(InlineKeyboardButton(text=d["label"], callback_data=f"dur_info_{key}"))
+            buttons.append(InlineKeyboardButton(text=label, callback_data=f"dur_info_{key}"))
         else:
-            buttons.append(InlineKeyboardButton(text=d["label"], callback_data=f"dur_info_{key}", icon_custom_emoji_id=EMOJI_NOT_BOUGHT))
+            buttons.append(InlineKeyboardButton(text=label, callback_data=f"dur_info_{key}", icon_custom_emoji_id=EMOJI_NOT_BOUGHT))
     builder.add(*buttons)
     builder.adjust(3)
-    builder.row(_back_btn("mine", "Назад"))
+    builder.row(_back_btn("mine", "Back" if lang == "en" else "Назад"))
     return builder.as_markup()
 
 
-def duration_detail_keyboard(data: dict, dur_key: str) -> InlineKeyboardMarkup:
+def duration_detail_keyboard(data: dict, dur_key: str, lang: str = "ru") -> InlineKeyboardMarkup:
     builder    = InlineKeyboardBuilder()
     d          = DURATIONS[dur_key]
     owned_durs = data.get("owned_durations", ["5min"])
+    if lang == "en":
+        _already_active = "Already active"
+        _select         = "Select"
+        _back_lbl       = "Back"
+    else:
+        _already_active = "Уже активна"
+        _select         = "Выбрать"
+        _back_lbl       = "Назад"
     if dur_key == data.get("mine_duration_key", "5min"):
-        builder.row(_prem_btn(EMOJI_BTN_ACTIVE, "Уже активна", "noop"))
+        builder.row(_prem_btn(EMOJI_BTN_ACTIVE, _already_active, "noop"))
     elif dur_key in owned_durs:
-        builder.row(_prem_btn(EMOJI_BTN_SELECT, "Выбрать", f"dur_select_{dur_key}"))
+        builder.row(_prem_btn(EMOJI_BTN_SELECT, _select, f"dur_select_{dur_key}"))
     else:
         builder.row(_prem_btn(EMOJI_BTN_DUR_BUY, f"{_fmt_num(d['cost'])} ", f"dur_buy_{dur_key}"))
-    builder.row(_back_btn("mine_duration_shop", "Назад"))
+    builder.row(_back_btn("mine_duration_shop", _back_lbl))
     return builder.as_markup()
 
 
@@ -723,7 +802,7 @@ def duration_detail_keyboard(data: dict, dur_key: str) -> InlineKeyboardMarkup:
 #  ЛОГИКА
 # ============================================================
 
-def sell_all_ores(data: dict) -> tuple:
+def sell_all_ores(data: dict, lang: str = "ru") -> tuple:
     total = 0
     lines = []
     for ore in ORES:
@@ -731,83 +810,118 @@ def sell_all_ores(data: dict) -> tuple:
         if qty > 0:
             earned = qty * ore["price"]
             total += earned
-            lines.append(f"<blockquote><b>{ore['name']}: {qty} (≈ {_fmt_num(earned)} {COIN})</b></blockquote>")
+            lines.append(f"<blockquote><b>{_ore_name(ore, lang)}: {qty} (≈ {_fmt_num(earned)} {COIN})</b></blockquote>")
             data["ores"][ore["key"]] = 0
     data["balance"] = data.get("balance", 0) + total
-    report = "\n".join(lines) if lines else "  Нечего продавать"
+    empty_msg = "Nothing to sell" if lang == "en" else "Нечего продавать"
+    report = "\n".join(lines) if lines else f"  {empty_msg}"
     return total, report
 
 
-def buy_pickaxe(data: dict, pick_key: str) -> tuple:
+def buy_pickaxe(data: dict, pick_key: str, lang: str = "ru") -> tuple:
     if pick_key not in PICKAXES:
-        return False, "❌ Неизвестная кирка."
+        msg = "❌ Unknown pickaxe." if lang == "en" else "❌ Неизвестная кирка."
+        return False, msg
     p = PICKAXES[pick_key]
     if p["currency"] == "stars":
-        return False, "❌ Эта кирка покупается только за звёзды Telegram!"
+        msg = "❌ This pickaxe is only available for Telegram Stars!" if lang == "en" else "❌ Эта кирка покупается только за звёзды Telegram!"
+        return False, msg
     owned = data.setdefault("owned_pickaxes", ["wood_1"])
     if pick_key in owned:
-        return False, "У тебя уже есть эта кирка!"
+        msg = "You already own this pickaxe!" if lang == "en" else "У тебя уже есть эта кирка!"
+        return False, msg
     if p["cost"] == 0:
         owned.append(pick_key)
-        return True, f"✅ Получена {p['name']} (бесплатно)!"
+        msg = f"✅ Got {p['name']} (free)!" if lang == "en" else f"✅ Получена {p['name']} (бесплатно)!"
+        return True, msg
     if data["balance"] < p["cost"]:
-        return False, f"❌ Недостаточно монет! Нужно: {_fmt_num(p['cost'])} {COIN}"
+        msg = (f"❌ Not enough coins! Need: {_fmt_num(p['cost'])} {COIN}" if lang == "en"
+               else f"❌ Недостаточно монет! Нужно: {_fmt_num(p['cost'])} {COIN}")
+        return False, msg
     data["balance"] -= p["cost"]
     owned.append(pick_key)
-    return True, f"✅ Куплена {p['name']}! Потрачено: {_fmt_num(p['cost'])} {COIN}"
+    msg = (f"✅ Bought {p['name']}! Spent: {_fmt_num(p['cost'])} {COIN}" if lang == "en"
+           else f"✅ Куплена {p['name']}! Потрачено: {_fmt_num(p['cost'])} {COIN}")
+    return True, msg
 
 
-def grant_premium_pickaxe(data: dict, pick_key: str) -> tuple:
+def grant_premium_pickaxe(data: dict, pick_key: str, lang: str = "ru") -> tuple:
     if pick_key not in PICKAXES:
-        return False, "❌ Неизвестная кирка."
+        msg = "❌ Unknown pickaxe." if lang == "en" else "❌ Неизвестная кирка."
+        return False, msg
     p     = PICKAXES[pick_key]
     owned = data.setdefault("owned_pickaxes", ["wood_1"])
     if pick_key in owned:
-        return False, "У тебя уже есть эта кирка!"
+        msg = "You already own this pickaxe!" if lang == "en" else "У тебя уже есть эта кирка!"
+        return False, msg
     owned.append(pick_key)
     stars = p.get("cost_stars", 0)
-    return True, (
-        f"⭐ <b>Спасибо за поддержку!</b>\n"
-        f"Получена кирка <b>{p['name']}</b> за {stars:,} {STAR} звёзд\n"
-        f"({p['dig_min']:,}–{p['dig_max']:,} ударов за кампанию)!"
-    )
+    if lang == "en":
+        msg = (
+            f"⭐ <b>Thank you for your support!</b>\n"
+            f"Received pickaxe <b>{p['name']}</b> for {stars:,} {STAR} stars\n"
+            f"({p['dig_min']:,}–{p['dig_max']:,} hits per campaign)!"
+        )
+    else:
+        msg = (
+            f"⭐ <b>Спасибо за поддержку!</b>\n"
+            f"Получена кирка <b>{p['name']}</b> за {stars:,} {STAR} звёзд\n"
+            f"({p['dig_min']:,}–{p['dig_max']:,} ударов за кампанию)!"
+        )
+    return True, msg
 
 
-def select_pickaxe(data: dict, pick_key: str) -> tuple:
+def select_pickaxe(data: dict, pick_key: str, lang: str = "ru") -> tuple:
     owned = data.get("owned_pickaxes", ["wood_1"])
     if pick_key not in owned:
-        return False, "❌ Сначала купи эту кирку!"
+        msg = "❌ Buy this pickaxe first!" if lang == "en" else "❌ Сначала купи эту кирку!"
+        return False, msg
     if data["mine_start"] is not None and not data["mine_collected"]:
-        return False, "❌ Нельзя менять кирку во время добычи!"
+        msg = "❌ Cannot change pickaxe during mining!" if lang == "en" else "❌ Нельзя менять кирку во время добычи!"
+        return False, msg
     data["pickaxe"] = pick_key
-    return True, f"✅ Выбрана {PICKAXES[pick_key]['name']}"
+    msg = (f"✅ Selected {PICKAXES[pick_key]['name']}" if lang == "en"
+           else f"✅ Выбрана {PICKAXES[pick_key]['name']}")
+    return True, msg
 
 
-def buy_duration(data: dict, dur_key: str) -> tuple:
+def buy_duration(data: dict, dur_key: str, lang: str = "ru") -> tuple:
     if dur_key not in DURATIONS:
-        return False, "❌ Неизвестная длительность."
+        msg = "❌ Unknown duration." if lang == "en" else "❌ Неизвестная длительность."
+        return False, msg
     d     = DURATIONS[dur_key]
     owned = data.setdefault("owned_durations", ["5min"])
     if dur_key in owned:
-        return False, "Уже куплено!"
+        msg = "Already purchased!" if lang == "en" else "Уже куплено!"
+        return False, msg
     if data["balance"] < d["cost"]:
-        return False, f"❌ Недостаточно монет! Нужно: {_fmt_num(d['cost'])} {COIN}"
+        msg = (f"❌ Not enough coins! Need: {_fmt_num(d['cost'])} {COIN}" if lang == "en"
+               else f"❌ Недостаточно монет! Нужно: {_fmt_num(d['cost'])} {COIN}")
+        return False, msg
     data["balance"] -= d["cost"]
     owned.append(dur_key)
-    return True, f"✅ Открыто: {d['label']}! Потрачено: {_fmt_num(d['cost'])} {COIN}"
+    dur_lbl = _dur_label(d, lang)
+    msg = (f"✅ Unlocked: {dur_lbl}! Spent: {_fmt_num(d['cost'])} {COIN}" if lang == "en"
+           else f"✅ Открыто: {d['label']}! Потрачено: {_fmt_num(d['cost'])} {COIN}")
+    return True, msg
 
 
-def select_duration(data: dict, dur_key: str) -> tuple:
+def select_duration(data: dict, dur_key: str, lang: str = "ru") -> tuple:
     owned = data.get("owned_durations", ["5min"])
     if dur_key not in owned and DURATIONS.get(dur_key, {}).get("cost", 1) != 0:
-        return False, "❌ Сначала купи эту длительность!"
+        msg = "❌ Buy this duration first!" if lang == "en" else "❌ Сначала купи эту длительность!"
+        return False, msg
     if data["mine_start"] is not None and not data["mine_collected"]:
-        return False, "❌ Нельзя менять длительность во время добычи!"
+        msg = "❌ Cannot change duration during mining!" if lang == "en" else "❌ Нельзя менять длительность во время добычи!"
+        return False, msg
     data["mine_duration_key"] = dur_key
-    return True, f"✅ Выбрана длительность: {DURATIONS[dur_key]['label']}"
+    dur_lbl = _dur_label(DURATIONS[dur_key], lang)
+    msg = (f"✅ Duration selected: {dur_lbl}" if lang == "en"
+           else f"✅ Выбрана длительность: {DURATIONS[dur_key]['label']}")
+    return True, msg
 
 
-def collect_mine(data: dict) -> tuple:
+def collect_mine(data: dict, lang: str = "ru") -> tuple:
     prog          = calc_mine_progress(data)
     new_campaigns = prog["new_campaigns"]
     if new_campaigns == 0:
@@ -831,28 +945,40 @@ def collect_mine(data: dict) -> tuple:
         for key, qty in results.items():
             ore   = ORES_BY_KEY[key]
             worth = qty * ore["price"]
-            loot_lines.append(f"<blockquote><b>{ore['name']}: {qty} (≈ {_fmt_num(worth)} {COIN})</b></blockquote>")
+            ore_name = _ore_name(ore, lang)
+            loot_lines.append(f"<blockquote><b>{ore_name}: {qty} (≈ {_fmt_num(worth)} {COIN})</b></blockquote>")
         loot = "\n".join(loot_lines)
     else:
-        loot = "<b>Ничего не нашли 😔</b>"
+        loot = "<b>Nothing found 😔</b>" if lang == "en" else "<b>Ничего не нашли 😔</b>"
     bar = progress_bar(prog["percent"])
     booster_line = ""
     active = get_active_booster_info(data)
     if active:
         mult_label = _multiplier_label(active["multiplier"])
-        booster_line = f'<tg-emoji emoji-id="5438571934210082705">⚡</tg-emoji> <b>Ускоритель {mult_label} активен</b>\n'
+        booster_label = f"Booster {mult_label} active" if lang == "en" else f"Ускоритель {mult_label} активен"
+        booster_line = f'<tg-emoji emoji-id="5438571934210082705">⚡</tg-emoji> <b>{booster_label}</b>\n'
+    if lang == "en":
+        _result_title = "Mining result"
+        _campaigns_lbl = "Campaigns"
+        _session_done = "<b>✅ Session complete!</b>"
+        _still_running = f"<b>⏳ Mine is running. Time left: {fmt_time(prog['time_left'], lang)}</b>"
+    else:
+        _result_title = "Результат добычи"
+        _campaigns_lbl = "Кампаний"
+        _session_done = "<b>✅ Сессия завершена!</b>"
+        _still_running = f"<b>⏳ Шахта работает. Осталось: {fmt_time(prog['time_left'], lang)}</b>"
     result_text = (
-        f'<tg-emoji emoji-id="5197371802136892976">🎟</tg-emoji> <b>Результат добычи</b>\n'
+        f'<tg-emoji emoji-id="5197371802136892976">🎟</tg-emoji> <b>{_result_title}</b>\n'
         f"━━━━━━━━━━━━━━━━━━━━\n"
-        f'<tg-emoji emoji-id="5375338737028841420">🎟</tg-emoji> <b>Кампаний: {new_campaigns}</b>\n'
+        f'<tg-emoji emoji-id="5375338737028841420">🎟</tg-emoji> <b>{_campaigns_lbl}: {new_campaigns}</b>\n'
         f'<tg-emoji emoji-id="5231200819986047254">🎟</tg-emoji> {bar}\n'
         f"{booster_line}\n"
         f"{loot}\n\n"
     )
     if prog["finished"]:
-        result_text += "<b>✅ Сессия завершена!</b>"
+        result_text += _session_done
     else:
-        result_text += f"<b>⏳ Шахта работает. Осталось: {fmt_time(prog['time_left'])}</b>"
+        result_text += _still_running
     return prog, result_text
 
 
@@ -876,18 +1002,22 @@ def init_mine_data() -> dict:
     }
 
 
-def shop_pickaxes_text() -> str:
-    lines = [f"🛒 <b>МАГАЗИН — КИРКИ</b>\n━━━━━━━━━━━━━━━━━━━━\n"]
+def shop_pickaxes_text(lang: str = "ru") -> str:
+    title = "SHOP — PICKAXES" if lang == "en" else "МАГАЗИН — КИРКИ"
+    hits  = "Hits" if lang == "en" else "Ударов"
+    price = "Price" if lang == "en" else "Цена"
+    per   = "per campaign" if lang == "en" else "за кампанию"
+    lines = [f"🛒 <b>{title}</b>\n━━━━━━━━━━━━━━━━━━━━\n"]
     for key in PICKAXES_ORDER:
         p    = PICKAXES[key]
-        cost = _fmt_cost(key)
+        cost = _fmt_cost(key, lang)
         lines.append(
             f"<b>{p['name']}</b>\n"
-            f"  ⛏ Ударов: <b>{p['dig_min']:,}–{p['dig_max']:,}</b> за кампанию\n"
-            f"  💵 Цена: <b>{cost}</b>\n"
+            f"  ⛏ {hits}: <b>{p['dig_min']:,}–{p['dig_max']:,}</b> {per}\n"
+            f"  💵 {price}: <b>{cost}</b>\n"
         )
     return "\n".join(lines)
 
 
-def shop_pickaxes_keyboard(data: dict, page: int = 0) -> InlineKeyboardMarkup:
-    return workshop_keyboard(data, page)
+def shop_pickaxes_keyboard(data: dict, page: int = 0, lang: str = "ru") -> InlineKeyboardMarkup:
+    return workshop_keyboard(data, page, lang)
