@@ -55,6 +55,8 @@ from hunt import (
     BOSSES_BY_KEY as _BOSSES_BY_KEY,
 )
 
+from stats import init_stats_db, track_user, stats_text, stats_keyboard
+
 from leaders import (
     init_leaders_db,
     record_boss_hit,
@@ -454,7 +456,8 @@ async def cmd_getstatus(message: Message):
 
 @dp.message(Command("start", "menu"))
 async def send_welcome(message: Message):
-    get_or_create_user(message.from_user)
+    u = get_or_create_user(message.from_user)
+    track_user(message.from_user.id)
     await message.answer(
         WELCOME_TEXT,
         parse_mode="HTML",
@@ -475,6 +478,7 @@ async def handle_callback(call: CallbackQuery):
     lock = await _get_user_lock(user.id)
     async with lock:
         data = get_or_create_user(user)
+        track_user(user.id)
 
         async def edit(text, kb, md="HTML"):
             try:
@@ -1155,9 +1159,14 @@ async def handle_callback(call: CallbackQuery):
                     )
                     return
 
+        # ===== СТАТИСТИКА =====
+        if cd == "stats":
+            await edit(stats_text(), stats_keyboard())
+            await call.answer()
+            return
+
         # ===== ЗАГЛУШКИ (в разработке) =====
         responses = {
-            "stats":    '<tg-emoji emoji-id="5231200819986047254">📊</tg-emoji> <b>СТАТИСТИКА</b>\n\n<blockquote><b>📝 Раздел в разработке...</b></blockquote>',
             "exchange": '<tg-emoji emoji-id="5402186569006210455">💱</tg-emoji> <b>БИРЖА</b>\n\n<blockquote><b>📝 Раздел в разработке...</b></blockquote>',
             "settings": '<tg-emoji emoji-id="5341715473882955310">⚙️</tg-emoji> <b>НАСТРОЙКИ</b>\n\n<blockquote><b>📝 Раздел в разработке...</b></blockquote>',
         }
@@ -1590,6 +1599,7 @@ async def main():
     init_db()          # создаёт таблицу при первом запуске
     init_hunt_db()     # создаёт таблицу боссов
     init_leaders_db()  # создаёт таблицу статистики боссов для лидерборда
+    init_stats_db()    # создаёт таблицу онлайн-статистики
 
     # ── Миграция: добавляем поля питомцев для старых пользователей ──
     from database import get_all_users, save_user as _save_mig
