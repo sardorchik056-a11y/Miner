@@ -1,882 +1,1693 @@
-# ============================================================
-#  miner.py  —  Модуль шахты для TGStellar бота
-#  Переписан для aiogram 3.x
-# ============================================================
-
-import random
-from datetime import datetime, timezone
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+import asyncio
+import logging
+from aiogram import Bot, Dispatcher, F
+from aiogram.types import (
+    Message, CallbackQuery,
+    InlineKeyboardMarkup, InlineKeyboardButton,
+    LabeledPrice, PreCheckoutQuery,
+)
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-
-# ============================================================
-#  PREMIUM EMOJI IDs
-# ============================================================
-
-EMOJI_NOT_BOUGHT  = "5240241223632954241"
-EMOJI_SELECTED    = "5206607081334906820"
-EMOJI_BACK        = "6039539366177541657"
-
-EMOJI_COIN        = "5199552030615558774"
-EMOJI_STAR        = "5267500801240092311"
-
-EMOJI_BTN_START        = "5906891238270834298"
-EMOJI_BTN_COLLECT      = "5310278924616356636"
-EMOJI_BTN_COLLECT_PART = "5310278924616356636"
-EMOJI_BTN_REFRESH      = "5386367538735104399"
-EMOJI_BTN_SELL         = "5429518319243775957"
-EMOJI_BTN_INV          = "5445221832074483553"
-EMOJI_BTN_WORKSHOP     = "5278702045883292456"
-EMOJI_BTN_DURATION     = "5440621591387980068"
-
-EMOJI_BTN_BUY_COINS  = "5199552030615558774"
-EMOJI_BTN_BUY_STARS  = "5267500801240092311"
-EMOJI_BTN_FREE       = "5199552030615558774"
-EMOJI_BTN_SELECT     = "5397916757333654639"
-EMOJI_BTN_ACTIVE     = "5206607081334906820"
-EMOJI_BTN_NO_COINS   = "5240241223632954241"
-
-EMOJI_BTN_DUR_BUY    = "5199552030615558774"
-EMOJI_BTN_SELL_ALL   = "5429518319243775957"
-
-EMOJI_BTN_PAGE_PREV  = "5255703720078879038"
-EMOJI_BTN_PAGE_NEXT  = "5253767677670862169"
-
-
-def _emoji_btn(emoji_id: str, fallback: str) -> str:
-    return f'<tg-emoji emoji-id="{emoji_id}">{fallback}</tg-emoji>'
-
-
-COIN = f'<tg-emoji emoji-id="{EMOJI_COIN}">🪙</tg-emoji>'
-STAR = f'<tg-emoji emoji-id="5267500801240092311">⭐</tg-emoji>'
-
-MAX_LEVEL = 150
-
-# ---------- РУДЫ ----------
-ORES = [
-    {"name": "🪨 Камень",  "name_en": "🪨 Stone",    "key": "stone",    "chance": 75.00, "weight": 500, "price": 50},
-    {"name": '<tg-emoji emoji-id="5773638078321135255">🖤</tg-emoji> Уголь',   "name_en": '<tg-emoji emoji-id="5773638078321135255">🖤</tg-emoji> Coal',    "key": "coal",     "chance": 30.00, "weight": 200, "price": 85},
-    {"name": '<tg-emoji emoji-id="5339390195768774311">🟤</tg-emoji> Медь',    "name_en": '<tg-emoji emoji-id="5339390195768774311">🟤</tg-emoji> Copper',  "key": "copper",   "chance": 20.00, "weight": 120, "price": 125},
-    {"name": '<tg-emoji emoji-id="5206502799528976649">⚙️</tg-emoji> Железо',  "name_en": '<tg-emoji emoji-id="5206502799528976649">⚙️</tg-emoji> Iron',    "key": "iron",     "chance":  8.00, "weight":  60, "price": 280},
-    {"name": '<tg-emoji emoji-id="5445256208992718797">🌕</tg-emoji> Золото',  "name_en": '<tg-emoji emoji-id="5445256208992718797">🌕</tg-emoji> Gold',    "key": "gold",     "chance":  3.00, "weight":  20, "price": 800},
-    {"name": '<tg-emoji emoji-id="5201914481671682382">💎</tg-emoji> Алмаз',   "name_en": '<tg-emoji emoji-id="5201914481671682382">💎</tg-emoji> Diamond',  "key": "diamond",  "chance":  1.00, "weight":   8, "price": 5000},
-    {"name": '<tg-emoji emoji-id="5217620305194800391">🔮</tg-emoji> Мифрил',  "name_en": '<tg-emoji emoji-id="5217620305194800391">🔮</tg-emoji> Mithril',  "key": "mithril",  "chance":  0.10, "weight":   3, "price": 45000},
-    {"name": '<tg-emoji emoji-id="5447225730670813734">☢️</tg-emoji> Уран',    "name_en": '<tg-emoji emoji-id="5447225730670813734">☢️</tg-emoji> Uranium',  "key": "uranium",  "chance":  0.04, "weight":   2, "price": 150000},
-    {"name": '<tg-emoji emoji-id="5314686299796427450">💜</tg-emoji> Аметист', "name_en": '<tg-emoji emoji-id="5314686299796427450">💜</tg-emoji> Amethyst', "key": "amethyst", "chance":  0.01, "weight":   1, "price": 500000},
-]
-ORES_BY_KEY = {o["key"]: o for o in ORES}
-
-# ============================================================
-#  КИРКИ
-# ============================================================
-
-PICKAXES = {
-    "wood_1": {"name": "Wood-1lvl", "dig_min": 1, "dig_max": 2, "cost": 0, "currency": "coins", "required_level": 1, "tier": "wood", "cost_stars": 0},
-    "wood_2": {"name": "Wood-2lvl", "dig_min": 2, "dig_max": 4, "cost": 1_500, "currency": "coins", "required_level": 1, "tier": "wood", "cost_stars": 10},
-    "wood_3": {"name": "Wood-3lvl", "dig_min": 2, "dig_max": 5, "cost": 2_500, "currency": "coins", "required_level": 1, "tier": "wood", "cost_stars": 15},
-    "wood_4": {"name": "Wood-4lvl", "dig_min": 3, "dig_max": 5, "cost": 4_000, "currency": "coins", "required_level": 1, "tier": "wood", "cost_stars": 20},
-    "wood_5": {"name": "Wood-5lvl", "dig_min": 3, "dig_max": 6, "cost": 6_000, "currency": "coins", "required_level": 1, "tier": "wood", "cost_stars": 25},
-    "rock_1": {"name": "Rock-1lvl", "dig_min": 3, "dig_max": 7, "cost": 10_000, "currency": "coins", "required_level": 1, "tier": "rock", "cost_stars": 35},
-    "rock_2": {"name": "Rock-2lvl", "dig_min": 4, "dig_max": 8, "cost": 16_000, "currency": "coins", "required_level": 1, "tier": "rock", "cost_stars": 45},
-    "rock_3": {"name": "Rock-3lvl", "dig_min": 5, "dig_max": 9, "cost": 25_000, "currency": "coins", "required_level": 1, "tier": "rock", "cost_stars": 60},
-    "rock_4": {"name": "Rock-4lvl", "dig_min": 5, "dig_max": 11, "cost": 40_000, "currency": "coins", "required_level": 1, "tier": "rock", "cost_stars": 80},
-    "rock_5": {"name": "Rock-5lvl", "dig_min": 6, "dig_max": 12, "cost": 64_000, "currency": "coins", "required_level": 1, "tier": "rock", "cost_stars": 100},
-    "iron_1": {"name": "Iron-1lvl", "dig_min": 7, "dig_max": 14, "cost": 100_000, "currency": "coins", "required_level": 1, "tier": "iron", "cost_stars": 150},
-    "iron_2": {"name": "Iron-2lvl", "dig_min": 8, "dig_max": 16, "cost": 160_000, "currency": "coins", "required_level": 1, "tier": "iron", "cost_stars": 200},
-    "iron_3": {"name": "Iron-3lvl", "dig_min": 9, "dig_max": 19, "cost": 260_000, "currency": "coins", "required_level": 1, "tier": "iron", "cost_stars": 250},
-    "iron_4": {"name": "Iron-4lvl", "dig_min": 11, "dig_max": 21, "cost": 420_000, "currency": "coins", "required_level": 1, "tier": "iron", "cost_stars": 300},
-    "iron_5": {"name": "Iron-5lvl", "dig_min": 12, "dig_max": 25, "cost": 680_000, "currency": "coins", "required_level": 1, "tier": "iron", "cost_stars": 350},
-    "gold_1": {"name": "Gold-1lvl", "dig_min": 14, "dig_max": 28, "cost": 1_100_000, "currency": "coins", "required_level": 1, "tier": "gold", "cost_stars": 400},
-    "gold_2": {"name": "Gold-2lvl", "dig_min": 16, "dig_max": 33, "cost": 1_700_000, "currency": "coins", "required_level": 1, "tier": "gold", "cost_stars": 450},
-    "gold_3": {"name": "Gold-3lvl", "dig_min": 19, "dig_max": 37, "cost": 2_800_000, "currency": "coins", "required_level": 1, "tier": "gold", "cost_stars": 500},
-    "gold_4": {"name": "Gold-4lvl", "dig_min": 22, "dig_max": 43, "cost": 4_400_000, "currency": "coins", "required_level": 1, "tier": "gold", "cost_stars": 550},
-    "gold_5": {"name": "Gold-5lvl", "dig_min": 25, "dig_max": 50, "cost": 7_100_000, "currency": "coins", "required_level": 1, "tier": "gold", "cost_stars": 600},
-    "diamond_1": {"name": "Diamond-1lvl", "dig_min": 28, "dig_max": 57, "cost": 11_000_000, "currency": "coins", "required_level": 1, "tier": "diamond", "cost_stars": 650},
-    "diamond_2": {"name": "Diamond-2lvl", "dig_min": 33, "dig_max": 65, "cost": 18_000_000, "currency": "coins", "required_level": 1, "tier": "diamond", "cost_stars": 700},
-    "diamond_3": {"name": "Diamond-3lvl", "dig_min": 38, "dig_max": 75, "cost": 29_000_000, "currency": "coins", "required_level": 1, "tier": "diamond", "cost_stars": 800},
-    "diamond_4": {"name": "Diamond-4lvl", "dig_min": 43, "dig_max": 87, "cost": 46_000_000, "currency": "coins", "required_level": 1, "tier": "diamond", "cost_stars": 900},
-    "diamond_5": {"name": "Diamond-5lvl", "dig_min": 50, "dig_max": 100, "cost": 74_000_000, "currency": "coins", "required_level": 1, "tier": "diamond", "cost_stars": 1100},
-    "uranium_1": {"name": "Uranium-1lvl", "dig_min": 57, "dig_max": 115, "cost": 120_000_000, "currency": "coins", "required_level": 1, "tier": "uranium", "cost_stars": 1200},
-    "uranium_2": {"name": "Uranium-2lvl", "dig_min": 66, "dig_max": 132, "cost": 190_000_000, "currency": "coins", "required_level": 1, "tier": "uranium", "cost_stars": 1400},
-    "uranium_3": {"name": "Uranium-3lvl", "dig_min": 76, "dig_max": 151, "cost": 300_000_000, "currency": "coins", "required_level": 1, "tier": "uranium", "cost_stars": 1600},
-    "uranium_4": {"name": "Uranium-4lvl", "dig_min": 87, "dig_max": 174, "cost": 490_000_000, "currency": "coins", "required_level": 1, "tier": "uranium", "cost_stars": 1800},
-    "uranium_5": {"name": "Uranium-5lvl", "dig_min": 100, "dig_max": 200, "cost": 780_000_000, "currency": "coins", "required_level": 1, "tier": "uranium", "cost_stars": 2100},
-    "amethyst_1": {"name": "Amethyst-1lvl", "dig_min": 115, "dig_max": 230, "cost": 1_200_000_000, "currency": "coins", "required_level": 1, "tier": "amethyst", "cost_stars": 2400},
-    "amethyst_2": {"name": "Amethyst-2lvl", "dig_min": 132, "dig_max": 265, "cost": 2_000_000_000, "currency": "coins", "required_level": 1, "tier": "amethyst", "cost_stars": 2800},
-    "amethyst_3": {"name": "Amethyst-3lvl", "dig_min": 152, "dig_max": 305, "cost": 3_200_000_000, "currency": "coins", "required_level": 1, "tier": "amethyst", "cost_stars": 3200},
-    "amethyst_4": {"name": "Amethyst-4lvl", "dig_min": 175, "dig_max": 350, "cost": 5_100_000_000, "currency": "coins", "required_level": 1, "tier": "amethyst", "cost_stars": 3700},
-    "amethyst_5": {"name": "Amethyst-5lvl", "dig_min": 201, "dig_max": 403, "cost": 8_200_000_000, "currency": "coins", "required_level": 1, "tier": "amethyst", "cost_stars": 4300},
-    "vip_1": {"name": "VIP-1lvl", "dig_min": 232, "dig_max": 463, "cost": 13_000_000_000, "currency": "coins", "required_level": 1, "tier": "vip", "cost_stars": 4900},
-    "vip_2": {"name": "VIP-2lvl", "dig_min": 266, "dig_max": 533, "cost": 21_000_000_000, "currency": "coins", "required_level": 1, "tier": "vip", "cost_stars": 5600},
-    "vip_3": {"name": "VIP-3lvl", "dig_min": 306, "dig_max": 613, "cost": 33_000_000_000, "currency": "coins", "required_level": 1, "tier": "vip", "cost_stars": 6500},
-    "vip_4": {"name": "VIP-4lvl", "dig_min": 352, "dig_max": 704, "cost": 54_000_000_000, "currency": "coins", "required_level": 1, "tier": "vip", "cost_stars": 7500},
-    "vip_5": {"name": "VIP-5lvl", "dig_min": 405, "dig_max": 810, "cost": 86_000_000_000, "currency": "coins", "required_level": 1, "tier": "vip", "cost_stars": 8600},
-    "vip_plus_1": {"name": "VIP+-1lvl", "dig_min": 466, "dig_max": 932, "cost": 140_000_000_000, "currency": "coins", "required_level": 1, "tier": "vip_plus", "cost_stars": 9900},
-    "vip_plus_2": {"name": "VIP+-2lvl", "dig_min": 536, "dig_max": 1_071, "cost": 220_000_000_000, "currency": "coins", "required_level": 1, "tier": "vip_plus", "cost_stars": 11000},
-    "vip_plus_3": {"name": "VIP+-3lvl", "dig_min": 616, "dig_max": 1_232, "cost": 350_000_000_000, "currency": "coins", "required_level": 1, "tier": "vip_plus", "cost_stars": 13000},
-    "vip_plus_4": {"name": "VIP+-4lvl", "dig_min": 708, "dig_max": 1_417, "cost": 560_000_000_000, "currency": "coins", "required_level": 1, "tier": "vip_plus", "cost_stars": 15000},
-    "vip_plus_5": {"name": "VIP+-5lvl", "dig_min": 815, "dig_max": 1_630, "cost": 900_000_000_000, "currency": "coins", "required_level": 1, "tier": "vip_plus", "cost_stars": 17000},
-    "premium_1": {"name": "Premium-1lvl", "dig_min": 937, "dig_max": 1_874, "cost": 0, "currency": "stars", "cost_stars": 20000, "required_level": 1, "tier": "premium"},
-    "premium_2": {"name": "Premium-2lvl", "dig_min": 1_078, "dig_max": 2_155, "cost": 0, "currency": "stars", "cost_stars": 23000, "required_level": 1, "tier": "premium"},
-    "premium_3": {"name": "Premium-3lvl", "dig_min": 1_239, "dig_max": 2_478, "cost": 0, "currency": "stars", "cost_stars": 26000, "required_level": 1, "tier": "premium"},
-    "premium_4": {"name": "Premium-4lvl", "dig_min": 1_425, "dig_max": 2_850, "cost": 0, "currency": "stars", "cost_stars": 30000, "required_level": 1, "tier": "premium"},
-    "premium_5": {"name": "Premium-5lvl", "dig_min": 1_639, "dig_max": 3_278, "cost": 0, "currency": "stars", "cost_stars": 35000, "required_level": 1, "tier": "premium"},
-}
-
-PICKAXES_ORDER = [
-    "wood_1", "wood_2", "wood_3", "wood_4", "wood_5",
-    "rock_1", "rock_2", "rock_3", "rock_4", "rock_5",
-    "iron_1", "iron_2", "iron_3", "iron_4", "iron_5",
-    "gold_1", "gold_2", "gold_3", "gold_4", "gold_5",
-    "diamond_1", "diamond_2", "diamond_3", "diamond_4", "diamond_5",
-    "uranium_1", "uranium_2", "uranium_3", "uranium_4", "uranium_5",
-    "amethyst_1", "amethyst_2", "amethyst_3", "amethyst_4", "amethyst_5",
-    "vip_1", "vip_2", "vip_3", "vip_4", "vip_5",
-    "vip_plus_1", "vip_plus_2", "vip_plus_3", "vip_plus_4", "vip_plus_5",
-    "premium_1", "premium_2", "premium_3", "premium_4", "premium_5",
-]
-
-WORKSHOP_PAGE_SIZE   = 10
-WORKSHOP_PAGES       = [PICKAXES_ORDER[i:i + WORKSHOP_PAGE_SIZE] for i in range(0, len(PICKAXES_ORDER), WORKSHOP_PAGE_SIZE)]
-WORKSHOP_TOTAL_PAGES = len(WORKSHOP_PAGES)
-
-WORKSHOP_PAGE_LABELS = [
-    "🪓 Wood / ⛏️ Rock",
-    "🔩 Iron / 🌕 Gold",
-    "💎 Diamond / ☢️ Uranium",
-    "💜 Amethyst / 👑 VIP",
-    "💠 VIP+ / 💫 Premium",
-]
-
-TIER_LABELS = {
-    "wood": "Wood", "rock": "Rock", "iron": "Iron", "gold": "Gold",
-    "diamond": "Diamond", "uranium": "Uranium", "amethyst": "Amethyst",
-    "vip": "VIP", "vip_plus": "VIP+", "premium": "Premium",
-}
-
-DURATIONS = {
-    "5min":  {"label": "5 мин",    "label_en": "5 min",    "campaigns": 1,   "cost": 0},
-    "10min": {"label": "10 мин",   "label_en": "10 min",   "campaigns": 2,   "cost": 25_000},
-    "15min": {"label": "15 мин",   "label_en": "15 min",   "campaigns": 3,   "cost": 75_000},
-    "30min": {"label": "30 мин",   "label_en": "30 min",   "campaigns": 6,   "cost": 500_000},
-    "45min": {"label": "45 мин",   "label_en": "45 min",   "campaigns": 9,   "cost": 1_000_000},
-    "1h":    {"label": "1 час",    "label_en": "1 hour",   "campaigns": 12,  "cost": 1_500_000},
-    "2h":    {"label": "2 часа",   "label_en": "2 hours",  "campaigns": 24,  "cost": 5_000_000},
-    "4h":    {"label": "4 часа",   "label_en": "4 hours",  "campaigns": 48,  "cost": 50_000_000},
-    "12h":   {"label": "12 часов", "label_en": "12 hours", "campaigns": 144, "cost": 350_000_000},
-    "24h":   {"label": "24 часа",  "label_en": "24 hours", "campaigns": 288, "cost": 950_000_000},
-}
-DURATIONS_ORDER = ["5min", "10min", "15min", "30min", "45min", "1h", "2h", "4h", "12h", "24h"]
-
-CAMPAIGN_SECONDS = 5 * 60
-XP_PER_ORE      = 20
-
-
-# ============================================================
-#  ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
-# ============================================================
-
-def now_ts() -> float:
-    return datetime.now(timezone.utc).timestamp()
-
-
-def _ore_name(ore: dict, lang: str = "ru") -> str:
-    """Return ore display name in the requested language."""
-    if lang == "en":
-        return ore.get("name_en", ore["name"])
-    return ore["name"]
-
-
-def _dur_label(dur: dict, lang: str = "ru") -> str:
-    """Return duration label in the requested language."""
-    if lang == "en":
-        return dur.get("label_en", dur["label"])
-    return dur["label"]
-
-
-def fmt_time(seconds: int, lang: str = "ru") -> str:
-    if seconds <= 0:
-        return "0s" if lang == "en" else "0с"
-    m, s = divmod(int(seconds), 60)
-    if m >= 60:
-        h, m = divmod(m, 60)
-        if lang == "en":
-            return f"{h}h {m}m {s}s"
-        return f"{h}ч {m}м {s}с"
-    if lang == "en":
-        return f"{m}m {s}s"
-    return f"{m}м {s}с"
-
-
-def progress_bar(percent: int, length: int = 10) -> str:
-    _E_EMPTY   = "5992142065603974345"
-    _E_QUARTER = "5992256170000127661"
-    _E_HALF    = "5992488673759729434"
-    _E_FULL    = "5992459287593489418"
-    cells = []
-    for i in range(length):
-        cell_start = i * (100 / length)
-        cell_fill  = percent - cell_start
-        cell_pct   = max(0.0, min(cell_fill, (100 / length))) / (100 / length) * 100
-        if cell_pct >= 75:
-            eid = _E_FULL
-        elif cell_pct >= 50:
-            eid = _E_HALF
-        elif cell_pct >= 25:
-            eid = _E_QUARTER
-        else:
-            eid = _E_EMPTY
-        cells.append(f'<tg-emoji emoji-id="{eid}">⬜</tg-emoji>')
-    return "".join(cells) + f" {percent}%"
-
-
-def xp_for_level(level: int) -> int:
-    _manual = {1: 100, 2: 150, 3: 300, 4: 500, 5: 750, 6: 1250, 7: 1600, 8: 2200, 9: 3000, 10: 4500}
-    if level in _manual:
-        return _manual[level]
-    raw = 4500 * (1.07 ** (level - 10))
-    if raw < 1000:       return max(100, round(raw / 50) * 50)
-    elif raw < 10000:    return round(raw / 100) * 100
-    elif raw < 100000:   return round(raw / 500) * 500
-    elif raw < 1000000:  return round(raw / 1000) * 1000
-    else:                return round(raw / 5000) * 5000
-
-
-def add_xp(data: dict, amount: int):
-    if data.get("level", 1) >= MAX_LEVEL:
-        data["xp"]     = data.get("xp_max", xp_for_level(MAX_LEVEL))
-        data["xp_max"] = data.get("xp_max", xp_for_level(MAX_LEVEL))
-        return
-    data["xp"] = data.get("xp", 0) + amount
-    while True:
-        current_level = data.get("level", 1)
-        if current_level >= MAX_LEVEL:
-            data["level"]  = MAX_LEVEL
-            data["xp_max"] = xp_for_level(MAX_LEVEL)
-            data["xp"]     = data["xp_max"]
-            break
-        needed = xp_for_level(current_level)
-        data["xp_max"] = needed
-        if data["xp"] >= needed:
-            data["xp"]    -= needed
-            data["level"]  = current_level + 1
-        else:
-            break
-
-
-def _fmt_cost(pick_key: str, lang: str = "ru") -> str:
-    p = PICKAXES[pick_key]
-    if p["currency"] == "stars":
-        return f"{p['cost_stars']} {STAR} " + ("stars" if lang == "en" else "звёзд")
-    if p["cost"] == 0:
-        return "Free" if lang == "en" else "Бесплатно"
-    return f"{_fmt_num(p['cost'])} {COIN}"
-
-
-def _fmt_num(n: int) -> str:
-    if n == 0:
-        return "0"
-    for div, suffix in [
-        (1_000_000_000_000_000_000_000, "Sk"),
-        (1_000_000_000_000_000_000, "Qi"),
-        (1_000_000_000_000_000, "Qd"),
-        (1_000_000_000_000, "T"),
-        (1_000_000_000, "B"),
-        (1_000_000, "M"),
-        (1_000, "K"),
-    ]:
-        if n >= div:
-            val = n / div
-            return f"{val:.1f}".rstrip("0").rstrip(".") + suffix
-    return f"{n:,}"
-
-
-def roll_ore(pick_key: str, multiplier: float = 1.0) -> list:
-    pick    = PICKAXES[pick_key]
-    dig_min = max(1, int(pick["dig_min"] * multiplier))
-    dig_max = max(1, int(pick["dig_max"] * multiplier))
-    n_digs  = random.randint(dig_min, dig_max)
-    found   = {}
-    weights = [o["weight"] for o in ORES]
-    for _ in range(n_digs):
-        ore = random.choices(ORES, weights=weights, k=1)[0]
-        found[ore["key"]] = found.get(ore["key"], 0) + 1
-        for o in ORES:
-            if random.random() * 100 < o["chance"] * 0.3:
-                found[o["key"]] = found.get(o["key"], 0) + 1
-    return [(ORES_BY_KEY[k], v) for k, v in found.items()]
-
-
-def get_session_params(data: dict) -> tuple:
-    dur   = DURATIONS[data.get("mine_duration_key", "5min")]
-    camps = dur["campaigns"]
-    return camps, camps * CAMPAIGN_SECONDS
-
-
-def calc_mine_progress(data: dict) -> dict:
-    total_campaigns, total_seconds = get_session_params(data)
-    start          = float(data["mine_start"])
-    elapsed        = min(now_ts() - start, total_seconds)
-    campaigns_done = min(int(elapsed / CAMPAIGN_SECONDS), total_campaigns)
-    new_campaigns  = campaigns_done - data["mine_campaigns_done"]
-    time_left      = max(0, total_seconds - elapsed)
-    finished       = elapsed >= total_seconds
-    percent        = min(100, int(elapsed / total_seconds * 100))
-    return {
-        "campaigns_done":  campaigns_done,
-        "new_campaigns":   new_campaigns,
-        "time_left":       int(time_left),
-        "finished":        finished,
-        "percent":         percent,
-        "total_campaigns": total_campaigns,
-        "total_seconds":   total_seconds,
-    }
-
-
-def ore_inventory_text(data: dict, short: bool = False, lang: str = "ru") -> str:
-    lines = []
-    for ore in ORES:
-        qty = data["ores"].get(ore["key"], 0)
-        if qty > 0:
-            worth = qty * ore["price"]
-            lines.append(f"<b>{_ore_name(ore, lang)}: {qty}</b> <b>(≈ {_fmt_num(worth)} {COIN})</b>")
-    if not lines:
-        return "<b>Inventory empty</b>" if lang == "en" else "<b>Инвентарь пуст</b>"
-    if short and len(lines) > 3:
-        more = "...and more" if lang == "en" else "...и ещё"
-        return "\n".join(lines[:3]) + f"\n<b><i>{more}</i></b>"
-    return "\n".join(lines)
-
-
-def inventory_screen_text(data: dict, lang: str = "ru") -> str:
-    title   = "Inventory" if lang == "en" else "Инвентарь"
-    lines = [f'<tg-emoji emoji-id="5445221832074483553">🎟</tg-emoji> <b>{title}</b>\n━━━━━━━━━━━━━━━━━━━━\n']
-    has_ores = False
-    total_value = 0
-    for ore in ORES:
-        qty = data["ores"].get(ore["key"], 0)
-        if qty > 0:
-            has_ores = True
-            worth = qty * ore["price"]
-            total_value += worth
-            lines.append(f"<blockquote><b>{_ore_name(ore, lang)}: {qty} (≈ {_fmt_num(worth)} {COIN})</b></blockquote>")
-    if not has_ores:
-        lines.append("<b>Inventory empty</b>" if lang == "en" else "<b>Инвентарь пуст</b>")
-    else:
-        total_lbl = "Total" if lang == "en" else "Итого"
-        lines.append(f'\n<tg-emoji emoji-id="5303214794336125778">🎟</tg-emoji> <b>{total_lbl}: {_fmt_num(total_value)} {COIN}</b>')
-    return "\n".join(lines)
-
-
-# ============================================================
-#  ТЕКСТЫ ЭКРАНОВ
-# ============================================================
-
-def mine_text(data: dict, lang: str = "ru") -> str:
-    from lang import t
-    pick_key = data.get("pickaxe", "wood_1")
-    pick     = PICKAXES[pick_key]
-    dur_key  = data.get("mine_duration_key", "5min")
-    dur      = DURATIONS[dur_key]
-    dur_lbl  = _dur_label(dur, lang)
-
-    if data["mine_start"] is None or data["mine_collected"]:
-        return (
-            f'<tg-emoji emoji-id="5197371802136892976">🎟</tg-emoji> <b>{t(lang, "mine_title")}</b>\n'
-            "━━━━━━━━━━━━━━━━━━━━\n\n"
-            f'<tg-emoji emoji-id="5397782960512444700">🎟</tg-emoji> <b>{t(lang, "mine_selected")}: {pick["name"]}</b>\n'
-            f'<tg-emoji emoji-id="5440621591387980068">🎟</tg-emoji> <b>{t(lang, "mine_duration")}: {dur_lbl}</b>\n\n'
-            f'<blockquote><tg-emoji emoji-id="5445221832074483553">🎟</tg-emoji> <b>{t(lang, "mine_inventory_lbl")}:</b>\n{ore_inventory_text(data, short=True, lang=lang)}</blockquote>\n\n'
-            f'{t(lang, "mine_press_start")}'
-        )
-    prog   = calc_mine_progress(data)
-    bar    = progress_bar(prog["percent"])
-    status = t(lang, "mine_finished") if prog["finished"] else t(lang, "mine_running")
-    return (
-        f'<tg-emoji emoji-id="5197371802136892976">🎟</tg-emoji> <b>{t(lang, "mine_title")}</b>\n'
-        "━━━━━━━━━━━━━━━━━━━━\n\n"
-        f'<tg-emoji emoji-id="5397782960512444700">🎟</tg-emoji> <b>{t(lang, "mine_selected")}: {pick["name"]}</b>\n'
-        f'<tg-emoji emoji-id="5375338737028841420">🎟</tg-emoji> <b>{t(lang, "mine_campaigns")}: {prog["campaigns_done"]}/{prog["total_campaigns"]}</b>\n\n'
-        f'<tg-emoji emoji-id="5231200819986047254">🎟</tg-emoji> <b>{t(lang, "mine_progress")}:</b>\n{bar}\n\n'
-        f"{status}\n\n"
-        f'<blockquote><tg-emoji emoji-id="5445221832074483553">🎟</tg-emoji> <b>{t(lang, "mine_inventory_lbl")}:</b>\n{ore_inventory_text(data, short=True, lang=lang)}</blockquote>'
-    )
-
-
-def workshop_text(data: dict, page: int = 0, lang: str = "ru") -> str:
-    from lang import t
-    current = data.get("pickaxe", "wood_1")
-    return (
-        f'<tg-emoji emoji-id="5278702045883292456">🎟</tg-emoji> <b>{t(lang, "mine_workshop_title")}</b>\n'
-        "━━━━━━━━━━━━━━━━━━━━\n\n"
-        f'<blockquote><tg-emoji emoji-id="5278467510604160626">🎟</tg-emoji> <b>{t(lang, "mine_workshop_balance")}: {_fmt_num(data["balance"])}{COIN}</b>\n'
-        f'<tg-emoji emoji-id="5397782960512444700">🎟</tg-emoji> <b>{t(lang, "mine_workshop_selected")}: {current}lvl</b>\n'
-        f'<tg-emoji emoji-id="5444856076954520455">🎟</tg-emoji> <b>{t(lang, "mine_workshop_page")}: {page + 1}/{WORKSHOP_TOTAL_PAGES}</b></blockquote>\n\n'
-        f'<b>{t(lang, "mine_workshop_choose")}</b>'
-    )
-
-
-def pickaxe_detail_text(data: dict, pick_key: str, lang: str = "ru") -> str:
-    from lang import t
-    p     = PICKAXES[pick_key]
-    owned = data.get("owned_pickaxes", ["wood_1"])
-    tier  = TIER_LABELS.get(p.get("tier", ""), "")
-    stars_unit = t(lang, "mine_pick_stars_unit")
-    if pick_key == data.get("pickaxe", "wood_1"):
-        status = t(lang, "mine_pick_selected")
-    elif pick_key in owned:
-        status = t(lang, "mine_pick_not_active")
-    elif p["currency"] == "stars":
-        status = f'{t(lang, "mine_pick_for_stars_st")} — {p["cost_stars"]} {STAR}'
-    else:
-        status = t(lang, "mine_pick_not_bought")
-    if p["currency"] == "stars":
-        coins_line = f'  {COIN} {t(lang, "mine_pick_for_coins")}: <b>{t(lang, "mine_pick_unavail")}</b>\n'
-        stars_line = f'  {STAR} {t(lang, "mine_pick_for_stars")}: <b>{p["cost_stars"]:,} {stars_unit}</b>\n'
-    elif p["cost"] == 0:
-        free = t(lang, "mine_pick_free")
-        coins_line = f'  {COIN} {t(lang, "mine_pick_for_coins")}: <b>{free}</b>\n'
-        stars_line = f'  {STAR} {t(lang, "mine_pick_for_stars")}: <b>{free}</b>\n'
-    else:
-        cost_stars = p.get("cost_stars", 0)
-        coins_line = f'  {COIN} {t(lang, "mine_pick_for_coins")}: <b>{_fmt_num(p["cost"])}</b>\n'
-        stars_line = f'  {STAR} {t(lang, "mine_pick_for_stars")}: <b>{cost_stars:,} {stars_unit}</b>\n'
-    return (
-        f"<b>{p['name']}</b>\n"
-        "━━━━━━━━━━━━━━━━━━━━\n\n"
-        f'<blockquote><tg-emoji emoji-id="5278467510604160626">🎟</tg-emoji> <b>{t(lang, "mine_workshop_balance")}: {_fmt_num(data["balance"])}</b>\n'
-        f'<b>{t(lang, "mine_pick_name")}: {p["name"]}</b>\n'
-        f'<b>{t(lang, "mine_pick_tier")}: {tier}</b>\n'
-        f'<b>{t(lang, "mine_pick_per5")}: {p["dig_min"]:,}–{p["dig_max"]:,}</b></blockquote>\n\n'
-        f'<blockquote><tg-emoji emoji-id="5287231198098117669">🎟</tg-emoji> <b>{t(lang, "mine_pick_prices")}:</b>\n'
-        f"{coins_line}"
-        f"{stars_line}\n</blockquote>"
-        f'<b>{t(lang, "mine_pick_status")}: {status}</b>'
-    )
-
-
-def duration_shop_text(data: dict, lang: str = "ru") -> str:
-    from lang import t
-    cur_key    = data.get("mine_duration_key", "5min")
-    cur_label  = _dur_label(DURATIONS[cur_key], lang)
-    owned_durs = data.get("owned_durations", ["5min"])
-    owned_cnt  = len([k for k in DURATIONS_ORDER if k in owned_durs])
-    return (
-        f'<tg-emoji emoji-id="5440621591387980068">🎟</tg-emoji> <b>{t(lang, "mine_dur_title")}</b>\n'
-        "━━━━━━━━━━━━━━━━━━━━\n\n"
-        f'<blockquote><tg-emoji emoji-id="5278467510604160626">🎟</tg-emoji> <b>{t(lang, "mine_sell_balance")}: {_fmt_num(data["balance"])}{COIN}</b>\n'
-        f'<tg-emoji emoji-id="5456140674028019486">🎟</tg-emoji> <b>{t(lang, "mine_dur_active")}: {cur_label}</b>\n'
-        f'<tg-emoji emoji-id="5296369303661067030">🎟</tg-emoji> <b>{t(lang, "mine_dur_unlocked")}: {owned_cnt}/{len(DURATIONS_ORDER)}</b></blockquote>\n\n'
-        f'<b>{t(lang, "mine_dur_choose")}</b>'
-    )
-
-
-def duration_detail_text(data: dict, dur_key: str, lang: str = "ru") -> str:
-    from lang import t
-    d          = DURATIONS[dur_key]
-    dur_lbl    = _dur_label(d, lang)
-    owned_durs = data.get("owned_durations", ["5min"])
-    if dur_key == data.get("mine_duration_key", "5min"):
-        status = t(lang, "mine_dur_status_active")
-    elif dur_key in owned_durs:
-        status = t(lang, "mine_dur_status_owned")
-    else:
-        status = t(lang, "mine_dur_status_none")
-    price_str = _fmt_num(d["cost"]) if d["cost"] else t(lang, "mine_dur_free")
-    return (
-        f'<tg-emoji emoji-id="5440621591387980068">🎟</tg-emoji> <b>{t(lang, "mine_dur_card_title")} {dur_lbl}</b>\n'
-        "━━━━━━━━━━━━━━━━━━━━\n\n"
-        f'<tg-emoji emoji-id="5278467510604160626">🎟</tg-emoji> <b>{t(lang, "mine_sell_balance")}: {_fmt_num(data["balance"])}{COIN}</b>\n\n'
-        f'<tg-emoji emoji-id="5382194935057372936">🎟</tg-emoji> <b>{t(lang, "mine_dur_session")}: {dur_lbl}</b>\n'
-        f'<tg-emoji emoji-id="5330320040883411678">🎟</tg-emoji> <b>{t(lang, "mine_dur_price")}: {price_str}{COIN}</b>\n'
-        f'<tg-emoji emoji-id="5438496463044752972">🎟</tg-emoji> <b>{t(lang, "mine_dur_status")}: {status}</b>'
-    )
-
-
-def sell_screen_text(data: dict, lang: str = "ru") -> str:
-    from lang import t
-    has_ores = any(data["ores"].get(o["key"], 0) > 0 for o in ORES)
-    title = t(lang, "mine_sell_title")
-    if not has_ores:
-        return (
-            f'<tg-emoji emoji-id="5429518319243775957">🎟</tg-emoji> <b>{title}</b>\n'
-            "━━━━━━━━━━━━━━━━━━━━\n\n"
-            f'<tg-emoji emoji-id="5445221832074483553">🎟</tg-emoji> <b>{t(lang, "mine_sell_empty")}</b>\n\n'
-            f'<b>{t(lang, "mine_sell_prompt")}</b>'
-        )
-    lines = [
-        f'<tg-emoji emoji-id="5429518319243775957">🎟</tg-emoji> <b>{title}</b>\n'
-        f'━━━━━━━━━━━━━━━━━━━━\n\n'
-        f'<tg-emoji emoji-id="5305699699204837855">🎟</tg-emoji> <b>{t(lang, "mine_sell_prices")}</b>\n'
-    ]
-    total_value = 0
-    for ore in ORES:
-        qty = data["ores"].get(ore["key"], 0)
-        if qty > 0:
-            worth = qty * ore["price"]
-            total_value += worth
-            lines.append(f"<blockquote><b>{_ore_name(ore, lang)}: {qty} (≈ {_fmt_num(worth)} {COIN})</b></blockquote>")
-    lines.append(f'\n<tg-emoji emoji-id="5278467510604160626">🎟</tg-emoji> <b>{t(lang, "mine_sell_balance")}: {_fmt_num(data["balance"])}</b>')
-    lines.append(f'\n<b>{t(lang, "mine_sell_total")}: {_fmt_num(total_value)} {COIN}</b>')
-    return "\n".join(lines)
-
-
-# ============================================================
-#  КЛАВИАТУРЫ — aiogram 3.x стиль
-# ============================================================
-
-def _prem_btn(emoji_id: str, text: str, callback: str) -> InlineKeyboardButton:
-    return InlineKeyboardButton(text=text, callback_data=callback, icon_custom_emoji_id=emoji_id)
-
+from aiogram.filters import Command
+
+from database import (
+    init_db, get_or_create_user, save_user,
+    profile_text,
+)
+from miner import (
+    ORES, PICKAXES, PICKAXES_ORDER,
+    DURATIONS, DURATIONS_ORDER,
+    now_ts,
+    mine_text, mine_keyboard,
+    workshop_text, workshop_keyboard,
+    pickaxe_detail_text, pickaxe_detail_keyboard,
+    duration_shop_text, duration_shop_keyboard,
+    duration_detail_text, duration_detail_keyboard,
+    sell_screen_text, sell_keyboard,
+    shop_pickaxes_text, shop_pickaxes_keyboard,
+    inventory_screen_text, inventory_keyboard,
+    init_mine_data,
+    collect_mine,
+    sell_all_ores,
+    buy_pickaxe, select_pickaxe,
+    buy_duration, select_duration,
+    get_pickaxe_page,
+    EMOJI_BACK,
+)
+from pets import (
+    PETS,
+    pets_main_text, pets_main_keyboard,
+    pet_detail_text, pet_detail_keyboard,
+    buy_pet,
+    get_pending_income, get_pending_notifications,
+    pet_income_text,
+)
+
+from hunt import (
+    init_hunt_db,
+    hunt_main_text, hunt_main_keyboard,
+    sword_shop_text, sword_shop_keyboard,
+    sword_detail_text, sword_detail_keyboard,
+    my_swords_text, my_swords_keyboard,
+    boss_attack_text, boss_attack_keyboard,
+    boss_strike_result_text, boss_strike_keyboard,
+    buy_sword, equip_sword, attack_boss,
+    get_boss_state,
+    BOSSES_BY_KEY as _BOSSES_BY_KEY,
+)
+
+from stats import init_stats_db, track_user, stats_text, stats_keyboard
+from settings import (
+    settings_text, settings_keyboard,
+    lang_choose_text, lang_choose_keyboard, lang_choose_keyboard_start,
+)
+from lang import t, get_lang
+
+from leaders import (
+    init_leaders_db,
+    record_boss_hit,
+    leaders_text,
+    leaders_keyboard,
+    leaders_main_text,
+    leaders_main_keyboard,
+    CATEGORIES as _LEADERS_CATEGORIES,
+    PERIODS    as _LEADERS_PERIODS,
+)
+
+
+from status import (
+    status_main_text, status_main_keyboard,
+    status_vip_text, status_vip_keyboard, status_vip_keyboard_invoice,
+    status_premium_text, status_premium_keyboard, status_premium_keyboard_invoice,
+    status_upgrade_keyboard_invoice,
+    activate_status,
+    VIP_COST_STARS, PREMIUM_COST_STARS, UPGRADE_COST_STARS,
+)
+from shop import (
+    cases_shop_text, cases_shop_keyboard,
+    inventory_main_text, inventory_main_keyboard,
+    boosters_inventory_text, boosters_inventory_keyboard,
+    booster_detail_text, booster_detail_keyboard,
+    booster_confirm_replace_text, booster_confirm_replace_keyboard,
+    xp_inventory_text, xp_inventory_keyboard,
+    xp_item_detail_text, xp_item_detail_keyboard,
+    xp_confirm_replace_text, xp_confirm_replace_keyboard,
+    enh_inventory_text, enh_inventory_keyboard,
+    enh_item_detail_text, enh_item_detail_keyboard,
+    enh_confirm_replace_text, enh_confirm_replace_keyboard,
+    open_case, activate_booster, sell_booster,
+    use_xp_item, sell_xp_item,
+    use_poison, activate_enh_boost, sell_enh_item,
+    # Артефакты
+    artifact_case_detail_text, artifact_case_keyboard,
+    artifact_collection_text, artifact_collection_keyboard,
+    open_artifact_case, ARTIFACT_CASE_COST_STARS, ARTIFACT_POOL_BY_KEY,
+)
+
+BOT_TOKEN = '8610804137:AAFkdrZIDRAsdhn4fZP51-rcnrI5C8d4xpg'
+
+bot = Bot(token=BOT_TOKEN)
+
+import re as _re
+
+def _plain(text: str) -> str:
+    """Убирает HTML-теги и обрезает до 200 символов для call.answer()."""
+    return _re.sub(r'<[^>]+>', '', text).strip()[:200]
+dp  = Dispatcher()
+
+# ---------- БЛОКИРОВКИ ПО ПОЛЬЗОВАТЕЛЯМ (защита от race condition / дюпов) ----------
+import asyncio as _asyncio
+_user_locks: dict[int, _asyncio.Lock] = {}
+_user_locks_mutex = _asyncio.Lock()
+
+# Хранит message_id экрана кирки перед оплатой: uid -> (chat_id, message_id, pick_key)
+_pending_stars_msg: dict[int, tuple] = {}
+
+# Хранит message_id экрана кейса артефактов перед оплатой: uid -> (chat_id, message_id)
+_pending_artifact_msg: dict[int, tuple] = {}
+
+# Хранит message_id экрана статуса перед оплатой: uid -> (chat_id, message_id, tier)
+_pending_status_msg: dict[int, tuple] = {}
+
+# Защита от повторной обработки одного charge_id (replay-attack)
+_processed_charge_ids: set[str] = set()
+
+
+async def _get_user_lock(uid: int) -> _asyncio.Lock:
+    """Возвращает персональный Lock для пользователя uid."""
+    async with _user_locks_mutex:
+        if uid not in _user_locks:
+            _user_locks[uid] = _asyncio.Lock()
+        return _user_locks[uid]
+
+
+# ---------- ЭМОДЗИ ГЛАВНОГО МЕНЮ ----------
+EMOJI_PROFILE  = "5906622905894050515"
+EMOJI_STATS    = "5231200819986047254"
+EMOJI_SHOP     = "5406683434124859552"
+EMOJI_MINE     = "5197371802136892976"
+EMOJI_HUNT     = "5424972470023104089"
+EMOJI_STATUS   = "5438496463044752972"
+EMOJI_EXCHANGE = "5402186569006210455"
+EMOJI_PETS     = "5337047059180566409"
+EMOJI_LEADERS  = "5440539497383087970"
+EMOJI_SETTINGS = "5341715473882955310"
 
 def _back_btn(callback: str, label: str = "Назад") -> InlineKeyboardButton:
     return InlineKeyboardButton(text=label, callback_data=callback, icon_custom_emoji_id=EMOJI_BACK)
 
 
-def mine_keyboard(data: dict, lang: str = "ru") -> InlineKeyboardMarkup:
-    from lang import t
+def main_menu_keyboard(lang: str = "ru") -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    is_running  = data["mine_start"] is not None and not data["mine_collected"]
-    is_finished = False
-    if is_running:
-        prog        = calc_mine_progress(data)
-        is_finished = prog["finished"]
-    if not is_running:
-        builder.row(_prem_btn(EMOJI_BTN_START, t(lang, "mine_btn_start"), "mine_start"))
-    elif is_finished:
-        builder.row(_prem_btn(EMOJI_BTN_COLLECT, t(lang, "mine_btn_collect"), "mine_collect"))
-    else:
-        builder.row(
-            _prem_btn(EMOJI_BTN_REFRESH, t(lang, "mine_btn_refresh"), "mine_refresh"),
-            _prem_btn(EMOJI_BTN_COLLECT_PART, t(lang, "mine_btn_partial"), "mine_collect"),
-        )
-    has_ores = any(data["ores"].get(o["key"], 0) > 0 for o in ORES)
-    if has_ores:
-        builder.row(
-            _prem_btn(EMOJI_BTN_SELL, t(lang, "mine_btn_sell"),  "mine_sell_screen"),
-            _prem_btn(EMOJI_BTN_INV,  t(lang, "mine_btn_inv"),   "mine_inventory"),
-        )
-    else:
-        builder.row(_prem_btn(EMOJI_BTN_INV, t(lang, "mine_btn_inv"), "mine_inventory"))
     builder.row(
-        _prem_btn(EMOJI_BTN_WORKSHOP, t(lang, "mine_btn_workshop"), "mine_workshop_0"),
-        _prem_btn(EMOJI_BTN_DURATION, t(lang, "mine_btn_duration"), "mine_duration_shop"),
+        InlineKeyboardButton(text=t(lang, "btn_profile"),  callback_data="profile",    icon_custom_emoji_id=EMOJI_PROFILE),
+        InlineKeyboardButton(text=t(lang, "btn_stats"),    callback_data="stats",      icon_custom_emoji_id=EMOJI_STATS),
+        InlineKeyboardButton(text=t(lang, "btn_cases"),    callback_data="shop_cases", icon_custom_emoji_id="5442939099906325301"),
     )
+    builder.row(InlineKeyboardButton(text=t(lang, "btn_mine"), callback_data="mine", icon_custom_emoji_id=EMOJI_MINE))
+    builder.row(
+        InlineKeyboardButton(text=t(lang, "btn_hunt"),   callback_data="hunt",   icon_custom_emoji_id=EMOJI_HUNT),
+        InlineKeyboardButton(text=t(lang, "btn_status"), callback_data="status", icon_custom_emoji_id=EMOJI_STATUS),
+    )
+    builder.row(InlineKeyboardButton(text=t(lang, "btn_pets"), callback_data="pets", icon_custom_emoji_id=EMOJI_PETS))
+    builder.row(
+        InlineKeyboardButton(text=t(lang, "btn_leaders"),  callback_data="leaders",  icon_custom_emoji_id=EMOJI_LEADERS),
+        InlineKeyboardButton(text=t(lang, "btn_settings"), callback_data="settings", icon_custom_emoji_id=EMOJI_SETTINGS),
+    )
+    return builder.as_markup()
+
+
+def profile_keyboard(lang: str = "ru") -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.row(InlineKeyboardButton(
+        text=t(lang, "btn_inventory"), callback_data="profile_boosters",
+        icon_custom_emoji_id="5445221832074483553"
+    ))
     builder.row(_back_btn("back_to_menu", t(lang, "btn_back")))
     return builder.as_markup()
 
 
-def inventory_keyboard(lang: str = "ru") -> InlineKeyboardMarkup:
+def back_button(lang: str = "ru") -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    builder.row(_back_btn("mine", "Back" if lang == "en" else "Назад"))
+    builder.row(_back_btn("back_to_menu", t(lang, "btn_back")))
     return builder.as_markup()
 
 
-def sell_keyboard(lang: str = "ru") -> InlineKeyboardMarkup:
+def stars_confirm_keyboard(pick_key: str, page: int, invoice_url: str = None) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    label = "Sell all" if lang == "en" else "Продать всё"
-    builder.row(_prem_btn(EMOJI_BTN_SELL_ALL, label, "mine_sell_all"))
-    builder.row(_back_btn("mine", "Back" if lang == "en" else "Назад"))
-    return builder.as_markup()
-
-
-def workshop_keyboard(data: dict, page: int = 0, lang: str = "ru") -> InlineKeyboardMarkup:
-    builder = InlineKeyboardBuilder()
-    current = data.get("pickaxe", "wood_1")
-    owned   = data.get("owned_pickaxes", ["wood_1"])
-    page    = max(0, min(page, WORKSHOP_TOTAL_PAGES - 1))
-    page_keys = WORKSHOP_PAGES[page]
-    buttons = []
-    for key in page_keys:
-        p     = PICKAXES[key]
-        label = p["name"]
-        if key == current:
-            btn = InlineKeyboardButton(text=label, callback_data=f"pick_info_{key}", icon_custom_emoji_id=EMOJI_SELECTED)
-        elif key in owned:
-            btn = InlineKeyboardButton(text=label, callback_data=f"pick_info_{key}")
-        else:
-            btn = InlineKeyboardButton(text=label, callback_data=f"pick_info_{key}", icon_custom_emoji_id=EMOJI_NOT_BOUGHT)
-        buttons.append(btn)
-    for i in range(0, len(buttons), 2):
-        row = buttons[i:i + 2]
-        builder.row(*row)
-    nav_row = []
-    if page > 0:
-        nav_row.append(_prem_btn(EMOJI_BTN_PAGE_PREV, f"{page}", f"mine_workshop_{page - 1}"))
-    if page < WORKSHOP_TOTAL_PAGES - 1:
-        nav_row.append(_prem_btn(EMOJI_BTN_PAGE_NEXT, f"{page + 2}", f"mine_workshop_{page + 1}"))
-    if nav_row:
-        builder.row(*nav_row)
-    builder.row(_back_btn("mine", "Back" if lang == "en" else "Назад"))
-    return builder.as_markup()
-
-
-def pickaxe_detail_keyboard(data: dict, pick_key: str, page: int = -1, lang: str = "ru") -> InlineKeyboardMarkup:
-    builder = InlineKeyboardBuilder()
-    p     = PICKAXES[pick_key]
-    owned = data.get("owned_pickaxes", ["wood_1"])
-    if page < 0:
-        page = get_pickaxe_page(pick_key)
-    if lang == "en":
-        _already_active = "Already active"
-        _select         = "Select"
-        _coins_unavail  = "Coins unavailable"
-        _free           = "Free"
-        _back_lbl       = "Back"
+    if invoice_url:
+        builder.row(InlineKeyboardButton(
+            text="Оплатить",
+            url=invoice_url,
+            icon_custom_emoji_id="5999336376342940892"
+        ))
     else:
-        _already_active = "Уже активна"
-        _select         = "Выбрать"
-        _coins_unavail  = "Монеты недоступны"
-        _free           = "Бесплатно"
-        _back_lbl       = "Назад"
-    if pick_key == data.get("pickaxe", "wood_1"):
-        builder.row(_prem_btn(EMOJI_BTN_ACTIVE, _already_active, "noop"))
-    elif pick_key in owned:
-        builder.row(_prem_btn(EMOJI_BTN_SELECT, _select, f"pick_select_{pick_key}"))
-    elif p["currency"] == "stars":
-        builder.row(_prem_btn(EMOJI_BTN_NO_COINS, _coins_unavail, "noop"))
-        builder.row(_prem_btn(EMOJI_BTN_BUY_STARS, f"{p['cost_stars']:,} ", f"pick_buy_stars_{pick_key}"))
-    elif p["cost"] == 0:
-        builder.row(_prem_btn(EMOJI_BTN_FREE, _free, f"pick_buy_{pick_key}"))
-        builder.row(_prem_btn(EMOJI_BTN_FREE, _free, f"pick_buy_stars_{pick_key}"))
-    else:
-        cost_stars = p.get("cost_stars", 0)
-        builder.row(_prem_btn(EMOJI_BTN_BUY_COINS, f"{_fmt_num(p['cost'])} ", f"pick_buy_{pick_key}"))
-        builder.row(_prem_btn(EMOJI_BTN_BUY_STARS, f"{cost_stars:,} ", f"pick_buy_stars_{pick_key}"))
-    builder.row(_back_btn(f"mine_workshop_{page}", f" {_back_lbl}"))
+        builder.row(InlineKeyboardButton(
+            text="Оплатить",
+            callback_data=f"pick_pay_stars_{pick_key}",
+            icon_custom_emoji_id="5999336376342940892"
+        ))
+    builder.row(InlineKeyboardButton(
+        text="Мои звёзды",
+        url="tg://stars/",
+        icon_custom_emoji_id="5348570868752595928"
+    ))
+    builder.row(_back_btn(f"pick_info_{pick_key}", "Назад"))
     return builder.as_markup()
 
 
-def duration_shop_keyboard(data: dict, lang: str = "ru") -> InlineKeyboardMarkup:
-    builder    = InlineKeyboardBuilder()
-    current    = data.get("mine_duration_key", "5min")
-    owned_durs = data.get("owned_durations", ["5min"])
-    buttons    = []
-    for key in DURATIONS_ORDER:
-        d     = DURATIONS[key]
-        label = _dur_label(d, lang)
-        if key == current:
-            buttons.append(InlineKeyboardButton(text=label, callback_data=f"dur_info_{key}", icon_custom_emoji_id=EMOJI_SELECTED))
-        elif key in owned_durs:
-            buttons.append(InlineKeyboardButton(text=label, callback_data=f"dur_info_{key}"))
-        else:
-            buttons.append(InlineKeyboardButton(text=label, callback_data=f"dur_info_{key}", icon_custom_emoji_id=EMOJI_NOT_BOUGHT))
-    builder.add(*buttons)
-    builder.adjust(3)
-    builder.row(_back_btn("mine", "Back" if lang == "en" else "Назад"))
-    return builder.as_markup()
-
-
-def duration_detail_keyboard(data: dict, dur_key: str, lang: str = "ru") -> InlineKeyboardMarkup:
-    builder    = InlineKeyboardBuilder()
-    d          = DURATIONS[dur_key]
-    owned_durs = data.get("owned_durations", ["5min"])
-    if lang == "en":
-        _already_active = "Already active"
-        _select         = "Select"
-        _back_lbl       = "Back"
-    else:
-        _already_active = "Уже активна"
-        _select         = "Выбрать"
-        _back_lbl       = "Назад"
-    if dur_key == data.get("mine_duration_key", "5min"):
-        builder.row(_prem_btn(EMOJI_BTN_ACTIVE, _already_active, "noop"))
-    elif dur_key in owned_durs:
-        builder.row(_prem_btn(EMOJI_BTN_SELECT, _select, f"dur_select_{dur_key}"))
-    else:
-        builder.row(_prem_btn(EMOJI_BTN_DUR_BUY, f"{_fmt_num(d['cost'])} ", f"dur_buy_{dur_key}"))
-    builder.row(_back_btn("mine_duration_shop", _back_lbl))
-    return builder.as_markup()
-
-
-# ============================================================
-#  ЛОГИКА
-# ============================================================
-
-def sell_all_ores(data: dict, lang: str = "ru") -> tuple:
-    from lang import t
-    total = 0
-    lines = []
-    for ore in ORES:
-        qty = data["ores"].get(ore["key"], 0)
-        if qty > 0:
-            earned = qty * ore["price"]
-            total += earned
-            lines.append(f"<blockquote><b>{_ore_name(ore, lang)}: {qty} (≈ {_fmt_num(earned)} {COIN})</b></blockquote>")
-            data["ores"][ore["key"]] = 0
-    data["balance"] = data.get("balance", 0) + total
-    report = "\n".join(lines) if lines else f"  {t(lang, 'mine_sell_nothing')}"
-    return total, report
-
-
-def buy_pickaxe(data: dict, pick_key: str, lang: str = "ru") -> tuple:
-    from lang import t
-    if pick_key not in PICKAXES:
-        return False, t(lang, "pick_unknown")
-    p = PICKAXES[pick_key]
-    if p["currency"] == "stars":
-        return False, t(lang, "pick_stars_only")
-    owned = data.setdefault("owned_pickaxes", ["wood_1"])
-    if pick_key in owned:
-        return False, t(lang, "pick_already_owned")
-    if p["cost"] == 0:
-        owned.append(pick_key)
-        return True, t(lang, "pick_free_ok").format(name=p["name"])
-    if data["balance"] < p["cost"]:
-        return False, t(lang, "pick_no_coins").format(cost=f"{_fmt_num(p['cost'])} {COIN}")
-    data["balance"] -= p["cost"]
-    owned.append(pick_key)
-    return True, t(lang, "pick_bought").format(name=p["name"], cost=f"{_fmt_num(p['cost'])} {COIN}")
-
-
-def grant_premium_pickaxe(data: dict, pick_key: str, lang: str = "ru") -> tuple:
-    from lang import t
-    if pick_key not in PICKAXES:
-        return False, t(lang, "pick_unknown")
-    p     = PICKAXES[pick_key]
-    owned = data.setdefault("owned_pickaxes", ["wood_1"])
-    if pick_key in owned:
-        return False, t(lang, "pick_already_owned")
-    owned.append(pick_key)
-    stars = p.get("cost_stars", 0)
-    msg = (
-        f"{t(lang, 'pick_premium_thanks')}\n"
-        f"{t(lang, 'pick_premium_got').format(name=p['name'], stars=f'{stars:,}')}\n"
-        f"({p['dig_min']:,}–{p['dig_max']:,} {t(lang, 'pick_premium_hits')})!"
+def stars_confirm_text(p: dict) -> str:
+    from miner import STAR, COIN, TIER_LABELS
+    tier  = TIER_LABELS.get(p.get("tier", ""), "")
+    return (
+        f'<tg-emoji emoji-id="5197371802136892976">⭐</tg-emoji> <b>{p["name"]}</b>\n'
+        f"━━━━━━━━━━━━━━━━━━━━\n\n"
+        f'<blockquote>'
+        f'<tg-emoji emoji-id="5197269100878907942">⭐</tg-emoji><b>Тир: {tier}</b>\n'
+        f'<tg-emoji emoji-id="5310278924616356636">⭐</tg-emoji><b>Ударов за кампанию: {p["dig_min"]:,}–{p["dig_max"]:,}</b>\n'
+        f'<tg-emoji emoji-id="5445353829304387411">⭐</tg-emoji><b>Стоимость: {p["cost_stars"]:,}</b> {STAR}'
+        f'</blockquote>'
     )
-    return True, msg
 
 
-def select_pickaxe(data: dict, pick_key: str, lang: str = "ru") -> tuple:
-    from lang import t
-    owned = data.get("owned_pickaxes", ["wood_1"])
-    if pick_key not in owned:
-        return False, t(lang, "pick_not_owned")
-    if data["mine_start"] is not None and not data["mine_collected"]:
-        return False, t(lang, "pick_no_change_mining")
-    data["pickaxe"] = pick_key
-    return True, t(lang, "pick_selected").format(name=PICKAXES[pick_key]["name"])
+SHOP_TEXT = '<blockquote><tg-emoji emoji-id="5406683434124859552">🛒</tg-emoji> <b>МАГАЗИН</b>\n\n<b>Выбери категорию:</b></blockquote>'
 
 
-def buy_duration(data: dict, dur_key: str, lang: str = "ru") -> tuple:
-    from lang import t
-    if dur_key not in DURATIONS:
-        return False, t(lang, "dur_unknown")
-    d     = DURATIONS[dur_key]
-    owned = data.setdefault("owned_durations", ["5min"])
-    if dur_key in owned:
-        return False, t(lang, "dur_already_owned")
-    if data["balance"] < d["cost"]:
-        return False, t(lang, "dur_no_coins").format(cost=f"{_fmt_num(d['cost'])} {COIN}")
-    data["balance"] -= d["cost"]
-    owned.append(dur_key)
-    dur_lbl = _dur_label(d, lang)
-    return True, t(lang, "dur_bought").format(label=dur_lbl, cost=f"{_fmt_num(d['cost'])} {COIN}")
+def shop_main_keyboard() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.row(InlineKeyboardButton(
+        text="Кейсы", callback_data="shop_cases",
+        icon_custom_emoji_id="5442939099906325301"
+    ))
+    builder.row(_back_btn("back_to_menu", "Назад"))
+    return builder.as_markup()
 
 
-def select_duration(data: dict, dur_key: str, lang: str = "ru") -> tuple:
-    from lang import t
-    owned = data.get("owned_durations", ["5min"])
-    if dur_key not in owned and DURATIONS.get(dur_key, {}).get("cost", 1) != 0:
-        return False, t(lang, "dur_not_owned")
-    if data["mine_start"] is not None and not data["mine_collected"]:
-        return False, t(lang, "dur_no_change_mining")
-    data["mine_duration_key"] = dur_key
-    dur_lbl = _dur_label(DURATIONS[dur_key], lang)
-    return True, t(lang, "dur_selected").format(label=dur_lbl)
+# ---------- КОМАНДЫ ----------
+
+ADMIN_IDS = {8118184388}
 
 
-def collect_mine(data: dict, lang: str = "ru") -> tuple:
-    from lang import t
-    prog          = calc_mine_progress(data)
-    new_campaigns = prog["new_campaigns"]
-    if new_campaigns == 0:
-        return prog, ""
-    from shop import get_active_booster_multiplier, get_active_booster_info, _multiplier_label, get_artifact_mine_multiplier
-    from status import get_status_multiplier as _status_mine_mult
-    multiplier = get_active_booster_multiplier(data) * get_artifact_mine_multiplier(data) * _status_mine_mult(data)
-    pick_key = data.get("pickaxe", "wood_1")
-    results  = {}
-    for _ in range(new_campaigns):
-        for ore, qty in roll_ore(pick_key, multiplier):
-            results[ore["key"]] = results.get(ore["key"], 0) + qty
-            data["ores"][ore["key"]] = data["ores"].get(ore["key"], 0) + qty
-    data["mine_campaigns_done"] = prog["campaigns_done"]
-    if prog["finished"]:
-        data["mine_collected"] = True
-    total_ore_count = sum(results.values())
-    add_xp(data, total_ore_count * XP_PER_ORE)
-    if results:
-        loot_lines = []
-        for key, qty in results.items():
-            ore   = ORES_BY_KEY[key]
-            worth = qty * ore["price"]
-            ore_name = _ore_name(ore, lang)
-            loot_lines.append(f"<blockquote><b>{ore_name}: {qty} (≈ {_fmt_num(worth)} {COIN})</b></blockquote>")
-        loot = "\n".join(loot_lines)
-    else:
-        loot = f"<b>{t(lang, 'mine_collect_nothing')}</b>"
-    bar = progress_bar(prog["percent"])
-    booster_line = ""
-    active = get_active_booster_info(data)
-    if active:
-        mult_label = _multiplier_label(active["multiplier"])
-        booster_label = f"{t(lang, 'mine_booster_active')} {mult_label} {t(lang, 'mine_booster_active_sfx')}"
-        booster_line = f'<tg-emoji emoji-id="5438571934210082705">⚡</tg-emoji> <b>{booster_label}</b>\n'
-    _result_title   = t(lang, "mine_collect_title")
-    _campaigns_lbl  = t(lang, "mine_collect_campaigns")
-    _session_done   = f"<b>{t(lang, 'mine_collect_done')}</b>"
-    _still_running  = f"<b>⏳ {t(lang, 'mine_collect_running')} {fmt_time(prog['time_left'], lang)}</b>"
-    result_text = (
-        f'<tg-emoji emoji-id="5197371802136892976">🎟</tg-emoji> <b>{_result_title}</b>\n'
-        f"━━━━━━━━━━━━━━━━━━━━\n"
-        f'<tg-emoji emoji-id="5375338737028841420">🎟</tg-emoji> <b>{_campaigns_lbl}: {new_campaigns}</b>\n'
-        f'<tg-emoji emoji-id="5231200819986047254">🎟</tg-emoji> {bar}\n'
-        f"{booster_line}\n"
-        f"{loot}\n\n"
-    )
-    if prog["finished"]:
-        result_text += _session_done
-    else:
-        result_text += _still_running
-    return prog, result_text
+@dp.message(Command("add"))
+async def cmd_add_balance(message: Message):
+    if message.from_user.id not in ADMIN_IDS:
+        return  # тихо игнорируем
 
-
-def get_pickaxe_page(pick_key: str) -> int:
-    if pick_key not in PICKAXES_ORDER:
-        return 0
-    idx = PICKAXES_ORDER.index(pick_key)
-    return idx // WORKSHOP_PAGE_SIZE
-
-
-def init_mine_data() -> dict:
-    return {
-        "ores":                {o["key"]: 0 for o in ORES},
-        "pickaxe":             "wood_1",
-        "owned_pickaxes":      ["wood_1"],
-        "mine_duration_key":   "5min",
-        "owned_durations":     ["5min"],
-        "mine_start":          None,
-        "mine_campaigns_done": 0,
-        "mine_collected":      False,
-    }
-
-
-def shop_pickaxes_text(lang: str = "ru") -> str:
-    title = "SHOP — PICKAXES" if lang == "en" else "МАГАЗИН — КИРКИ"
-    hits  = "Hits" if lang == "en" else "Ударов"
-    price = "Price" if lang == "en" else "Цена"
-    per   = "per campaign" if lang == "en" else "за кампанию"
-    lines = [f"🛒 <b>{title}</b>\n━━━━━━━━━━━━━━━━━━━━\n"]
-    for key in PICKAXES_ORDER:
-        p    = PICKAXES[key]
-        cost = _fmt_cost(key, lang)
-        lines.append(
-            f"<b>{p['name']}</b>\n"
-            f"  ⛏ {hits}: <b>{p['dig_min']:,}–{p['dig_max']:,}</b> {per}\n"
-            f"  💵 {price}: <b>{cost}</b>\n"
+    parts = message.text.strip().split()
+    # /add <username|id> <сумма>
+    if len(parts) != 3:
+        await message.reply(
+            "❌ Неверный формат.\nИспользование: <code>/add username|id сумма</code>",
+            parse_mode="HTML"
         )
-    return "\n".join(lines)
+        return
+
+    target_raw = parts[1].lstrip("@")
+    try:
+        amount = int(parts[2])
+    except ValueError:
+        await message.reply("❌ Сумма должна быть целым числом.", parse_mode="HTML")
+        return
+
+    # Поиск пользователя в БД
+    from database import get_all_users, save_user as _save
+    all_users = get_all_users()
+    found = None
+
+    # Сначала пробуем по числовому ID
+    if target_raw.lstrip("-").isdigit():
+        uid = int(target_raw)
+        found = next((u for u in all_users if u["id"] == uid), None)
+    else:
+        # По username (без учёта регистра)
+        found = next(
+            (u for u in all_users
+             if (u.get("username") or "").lower() == target_raw.lower()),
+            None
+        )
+
+    if not found:
+        await message.reply(
+            f"❌ Пользователь <code>{target_raw}</code> не найден в базе.",
+            parse_mode="HTML"
+        )
+        return
+
+    old_balance = found.get("balance", 0)
+    new_balance = old_balance + amount
+    if new_balance < 0:
+        new_balance = 0  # не уходим в минус
+
+    found["balance"] = new_balance
+    _save(found["id"], found)
+
+    name   = found.get("first_name") or found.get("username") or str(found["id"])
+    action = "➕ Выдано" if amount >= 0 else "➖ Снято"
+    coin   = '<tg-emoji emoji-id="5199552030615558774">🪙</tg-emoji>'
+
+    await message.reply(
+        f"✅ <b>Готово!</b>\n\n"
+        f"<blockquote>👤 Игрок: <b>{name}</b> (<code>{found['id']}</code>)\n"
+        f"{action}: <b>{abs(amount):,}</b> {coin}\n"
+        f"Было: <b>{old_balance:,}</b> {coin}\n"
+        f"Стало: <b>{new_balance:,}</b> {coin}</blockquote>",
+        parse_mode="HTML"
+    )
 
 
-def shop_pickaxes_keyboard(data: dict, page: int = 0, lang: str = "ru") -> InlineKeyboardMarkup:
-    return workshop_keyboard(data, page, lang)
+@dp.message(Command("getallart"))
+async def cmd_getallart(message: Message):
+    if message.from_user.id not in ADMIN_IDS:
+        return
+    from shop import _ARTIFACT_POOL, ARTIFACT_POOL_BY_KEY, get_artifact_mine_multiplier, get_artifact_damage_multiplier, get_artifact_pets_multiplier
+    from database import get_user, save_user as _save
+    uid  = message.from_user.id
+    data = get_user(uid)
+    if not data:
+        await message.reply("❌ Пользователь не найден в БД. Напиши /start сначала.", parse_mode="HTML")
+        return
+    artifacts = data.setdefault("artifacts", [])
+    already   = {e["key"] for e in artifacts}
+    added     = []
+    for a in _ARTIFACT_POOL:
+        if a["key"] not in already:
+            artifacts.append({"key": a["key"]})
+            added.append(a)
+    data["artifact_cases_opened"] = data.get("artifact_cases_opened", 0) + len(added)
+    _save(uid, data)
+    mine_mult   = get_artifact_mine_multiplier(data)
+    damage_mult = get_artifact_damage_multiplier(data)
+    pets_mult   = get_artifact_pets_multiplier(data)
+    if added:
+        lines = "\n".join(f'<b>✅ {a["name"]} — {a["multiplier"]}×</b>' for a in added)
+        status = f"<b>Добавлено: {len(added)} шт.</b>\n{lines}"
+    else:
+        status = "<b>Все артефакты уже были в коллекции.</b>"
+    await message.reply(
+        f'<tg-emoji emoji-id="5442939099906325301">💎</tg-emoji> <b>GETALLART</b>\n\n'
+        f'<blockquote>{status}</blockquote>\n\n'
+        f'<blockquote>'
+        f'<b>Итоговые бонусы:</b>\n'
+        f'<b>⛏ Добыча руды: ×{mine_mult}</b>\n'
+        f'<b>⚔️ Урон по боссу: ×{damage_mult}</b>\n'
+        f'<b>🐾 Добыча питомцов: ×{pets_mult}</b>'
+        f'</blockquote>',
+        parse_mode="HTML"
+    )
+
+
+@dp.message(Command("updamage"))
+async def cmd_updamage(message: Message):
+    if message.from_user.id not in ADMIN_IDS:
+        return  # тихо игнорируем
+
+    parts = message.text.strip().split()
+    if len(parts) != 2:
+        await message.reply(
+            "❌ Неверный формат.\nИспользование: <code>/updamage username|id</code>",
+            parse_mode="HTML"
+        )
+        return
+
+    target_raw = parts[1].lstrip("@")
+    from database import get_all_users, save_user as _save
+    all_users = get_all_users()
+
+    if target_raw.lstrip("-").isdigit():
+        found = next((u for u in all_users if u["id"] == int(target_raw)), None)
+    else:
+        found = next(
+            (u for u in all_users if (u.get("username") or "").lower() == target_raw.lower()),
+            None
+        )
+
+    if not found:
+        await message.reply(
+            f"❌ Пользователь <code>{target_raw}</code> не найден в базе.",
+            parse_mode="HTML"
+        )
+        return
+
+    current = found.get("infinite_dmg", False)
+    found["infinite_dmg"] = not current
+    _save(found["id"], found)
+
+    name = found.get("first_name") or found.get("username") or str(found["id"])
+    status = "✅ <b>Включён</b>" if found["infinite_dmg"] else "❌ <b>Выключен</b>"
+
+    await message.reply(
+        f'⚔️ <b>Бесконечный урон для {name}:</b> {status}',
+        parse_mode="HTML"
+    )
+
+
+
+@dp.message(Command("getstatus"))
+async def cmd_getstatus(message: Message):
+    if message.from_user.id not in ADMIN_IDS:
+        return
+
+    parts = message.text.strip().split()
+    # /getstatus <username|id> <vip|pr>
+    if len(parts) != 3 or parts[2].lower() not in ("vip", "pr", "premium"):
+        await message.reply(
+            "❌ Неверный формат.\nИспользование: <code>/getstatus username|id vip|pr</code>",
+            parse_mode="HTML"
+        )
+        return
+
+    target_raw = parts[1].lstrip("@")
+    tier_arg   = parts[2].lower()
+    tier       = "premium" if tier_arg in ("pr", "premium") else "vip"
+
+    from database import get_all_users, save_user as _save
+    all_users = get_all_users()
+
+    if target_raw.lstrip("-").isdigit():
+        found = next((u for u in all_users if u["id"] == int(target_raw)), None)
+    else:
+        found = next(
+            (u for u in all_users if (u.get("username") or "").lower() == target_raw.lower()),
+            None
+        )
+
+    if not found:
+        await message.reply(
+            f"❌ Пользователь <code>{target_raw}</code> не найден в базе.",
+            parse_mode="HTML"
+        )
+        return
+
+    ok, msg = activate_status(found, tier)
+    if ok:
+        _save(found["id"], found)
+
+    name  = found.get("first_name") or found.get("username") or str(found["id"])
+    label = "VIP" if tier == "vip" else "Premium"
+    await message.reply(
+        f'✅ <b>Статус {label} выдан!</b>\n\n'
+        f'<blockquote>👤 Игрок: <b>{name}</b> (<code>{found["id"]}</code>)\n'
+        f'📅 Срок: <b>30 дней</b></blockquote>',
+        parse_mode="HTML"
+    )
+
+
+
+@dp.message(Command("start", "menu"))
+async def send_welcome(message: Message):
+    from database import _load_raw
+    existing = _load_raw(message.from_user.id)
+    u = get_or_create_user(message.from_user)
+    track_user(message.from_user.id)
+
+    # Новый пользователь — сначала выбор языка
+    if existing is None:
+        await message.answer(
+            lang_choose_text("ru"),
+            parse_mode="HTML",
+            reply_markup=lang_choose_keyboard_start(),
+        )
+        return
+
+    lang = get_lang(u)
+    await message.answer(
+        t(lang, "welcome"),
+        parse_mode="HTML",
+        disable_web_page_preview=True,
+        reply_markup=main_menu_keyboard(lang),
+    )
+
+
+# ---------- CALLBACK HANDLER ----------
+
+@dp.callback_query()
+async def handle_callback(call: CallbackQuery):
+    chat_id    = call.message.chat.id
+    message_id = call.message.message_id
+    user       = call.from_user
+
+    # ── Берём персональный Lock и держим его на всё время обработки ──
+    lock = await _get_user_lock(user.id)
+    async with lock:
+        data = get_or_create_user(user)
+        track_user(user.id)
+        lang = get_lang(data)
+
+        async def edit(text, kb, md="HTML"):
+            try:
+                await call.message.edit_text(
+                    text,
+                    parse_mode=md,
+                    reply_markup=kb,
+                    disable_web_page_preview=True
+                )
+            except Exception as e:
+                if "message is not modified" not in str(e):
+                    print(e)
+
+        cd = call.data
+
+        # ===== NOOP =====
+        if cd == "noop":
+            await call.answer()
+            return
+
+        # ===== ПРОФИЛЬ =====
+        if cd == "profile":
+            await edit(profile_text(data), profile_keyboard(lang))
+            return
+
+        # ===== МАГАЗИН =====
+        if cd == "shop":
+            await edit(SHOP_TEXT, shop_main_keyboard())
+            return
+
+        if cd == "shop_cases":
+            await edit(cases_shop_text(), cases_shop_keyboard())
+            return
+
+        # ===== КЕЙСЫ: карточка кейса (инфо + кнопка купить) =====
+        if cd.startswith("case_info_"):
+            case_key = cd.removeprefix("case_info_")
+            from shop import case_detail_text, case_detail_keyboard, CASES
+            case     = CASES.get(case_key)
+            if not case:
+                await call.answer("❌ Кейс не найден.", show_alert=True)
+                return
+            can_buy = data.get("balance", 0) >= case["cost"]
+            await edit(case_detail_text(data, case_key), case_detail_keyboard(case_key, can_buy))
+            return
+
+        # ===== КЕЙСЫ: купить и открыть =====
+        if cd.startswith("case_open_"):
+            case_key = cd.removeprefix("case_open_")
+            ok, msg, instance = open_case(data, case_key)
+            if ok:
+                save_user(data["id"], data)
+                await edit(msg, cases_shop_keyboard())
+            else:
+                await call.answer(_plain(msg), show_alert=True)
+            return
+
+        # ===== ИНВЕНТАРЬ — главная страница выбора раздела =====
+        if cd == "profile_boosters":
+            await edit(inventory_main_text(data), inventory_main_keyboard())
+            return
+
+        # ===== ИНВЕНТАРЬ — раздел ускорителей кирки =====
+        if cd == "inv_boosters":
+            await edit(boosters_inventory_text(data), boosters_inventory_keyboard(data))
+            return
+
+        # ===== ИНВЕНТАРЬ — раздел XP-предметов =====
+        if cd == "inv_xp":
+            await edit(xp_inventory_text(data), xp_inventory_keyboard(data))
+            return
+
+        # ===== КАРТОЧКА УСКОРИТЕЛЯ КИРКИ =====
+        if cd.startswith("boost_info_"):
+            instance_id = cd.removeprefix("boost_info_")
+            await edit(booster_detail_text(data, instance_id), booster_detail_keyboard(data, instance_id))
+            return
+
+        # ===== АКТИВАЦИЯ УСКОРИТЕЛЯ КИРКИ =====
+        if cd.startswith("boost_activate_"):
+            instance_id = cd.removeprefix("boost_activate_")
+            ok, msg = activate_booster(data, instance_id)
+            if ok:
+                save_user(data["id"], data)
+                await call.answer("⚡ Ускоритель активирован!", show_alert=True)
+                await edit(boosters_inventory_text(data), boosters_inventory_keyboard(data))
+            elif msg.startswith("CONFIRM_REPLACE:"):
+                await edit(booster_confirm_replace_text(data, instance_id), booster_confirm_replace_keyboard(instance_id))
+            else:
+                await call.answer(msg, show_alert=True)
+            return
+
+        # ===== ПОДТВЕРЖДЕНИЕ ЗАМЕНЫ УСКОРИТЕЛЯ КИРКИ =====
+        if cd.startswith("boost_replace_"):
+            instance_id = cd.removeprefix("boost_replace_")
+            ok, msg = activate_booster(data, instance_id, force=True)
+            await call.answer("⚡ Ускоритель заменён!" if ok else msg, show_alert=True)
+            if ok:
+                save_user(data["id"], data)
+            await edit(boosters_inventory_text(data), boosters_inventory_keyboard(data))
+            return
+
+        # ===== ПРОДАЖА УСКОРИТЕЛЯ КИРКИ =====
+        if cd.startswith("boost_sell_"):
+            instance_id = cd.removeprefix("boost_sell_")
+            ok, msg, price = sell_booster(data, instance_id)
+            await call.answer(f" Продано за {price:,} монет!" if ok else msg, show_alert=True)
+            if ok:
+                save_user(data["id"], data)
+            await edit(boosters_inventory_text(data), boosters_inventory_keyboard(data))
+            return
+
+        # ===== КАРТОЧКА XP-ПРЕДМЕТА =====
+        if cd.startswith("xp_info_"):
+            instance_id = cd.removeprefix("xp_info_")
+            inv  = data.get("xp_inventory", [])
+            item = next((x for x in inv if x["instance_id"] == instance_id), None)
+            if not item:
+                await call.answer("❌ Предмет не найден.", show_alert=True)
+                return
+            is_boost = item["type"] == "xp_boost"
+            await edit(xp_item_detail_text(data, instance_id), xp_item_detail_keyboard(instance_id, is_boost))
+            return
+
+        # ===== ИСПОЛЬЗОВАНИЕ XP-ПРЕДМЕТА =====
+        if cd.startswith("xp_use_"):
+            instance_id = cd.removeprefix("xp_use_")
+            ok, msg = use_xp_item(data, instance_id)
+            if ok:
+                save_user(data["id"], data)
+                await call.answer("✅ Применено!", show_alert=True)
+                await edit(xp_inventory_text(data), xp_inventory_keyboard(data))
+            elif msg.startswith("CONFIRM_REPLACE_XP:"):
+                await edit(xp_confirm_replace_text(data, instance_id), xp_confirm_replace_keyboard(instance_id))
+            else:
+                await call.answer(msg, show_alert=True)
+            return
+
+        # ===== ПОДТВЕРЖДЕНИЕ ЗАМЕНЫ XP-УСКОРИТЕЛЯ =====
+        if cd.startswith("xp_replace_"):
+            instance_id = cd.removeprefix("xp_replace_")
+            ok, msg = use_xp_item(data, instance_id, force=True)
+            await call.answer(" XP-ускоритель заменён!" if ok else msg, show_alert=True)
+            if ok:
+                save_user(data["id"], data)
+            await edit(xp_inventory_text(data), xp_inventory_keyboard(data))
+            return
+
+        # ===== ПРОДАЖА XP-ПРЕДМЕТА =====
+        if cd.startswith("xp_sell_"):
+            instance_id = cd.removeprefix("xp_sell_")
+            ok, msg, price = sell_xp_item(data, instance_id)
+            await call.answer(f" Продано за {price:,} монет!" if ok else msg, show_alert=True)
+            if ok:
+                save_user(data["id"], data)
+            await edit(xp_inventory_text(data), xp_inventory_keyboard(data))
+            return
+
+        # ===== ИНВЕНТАРЬ — раздел усилителей и ядов =====
+        if cd == "inv_enh":
+            await edit(enh_inventory_text(data), enh_inventory_keyboard(data))
+            return
+
+        # ===== КАРТОЧКА УСИЛИТЕЛЯ / ЯДА =====
+        if cd.startswith("enh_info_"):
+            instance_id = cd.removeprefix("enh_info_")
+            inv  = data.get("enh_inventory", [])
+            item = next((x for x in inv if x["instance_id"] == instance_id), None)
+            if not item:
+                await call.answer("❌ Предмет не найден.", show_alert=True)
+                return
+            await edit(enh_item_detail_text(data, instance_id), enh_item_detail_keyboard(item["type"], instance_id))
+            return
+
+        # ===== ПРИМЕНИТЬ ЯД =====
+        if cd.startswith("enh_use_"):
+            instance_id = cd.removeprefix("enh_use_")
+            ok, msg = use_poison(data, instance_id)
+            if ok:
+                save_user(data["id"], data)
+                await call.answer("☠️ Яд применён!", show_alert=True)
+                await edit(enh_inventory_text(data), enh_inventory_keyboard(data))
+            elif msg.startswith("CONFIRM_REPLACE_POISON:"):
+                await edit(enh_confirm_replace_text(data, instance_id, "poison"), enh_confirm_replace_keyboard(instance_id, "poison"))
+            else:
+                await call.answer(msg, show_alert=True)
+            return
+
+        # ===== АКТИВИРОВАТЬ УСИЛИТЕЛЬ УРОНА =====
+        if cd.startswith("enh_activate_"):
+            instance_id = cd.removeprefix("enh_activate_")
+            ok, msg = activate_enh_boost(data, instance_id)
+            if ok:
+                save_user(data["id"], data)
+                await call.answer("⚡ Усилитель активирован!", show_alert=True)
+                await edit(enh_inventory_text(data), enh_inventory_keyboard(data))
+            elif msg.startswith("CONFIRM_REPLACE_ENH:"):
+                await edit(enh_confirm_replace_text(data, instance_id, "enh_boost"), enh_confirm_replace_keyboard(instance_id, "enh_boost"))
+            else:
+                await call.answer(msg, show_alert=True)
+            return
+
+        # ===== ПОДТВЕРЖДЕНИЕ ЗАМЕНЫ ЯДА =====
+        if cd.startswith("enh_poison_replace_"):
+            instance_id = cd.removeprefix("enh_poison_replace_")
+            ok, msg = use_poison(data, instance_id, force=True)
+            await call.answer("☠️ Яд заменён!" if ok else msg, show_alert=True)
+            if ok:
+                save_user(data["id"], data)
+            await edit(enh_inventory_text(data), enh_inventory_keyboard(data))
+            return
+
+        # ===== ПОДТВЕРЖДЕНИЕ ЗАМЕНЫ УСИЛИТЕЛЯ УРОНА =====
+        if cd.startswith("enh_boost_replace_"):
+            instance_id = cd.removeprefix("enh_boost_replace_")
+            ok, msg = activate_enh_boost(data, instance_id, force=True)
+            await call.answer("⚡ Усилитель заменён!" if ok else msg, show_alert=True)
+            if ok:
+                save_user(data["id"], data)
+            await edit(enh_inventory_text(data), enh_inventory_keyboard(data))
+            return
+
+        # ===== ПРОДАЖА УСИЛИТЕЛЯ / ЯДА =====
+        if cd.startswith("enh_sell_"):
+            instance_id = cd.removeprefix("enh_sell_")
+            ok, msg, price = sell_enh_item(data, instance_id)
+            await call.answer(f"💸 Продано за {price:,} монет!" if ok else msg, show_alert=True)
+            if ok:
+                save_user(data["id"], data)
+            await edit(enh_inventory_text(data), enh_inventory_keyboard(data))
+            return
+            await edit(shop_pickaxes_text(), shop_pickaxes_keyboard(data))
+            return
+
+        # ===== КИРКИ: просмотр карточки =====
+        if cd.startswith("pick_info_"):
+            pick_key = cd.removeprefix("pick_info_")
+            page     = get_pickaxe_page(pick_key)
+            await edit(pickaxe_detail_text(data, pick_key), pickaxe_detail_keyboard(data, pick_key, page))
+            return
+
+        # ===== КИРКИ: купить за монеты =====
+        if cd.startswith("pick_buy_") and not cd.startswith("pick_buy_stars_"):
+            pick_key = cd.removeprefix("pick_buy_")
+            ok, msg  = buy_pickaxe(data, pick_key)
+            await call.answer(msg, show_alert=True)
+            if ok:
+                save_user(data["id"], data)
+            page = get_pickaxe_page(pick_key)
+            await edit(pickaxe_detail_text(data, pick_key), pickaxe_detail_keyboard(data, pick_key, page))
+            return
+
+        # ===== КИРКИ: купить за звёзды (экран подтверждения + инвойс-кнопка) =====
+        if cd.startswith("pick_buy_stars_"):
+            pick_key = cd.removeprefix("pick_buy_stars_")
+            p        = PICKAXES.get(pick_key)
+            if not p:
+                await call.answer("❌ Неизвестная кирка.", show_alert=True)
+                return
+            page = get_pickaxe_page(pick_key)
+            # Создаём ссылку на инвойс и сразу вставляем в кнопку
+            invoice_url = None
+            try:
+                invoice_url = await bot.create_invoice_link(
+                    title=p['name'],
+                    description=f"{p['name']} — {p['dig_min']:,}–{p['dig_max']:,} ударов за кампанию",
+                    payload=f"premium_pickaxe:{pick_key}",
+                    provider_token="",
+                    currency="XTR",
+                    prices=[LabeledPrice(label=p["name"], amount=p["cost_stars"])],
+                )
+            except Exception as e:
+                print(f"Invoice link error: {e}")
+                await call.answer("❌ Ошибка при создании инвойса.", show_alert=True)
+                return
+            # Сохраняем message_id чтобы обновить после оплаты
+            _pending_stars_msg[call.from_user.id] = (
+                call.message.chat.id,
+                call.message.message_id,
+                pick_key
+            )
+            await edit(stars_confirm_text(p), stars_confirm_keyboard(pick_key, page, invoice_url=invoice_url))
+            return
+
+        # ===== КИРКИ: выбрать =====
+        if cd.startswith("pick_select_"):
+            pick_key = cd.removeprefix("pick_select_")
+            ok, msg  = select_pickaxe(data, pick_key)
+            await call.answer(msg, show_alert=True)
+            if ok:
+                save_user(data["id"], data)
+            page = get_pickaxe_page(pick_key)
+            await edit(pickaxe_detail_text(data, pick_key), pickaxe_detail_keyboard(data, pick_key, page))
+            return
+
+        # ===== ДЛИТЕЛЬНОСТИ: просмотр карточки =====
+        if cd.startswith("dur_info_"):
+            dur_key = cd.removeprefix("dur_info_")
+            await edit(duration_detail_text(data, dur_key), duration_detail_keyboard(data, dur_key))
+            return
+
+        # ===== ДЛИТЕЛЬНОСТИ: купить =====
+        if cd.startswith("dur_buy_"):
+            dur_key = cd.removeprefix("dur_buy_")
+            ok, msg = buy_duration(data, dur_key)
+            await call.answer(msg, show_alert=True)
+            if ok:
+                save_user(data["id"], data)
+            await edit(duration_detail_text(data, dur_key), duration_detail_keyboard(data, dur_key))
+            return
+
+        # ===== ДЛИТЕЛЬНОСТИ: выбрать =====
+        if cd.startswith("dur_select_"):
+            dur_key = cd.removeprefix("dur_select_")
+            ok, msg = select_duration(data, dur_key)
+            await call.answer(msg, show_alert=True)
+            if ok:
+                save_user(data["id"], data)
+            await edit(duration_detail_text(data, dur_key), duration_detail_keyboard(data, dur_key))
+            return
+
+        # ===== ШАХТА =====
+        if cd == "mine":
+            await edit(mine_text(data), mine_keyboard(data))
+            return
+
+        if cd == "mine_start":
+            if data["mine_start"] is not None and not data["mine_collected"]:
+                await call.answer("⛏️ Шахта уже работает!", show_alert=True)
+                return
+            data["mine_start"]          = now_ts()
+            data["mine_campaigns_done"] = 0
+            data["mine_collected"]      = False
+            save_user(data["id"], data)
+            await edit(mine_text(data), mine_keyboard(data))
+            return
+
+        if cd == "mine_refresh":
+            await edit(mine_text(data), mine_keyboard(data))
+            return
+
+        if cd == "mine_collect":
+            if data["mine_start"] is None:
+                await call.answer("Сначала запусти шахту!", show_alert=True)
+                return
+            prog, result_text = collect_mine(data)
+            if not result_text:
+                await call.answer("⏳ Ещё ни одной кампании не завершено!", show_alert=True)
+                return
+            save_user(data["id"], data)
+            await edit(result_text, mine_keyboard(data))
+            return
+
+        if cd == "mine_sell_screen":
+            await edit(sell_screen_text(data), sell_keyboard())
+            return
+
+        if cd == "mine_sell_all":
+            total, report = sell_all_ores(data)
+            if total == 0:
+                await call.answer("Нечего продавать!", show_alert=True)
+                return
+            save_user(data["id"], data)
+            sell_text = (
+                f'<tg-emoji emoji-id="5206607081334906820">🎟</tg-emoji> <b>Успешно!</b>\n'
+                f"━━━━━━━━━━━━━━━━━━━━\n\n"
+                f"{report}\n\n"
+                f'<tg-emoji emoji-id="5429651785352501917">🎟</tg-emoji> <b>Итого получено: {total:,}</b> <tg-emoji emoji-id="5199552030615558774">🎟</tg-emoji>\n'
+                f'<tg-emoji emoji-id="5278467510604160626">🎟</tg-emoji> <b>Баланс: {data["balance"]:,}</b> <tg-emoji emoji-id="5199552030615558774">🎟</tg-emoji>'
+            )
+            await edit(sell_text, mine_keyboard(data))
+            return
+
+        # ===== ИНВЕНТАРЬ =====
+        if cd == "mine_inventory":
+            await edit(inventory_screen_text(data), inventory_keyboard())
+            return
+
+        # ===== МАСТЕРСКАЯ (с поддержкой страниц) =====
+        if cd == "mine_workshop" or cd == "mine_workshop_0":
+            await edit(workshop_text(data, 0), workshop_keyboard(data, 0))
+            return
+
+        if cd.startswith("mine_workshop_"):
+            try:
+                page = int(cd.removeprefix("mine_workshop_"))
+            except ValueError:
+                page = 0
+            await edit(workshop_text(data, page), workshop_keyboard(data, page))
+            return
+
+        if cd == "mine_duration_shop":
+            await edit(duration_shop_text(data), duration_shop_keyboard(data))
+            return
+
+        # ===== НАЗАД В МЕНЮ =====
+        if cd == "back_to_menu":
+            try:
+                await call.message.edit_text(
+                    t(lang, "welcome"),
+                    parse_mode="HTML",
+                    disable_web_page_preview=True,
+                    reply_markup=main_menu_keyboard(lang)
+                )
+            except Exception as e:
+                if "message is not modified" not in str(e):
+                    print(e)
+            return
+
+        # ===== ПИТОМЦЫ: главный экран =====
+        if cd == "pets" or cd == "pets_page_0":
+            await edit(pets_main_text(data), pets_main_keyboard(data, 0))
+            return
+
+        if cd.startswith("pets_page_"):
+            try:
+                page = int(cd.removeprefix("pets_page_"))
+            except ValueError:
+                page = 0
+            await edit(pets_main_text(data), pets_main_keyboard(data, page))
+            return
+
+        # ===== ПИТОМЦЫ: карточка =====
+        if cd.startswith("pet_info_"):
+            pk   = cd.removeprefix("pet_info_")
+            idx  = next((i for i, p in enumerate(PETS) if p["key"] == pk), 0)
+            page = idx // 5
+            await edit(pet_detail_text(data, pk), pet_detail_keyboard(data, pk, page))
+            return
+
+        # ===== ПИТОМЦЫ: покупка =====
+        if cd.startswith("pet_buy_"):
+            pk      = cd.removeprefix("pet_buy_")
+            ok, msg = buy_pet(data, pk)
+            if ok:
+                save_user(data["id"], data)
+                await call.answer("✅ Питомец куплен!", show_alert=False)
+            else:
+                # Ошибки короткие — strip HTML-тегов для alert
+                import re
+                plain = re.sub(r'<[^>]+>', '', msg)
+                await call.answer(plain[:200], show_alert=True)
+            idx  = next((i for i, p in enumerate(PETS) if p["key"] == pk), 0)
+            page = idx // 5
+            await edit(pet_detail_text(data, pk), pet_detail_keyboard(data, pk, page))
+            return
+
+        # ===== ОХОТА: главный экран =====
+        if cd == "hunt":
+            await edit(hunt_main_text(data), hunt_main_keyboard(data))
+            return
+
+        # ===== ОХОТА: магазин мечей =====
+        if cd == "hunt_shop_swords":
+            await edit(sword_shop_text(data, 0), sword_shop_keyboard(data, 0))
+            return
+
+        # ===== ОХОТА: пагинация магазина мечей =====
+        if cd.startswith("sword_shop_page_"):
+            page = int(cd.removeprefix("sword_shop_page_"))
+            await call.answer()
+            await edit(sword_shop_text(data, page), sword_shop_keyboard(data, page))
+            return
+
+        # ===== ОХОТА: мои мечи =====
+        if cd == "hunt_my_swords":
+            await edit(my_swords_text(data), my_swords_keyboard(data))
+            return
+
+        # ===== ОХОТА: карточка меча =====
+        if cd.startswith("sword_info_"):
+            sk = cd.removeprefix("sword_info_")
+            await edit(sword_detail_text(data, sk), sword_detail_keyboard(data, sk))
+            return
+
+        # ===== ОХОТА: купить меч =====
+        if cd.startswith("sword_buy_"):
+            sk = cd.removeprefix("sword_buy_")
+            ok, msg = buy_sword(data, sk)
+            if ok:
+                save_user(data["id"], data)
+                await call.answer("✅ Меч куплен!", show_alert=False)
+            else:
+                import re as _re2
+                plain = _re2.sub(r'<[^>]+>', '', msg)
+                await call.answer(plain[:200], show_alert=True)
+            await edit(sword_detail_text(data, sk), sword_detail_keyboard(data, sk))
+            return
+
+        # ===== ОХОТА: экипировать меч =====
+        if cd.startswith("sword_equip_"):
+            sk = cd.removeprefix("sword_equip_")
+            ok, msg = equip_sword(data, sk)
+            if ok:
+                save_user(data["id"], data)
+                await call.answer("✅ Экипировано!", show_alert=False)
+            await edit(my_swords_text(data), my_swords_keyboard(data))
+            return
+
+        # ===== ОХОТА: экран атаки босса =====
+        if cd == "hunt_boss":
+            await edit(boss_attack_text(data), boss_attack_keyboard(data))
+            return
+
+        # ===== ОХОТА: удар по боссу =====
+        if cd == "hunt_strike":
+            result = attack_boss(data)
+            # Кулдаун — тихий игнор, просто отвечаем на callback без действий
+            if result.get("error") == "cooldown":
+                await call.answer()
+                return
+            if result.get("boss_killed") or result.get("hit"):
+                save_user(data["id"], data)
+                # ── Запись статистики для лидерборда ──
+                try:
+                    _boss_state = get_boss_state()
+                    _boss_key   = _boss_state.get("boss_key", "unknown")
+                    record_boss_hit(
+                        uid        = user.id,
+                        username   = user.username or "",
+                        first_name = user.first_name or "",
+                        boss_key   = _boss_key,
+                        damage     = result.get("dmg", 0),
+                        killed     = bool(result.get("boss_killed")),
+                    )
+                except Exception as _le:
+                    print(f"[leaders] record_boss_hit error: {_le}")
+            txt = boss_strike_result_text(data, result)
+            kb  = boss_strike_keyboard(data)
+            if result.get("crit"):
+                await call.answer("⭐ КРИТИЧЕСКИЙ УДАР!", show_alert=False)
+            else:
+                await call.answer()
+            await edit(txt, kb)
+            return
+
+        # ===== КЕЙС АРТЕФАКТОВ: экран информации =====
+        if cd == "artifact_case_info":
+            await edit(artifact_case_detail_text(data), artifact_case_keyboard())
+            return
+
+        # ===== КЕЙС АРТЕФАКТОВ: создать инвойс и обновить сообщение =====
+        if cd == "artifact_case_buy":
+            invoice_url = None
+            try:
+                invoice_url = await bot.create_invoice_link(
+                    title="Кейс Артефактов",
+                    description="Открой кейс и получи постоянный артефакт с бонусом навсегда!",
+                    payload="artifact_case",
+                    provider_token="",
+                    currency="XTR",
+                    prices=[LabeledPrice(label="Кейс Артефактов", amount=ARTIFACT_CASE_COST_STARS)],
+                )
+            except Exception as e:
+                print(f"Artifact invoice error: {e}")
+                await call.answer("❌ Ошибка при создании инвойса.", show_alert=True)
+                return
+            _pending_artifact_msg[call.from_user.id] = (
+                call.message.chat.id,
+                call.message.message_id,
+            )
+            await edit(artifact_case_detail_text(data), artifact_case_keyboard(invoice_url=invoice_url))
+            return
+
+        # ===== КЕЙС АРТЕФАКТОВ: коллекция =====
+        if cd == "artifact_collection":
+            await edit(artifact_collection_text(data), artifact_collection_keyboard())
+            return
+
+        # ===== СТАТУС: главный экран =====
+        if cd == "status":
+            await edit(status_main_text(data), status_main_keyboard(data))
+            return
+
+        # ===== СТАТУС: карточка VIP =====
+        if cd == "status_vip_info":
+            await edit(status_vip_text(data), status_vip_keyboard(data))
+            return
+
+        # ===== СТАТУС: карточка Premium =====
+        if cd == "status_premium_info":
+            await edit(status_premium_text(data), status_premium_keyboard(data))
+            return
+
+        # ===== СТАТУС: купить VIP (создать инвойс) =====
+        if cd == "status_buy_vip":
+            invoice_url = None
+            try:
+                invoice_url = await bot.create_invoice_link(
+                    title="Статус VIP — 30 дней",
+                    description="×1.3 к добыче, +15% крит, удача в кейсах, Яд Гадюки в подарок",
+                    payload="status_vip",
+                    provider_token="",
+                    currency="XTR",
+                    prices=[LabeledPrice(label="VIP на 30 дней", amount=VIP_COST_STARS)],
+                )
+            except Exception as e:
+                print(f"VIP invoice error: {e}")
+                await call.answer("❌ Ошибка при создании инвойса.", show_alert=True)
+                return
+            _pending_status_msg[call.from_user.id] = (
+                call.message.chat.id,
+                call.message.message_id,
+                "vip",
+            )
+            await edit(status_vip_text(data), status_vip_keyboard_invoice(invoice_url))
+            return
+
+        # ===== СТАТУС: купить Premium (создать инвойс) =====
+        if cd == "status_buy_premium":
+            invoice_url = None
+            try:
+                invoice_url = await bot.create_invoice_link(
+                    title="Статус Premium — 30 дней",
+                    description="×1.6 к добыче, +25% крит, макс. удача, Яд Кобры в подарок",
+                    payload="status_premium",
+                    provider_token="",
+                    currency="XTR",
+                    prices=[LabeledPrice(label="Premium на 30 дней", amount=PREMIUM_COST_STARS)],
+                )
+            except Exception as e:
+                print(f"Premium invoice error: {e}")
+                await call.answer("❌ Ошибка при создании инвойса.", show_alert=True)
+                return
+            _pending_status_msg[call.from_user.id] = (
+                call.message.chat.id,
+                call.message.message_id,
+                "premium",
+            )
+            await edit(status_premium_text(data), status_premium_keyboard_invoice(invoice_url))
+            return
+
+        # ===== СТАТУС: апгрейд VIP → Premium (создать инвойс за 59 Stars) =====
+        if cd == "status_upgrade_premium":
+            # Только если VIP активен
+            from status import get_active_status as _gas
+            if _gas(data) != "vip":
+                await call.answer("❌ Апгрейд доступен только при активном VIP.", show_alert=True)
+                return
+            invoice_url = None
+            try:
+                invoice_url = await bot.create_invoice_link(
+                    title="Улучшение VIP → Premium",
+                    description="×1.6 к добыче, +25% крит, макс. удача, Яд Кобры в подарок",
+                    payload="status_upgrade_premium",
+                    provider_token="",
+                    currency="XTR",
+                    prices=[LabeledPrice(label="Апгрейд до Premium", amount=UPGRADE_COST_STARS)],
+                )
+            except Exception as e:
+                print(f"Upgrade invoice error: {e}")
+                await call.answer("❌ Ошибка при создании инвойса.", show_alert=True)
+                return
+            _pending_status_msg[call.from_user.id] = (
+                call.message.chat.id,
+                call.message.message_id,
+                "premium",
+            )
+            await edit(status_premium_text(data), status_upgrade_keyboard_invoice(invoice_url))
+            return
+
+
+        # ===== ЛИДЕРЫ: главный экран =====
+        if cd == "leaders":
+            await edit(leaders_main_text(viewer_uid=user.id), leaders_main_keyboard())
+            return
+
+        # ===== ЛИДЕРЫ: переключение категории / периода =====
+        # Формат: leaders_{category}_{period}
+        if cd.startswith("leaders_"):
+            parts = cd.split("_", 2)  # ["leaders", category, period]
+            if len(parts) == 3:
+                _lcat, _lper = parts[1], parts[2]
+                if _lcat in _LEADERS_CATEGORIES and _lper in _LEADERS_PERIODS:
+                    await edit(
+                        leaders_text(_lcat, _lper, viewer_uid=user.id),
+                        leaders_keyboard(_lcat, _lper)
+                    )
+                    return
+
+        # ===== СТАТИСТИКА =====
+        if cd == "stats":
+            await edit(stats_text(lang), stats_keyboard(lang))
+            await call.answer()
+            return
+
+        # ===== НАСТРОЙКИ =====
+        if cd == "settings":
+            await edit(settings_text(data), settings_keyboard(data))
+            await call.answer()
+            return
+
+        # ===== НАСТРОЙКИ: смена языка (из настроек) =====
+        if cd == "settings_lang":
+            await edit(lang_choose_text(lang), lang_choose_keyboard())
+            await call.answer()
+            return
+
+        if cd in ("set_lang_ru", "set_lang_en"):
+            new_lang = "ru" if cd == "set_lang_ru" else "en"
+            data["lang"] = new_lang
+            save_user(data["id"], data)
+            alert = "🇷🇺 Язык установлен: Русский" if new_lang == "ru" else "🇬🇧 Language set: English"
+            await call.answer(alert, show_alert=True)
+            await edit(settings_text(data), settings_keyboard(data))
+            return
+
+        # ===== ВЫБОР ЯЗЫКА ПРИ СТАРТЕ =====
+        if cd in ("start_lang_ru", "start_lang_en"):
+            new_lang = "ru" if cd == "start_lang_ru" else "en"
+            data["lang"] = new_lang
+            save_user(data["id"], data)
+            await call.message.edit_text(
+                t(new_lang, "welcome"),
+                parse_mode="HTML",
+                disable_web_page_preview=True,
+                reply_markup=main_menu_keyboard(new_lang),
+            )
+            await call.answer()
+            return
+
+        # ===== ЗАГЛУШКИ (в разработке) =====
+        responses = {
+            "exchange": f'<tg-emoji emoji-id="5402186569006210455">💱</tg-emoji> <b>{"БИРЖА" if lang == "ru" else "EXCHANGE"}</b>\n\n<blockquote><b>{t(lang, "in_development")}</b></blockquote>',
+        }
+        text = responses.get(cd, t(lang, "unknown_cmd"))
+        try:
+            await call.message.edit_text(
+                text,
+                parse_mode="HTML",
+                reply_markup=back_button(lang)
+            )
+        except Exception as e:
+            if "message is not modified" not in str(e):
+                print(e)
+
+
+# ===== ОПЛАТА ЧЕРЕЗ TELEGRAM STARS =====
+
+@dp.pre_checkout_query()
+async def handle_pre_checkout(query: PreCheckoutQuery):
+    await query.answer(ok=True)
+
+
+@dp.message(F.successful_payment)
+async def handle_successful_payment(message: Message):
+    payload = message.successful_payment.invoice_payload
+
+    # ===== ОПЛАТА: Кейс Артефактов =====
+    if payload == "artifact_case":
+        from miner import STAR
+        from database import get_user, save_user
+
+        # Проверяем сумму оплаты — защита от подмены инвойса
+        paid_amount = message.successful_payment.total_amount
+        if paid_amount != ARTIFACT_CASE_COST_STARS:
+            await bot.send_message(message.chat.id, "❌ Ошибка: сумма оплаты не совпадает.")
+            return
+
+        # Защита от replay-атаки: один charge_id обрабатывается ровно один раз
+        charge_id = message.successful_payment.telegram_payment_charge_id
+        if charge_id in _processed_charge_ids:
+            return
+        _processed_charge_ids.add(charge_id)
+
+        uid = message.from_user.id
+        lock = await _get_user_lock(uid)
+        async with lock:
+            data = get_user(uid)
+            if not data:
+                return
+            ok, msg, chosen = open_artifact_case(data)
+            if ok:
+                save_user(data["id"], data)
+
+            # 1) Обновляем старое сообщение — убираем ссылку-инвойс
+            pending = _pending_artifact_msg.pop(uid, None)
+            if pending:
+                old_chat_id, old_msg_id = pending
+                try:
+                    await bot.edit_message_text(
+                        artifact_case_detail_text(data),
+                        chat_id=old_chat_id,
+                        message_id=old_msg_id,
+                        reply_markup=artifact_case_keyboard(),
+                        parse_mode="HTML"
+                    )
+                except Exception:
+                    pass
+
+            # 2) Сообщение об успехе
+            _effect_labels = {
+                "mine":   "к добыче руды",
+                "damage": "к урону по боссу",
+                "pets":   "к добыче питомцов",
+                "all":    "ко всем трём видам добычи",
+            }
+            effect_label = _effect_labels.get(chosen["effect"], "")
+            success_text = (
+                f'<tg-emoji emoji-id="5267500801240092311">⭐</tg-emoji> <b>Оплата прошла успешно!</b>\n'
+                f'━━━━━━━━━━━━━━━━━━━━\n\n'
+                f'<blockquote>'
+                f'<tg-emoji emoji-id="5442939099906325301">💎</tg-emoji> <b>Кейс Артефактов открыт!</b>\n'
+                f'<tg-emoji emoji-id="5397782960512444700">🎟</tg-emoji> <b>Артефакт: {chosen["name"]}</b>\n'
+                f'<tg-emoji emoji-id="5375338737028841420">🎟</tg-emoji> <b>Бонус: {chosen["multiplier"]}× {effect_label} навсегда</b>\n'
+                f'<tg-emoji emoji-id="5267500801240092311">🎟</tg-emoji> <b>Потрачено: {ARTIFACT_CASE_COST_STARS} {STAR}</b>'
+                f'</blockquote>\n\n'
+                f'<tg-emoji emoji-id="5206607081334906820">🎟</tg-emoji> <b>Артефакт добавлен в коллекцию!</b>'
+            )
+            await bot.send_message(message.chat.id, success_text, parse_mode="HTML")
+        return
+
+    if payload.startswith("premium_pickaxe:"):
+        pick_key = payload.split(":", 1)[1]
+        from miner import (
+            grant_premium_pickaxe, pickaxe_detail_text, pickaxe_detail_keyboard,
+            get_pickaxe_page, PICKAXES, TIER_LABELS, STAR
+        )
+        from database import get_user, save_user
+
+        # Проверяем сумму: должна совпадать с ценой кирки в Stars
+        from miner import PICKAXES as _PX
+        _pick_entry = _PX.get(pick_key)
+        paid_amount = message.successful_payment.total_amount
+        if _pick_entry and _pick_entry.get("cost_stars") and paid_amount != _pick_entry["cost_stars"]:
+            await bot.send_message(message.chat.id, "❌ Ошибка: сумма оплаты не совпадает.")
+            return
+
+        # Защита от replay-атаки
+        charge_id = message.successful_payment.telegram_payment_charge_id
+        if charge_id in _processed_charge_ids:
+            return
+        _processed_charge_ids.add(charge_id)
+
+        uid = message.from_user.id
+        lock = await _get_user_lock(uid)
+        async with lock:
+            data = get_user(uid)
+            if not data:
+                return
+            ok, _ = grant_premium_pickaxe(data, pick_key)
+            if ok:
+                save_user(data["id"], data)
+            p    = PICKAXES[pick_key]
+            tier = TIER_LABELS.get(p.get("tier", ""), "")
+            page = get_pickaxe_page(pick_key)
+
+            # 1) Обновляем старое сообщение (экран кирки) — теперь с кнопкой «Выбрать»
+            pending = _pending_stars_msg.pop(uid, None)
+            if pending:
+                old_chat_id, old_msg_id, _ = pending
+                try:
+                    await bot.edit_message_text(
+                        pickaxe_detail_text(data, pick_key),
+                        chat_id=old_chat_id,
+                        message_id=old_msg_id,
+                        reply_markup=pickaxe_detail_keyboard(data, pick_key, page),
+                        parse_mode="HTML"
+                    )
+                except Exception:
+                    pass
+
+            # 2) Новое сообщение об успешной оплате
+            success_text = (
+                f'<tg-emoji emoji-id="5267500801240092311">⭐</tg-emoji> <b>Оплата прошла успешно!</b>\n'
+                f'━━━━━━━━━━━━━━━━━━━━\n\n'
+                f'<blockquote>'
+                f'<tg-emoji emoji-id="5397782960512444700">🎟</tg-emoji> <b>Кирка: {p["name"]}</b>\n'
+                f'<tg-emoji emoji-id="5444856076954520455">🎟</tg-emoji> <b>Тир: {tier}</b>\n'
+                f'<tg-emoji emoji-id="5375338737028841420">🎟</tg-emoji> <b>Ударов за кампанию: {p["dig_min"]:,}–{p["dig_max"]:,}</b>\n'
+                f'<tg-emoji emoji-id="5267500801240092311">🎟</tg-emoji> <b>Потрачено: {p["cost_stars"]:,} {STAR}</b>'
+                f'</blockquote>\n\n'
+                f'<tg-emoji emoji-id="5206607081334906820">🎟</tg-emoji> <b>Кирка добавлена в мастерскую!</b>'
+            )
+            await bot.send_message(
+                message.chat.id,
+                success_text,
+                parse_mode="HTML"
+            )
+
+    # ===== ОПЛАТА: Статус VIP =====
+    if payload == "status_vip":
+        from database import get_user, save_user
+        paid_amount = message.successful_payment.total_amount
+        if paid_amount != VIP_COST_STARS:
+            await bot.send_message(message.chat.id, "❌ Ошибка: сумма оплаты не совпадает.")
+            return
+        charge_id = message.successful_payment.telegram_payment_charge_id
+        if charge_id in _processed_charge_ids:
+            return
+        _processed_charge_ids.add(charge_id)
+        uid = message.from_user.id
+        lock = await _get_user_lock(uid)
+        async with lock:
+            data = get_user(uid)
+            if not data:
+                return
+            ok, msg = activate_status(data, "vip")
+            if ok:
+                save_user(data["id"], data)
+            # Обновляем старое сообщение
+            pending = _pending_status_msg.pop(uid, None)
+            if pending:
+                old_chat_id, old_msg_id, _ = pending
+                try:
+                    await bot.edit_message_text(
+                        status_vip_text(data),
+                        chat_id=old_chat_id,
+                        message_id=old_msg_id,
+                        reply_markup=status_vip_keyboard(data),
+                        parse_mode="HTML"
+                    )
+                except Exception:
+                    pass
+            success_text = (
+                f'<tg-emoji emoji-id="5267500801240092311">⭐</tg-emoji> <b>Оплата прошла успешно!</b>\n'
+                f'━━━━━━━━━━━━━━━━━━━━\n\n'
+                f'<blockquote>'
+                f'<tg-emoji emoji-id="5325547803936572038">👑</tg-emoji> <b>Статус VIP активирован на 30 дней!</b>\n'
+                f'<tg-emoji emoji-id="5197371802136892976">⛏</tg-emoji> <b>×1.3 к добыче · +15% крит · Удача в кейсах</b>\n'
+                f'<tg-emoji emoji-id="5348570868752595928">⭐</tg-emoji> <b>Потрачено: {VIP_COST_STARS} Stars</b>'
+                f'</blockquote>'
+            )
+            await bot.send_message(message.chat.id, success_text, parse_mode="HTML")
+        return
+
+    # ===== ОПЛАТА: Статус Premium =====
+    if payload == "status_premium":
+        from database import get_user, save_user
+        paid_amount = message.successful_payment.total_amount
+        if paid_amount != PREMIUM_COST_STARS:
+            await bot.send_message(message.chat.id, "❌ Ошибка: сумма оплаты не совпадает.")
+            return
+        charge_id = message.successful_payment.telegram_payment_charge_id
+        if charge_id in _processed_charge_ids:
+            return
+        _processed_charge_ids.add(charge_id)
+        uid = message.from_user.id
+        lock = await _get_user_lock(uid)
+        async with lock:
+            data = get_user(uid)
+            if not data:
+                return
+            ok, msg = activate_status(data, "premium")
+            if ok:
+                save_user(data["id"], data)
+            pending = _pending_status_msg.pop(uid, None)
+            if pending:
+                old_chat_id, old_msg_id, _ = pending
+                try:
+                    await bot.edit_message_text(
+                        status_premium_text(data),
+                        chat_id=old_chat_id,
+                        message_id=old_msg_id,
+                        reply_markup=status_premium_keyboard(data),
+                        parse_mode="HTML"
+                    )
+                except Exception:
+                    pass
+            success_text = (
+                f'<tg-emoji emoji-id="5267500801240092311">⭐</tg-emoji> <b>Оплата прошла успешно!</b>\n'
+                f'━━━━━━━━━━━━━━━━━━━━\n\n'
+                f'<blockquote>'
+                f'<tg-emoji emoji-id="5427168083074628963">⭐</tg-emoji> <b>Статус Premium активирован на 30 дней!</b>\n'
+                f'<tg-emoji emoji-id="5197371802136892976">⛏</tg-emoji> <b>×1.6 к добыче · +25% крит · Макс. удача</b>\n'
+                f'<tg-emoji emoji-id="5348570868752595928">⭐</tg-emoji> <b>Потрачено: {PREMIUM_COST_STARS} Stars</b>'
+                f'</blockquote>'
+            )
+            await bot.send_message(message.chat.id, success_text, parse_mode="HTML")
+        return
+
+    # ===== ОПЛАТА: Апгрейд VIP → Premium =====
+    if payload == "status_upgrade_premium":
+        from database import get_user, save_user
+        paid_amount = message.successful_payment.total_amount
+        if paid_amount != UPGRADE_COST_STARS:
+            await bot.send_message(message.chat.id, "❌ Ошибка: сумма оплаты не совпадает.")
+            return
+        charge_id = message.successful_payment.telegram_payment_charge_id
+        if charge_id in _processed_charge_ids:
+            return
+        _processed_charge_ids.add(charge_id)
+        uid = message.from_user.id
+        lock = await _get_user_lock(uid)
+        async with lock:
+            data = get_user(uid)
+            if not data:
+                return
+            ok, msg = activate_status(data, "premium")
+            if ok:
+                save_user(data["id"], data)
+            pending = _pending_status_msg.pop(uid, None)
+            if pending:
+                old_chat_id, old_msg_id, _ = pending
+                try:
+                    await bot.edit_message_text(
+                        status_premium_text(data),
+                        chat_id=old_chat_id,
+                        message_id=old_msg_id,
+                        reply_markup=status_premium_keyboard(data),
+                        parse_mode="HTML"
+                    )
+                except Exception:
+                    pass
+            success_text = (
+                f'<tg-emoji emoji-id="5267500801240092311">⭐</tg-emoji> <b>Оплата прошла успешно!</b>\n'
+                f'━━━━━━━━━━━━━━━━━━━━\n\n'
+                f'<blockquote>'
+                f'<tg-emoji emoji-id="5427168083074628963">⭐</tg-emoji> <b>VIP улучшен до Premium на 30 дней!</b>\n'
+                f'<tg-emoji emoji-id="5197371802136892976">⛏</tg-emoji> <b>×1.6 к добыче · +25% крит · Макс. удача</b>\n'
+                f'<tg-emoji emoji-id="5348570868752595928">⭐</tg-emoji> <b>Потрачено: {UPGRADE_COST_STARS} Stars</b>'
+                f'</blockquote>'
+            )
+            await bot.send_message(message.chat.id, success_text, parse_mode="HTML")
+        return
+
+
+async def _pets_loop():
+    """Фоновая задача: уведомления и доход питомцев.
+    1 питомец  → сообщение каждые 12 ч от него.
+    2+ питомца → каждые 6 ч случайный питомец шлёт сообщение + начисляет доход.
+    """
+    from database import get_all_users, save_user as _sv
+    import random as _rnd
+
+    INTERVAL_ONE  = 12 * 3600
+    INTERVAL_MANY =  6 * 3600
+
+    while True:
+        try:
+            for _d in get_all_users():
+                owned = _d.get("owned_pets", [])
+                if not owned:
+                    continue
+
+                now      = int(__import__("datetime").datetime.now(
+                               __import__("datetime").timezone.utc).timestamp())
+                last_all = _d.get("pet_last_group_notify", 0)
+                interval = INTERVAL_ONE if len(owned) == 1 else INTERVAL_MANY
+
+                if now - last_all < interval:
+                    continue
+
+                # Выбираем рандомного питомца
+                pk  = _rnd.choice(owned)
+                pet = __import__("pets").PETS_BY_KEY.get(pk)
+                if not pet:
+                    continue
+
+                amount        = _rnd.randint(pet["income_min"], pet["income_max"])
+                # Множитель артефактов к добыче питомцов
+                try:
+                    from shop import get_artifact_pets_multiplier as _apt_mult
+                    amount = int(amount * _apt_mult(_d))
+                except Exception:
+                    pass
+                _d["balance"] = _d.get("balance", 0) + amount
+                _d["pet_last_group_notify"] = now
+
+                msgs       = __import__("pets")._NOTIFICATIONS.get(pk, [])
+                notif_text = _rnd.choice(msgs) if msgs else ""
+                msg_text   = pet_income_text(pk, amount, notif_text)
+                try:
+                    await bot.send_message(_d["id"], msg_text, parse_mode="HTML")
+                except Exception:
+                    pass
+                _sv(_d["id"], _d)
+        except Exception as _e:
+            print(f"[pets_loop] {_e}")
+        await asyncio.sleep(15 * 60)
+
+
+async def _poison_loop():
+    """Фоновая задача: яд наносит урон боссу каждую минуту.
+    Суммарный урон = damage, распределённый равномерно по 30 тикам (30 мин).
+    Если босс умирает от яда — владелец получает награду.
+    """
+    from database import get_all_users, save_user as _sv
+    from hunt import get_boss_state, _save_boss_state, BOSS_KILL_REWARD, _now_ts as _h_now
+    from shop import get_active_poison_info
+
+    while True:
+        await asyncio.sleep(60)  # тик каждую минуту
+        try:
+            from database import get_all_users as _gau
+            for _d in _gau():
+                poison = get_active_poison_info(_d)
+                if not poison:
+                    continue
+
+                now = _h_now()
+
+                # Считаем сколько тиков уже прошло и сколько урона нанесено
+                applied_at   = poison.get("applied_at", poison["ends_at"] - 1800)
+                total_damage = poison["damage"]
+                duration_sec = 30 * 60  # 30 минут = 1800 сек
+                tick_damage  = round(total_damage / 30)  # урон за 1 тик (1 мин)
+
+                last_tick = poison.get("last_tick", applied_at)
+                if now - last_tick < 55:  # ещё не прошла минута
+                    continue
+
+                # Наносим тик урона боссу
+                state = get_boss_state()
+                if not state.get("boss_alive"):
+                    continue
+
+                hp_before = state["boss_hp"]
+                hp_after  = max(0, hp_before - tick_damage)
+                state["boss_hp"] = hp_after
+
+                poison["last_tick"] = now
+                _d["active_poison"] = poison
+
+                killed = hp_after == 0
+                if killed:
+                    from datetime import datetime, timezone as _tz
+                    died_at      = now
+                    spawned_at   = state.get("boss_spawned", died_at)
+                    kill_duration = died_at - spawned_at
+                    state["boss_alive"]         = False
+                    state["boss_died_at"]        = died_at
+                    state["boss_kill_duration"]  = kill_duration
+                    _d["balance"] = _d.get("balance", 0) + BOSS_KILL_REWARD
+                    _d["active_poison"] = None
+
+                _save_boss_state(state)
+                _sv(_d["id"], _d)
+
+                if killed:
+                    from hunt import BOSSES_BY_KEY
+                    boss_name = BOSSES_BY_KEY.get(state.get("boss_key"), {}).get("name", "Босс")
+                    reward_text = (
+                        f'<tg-emoji emoji-id="5456584142286250164">☠️</tg-emoji> <b>Яд добил босса!</b>\n\n'
+                        f'<blockquote>'
+                        f'<b>{boss_name} уничтожен ядом!</b>\n'
+                        f'<tg-emoji emoji-id="5438496463044752972">💰</tg-emoji> <b>Награда: +{BOSS_KILL_REWARD:,} монет</b>'
+                        f'</blockquote>'
+                    )
+                    try:
+                        await bot.send_message(_d["id"], reward_text, parse_mode="HTML")
+                    except Exception:
+                        pass
+
+        except Exception as _e:
+            print(f"[poison_loop] {_e}")
+
+
+async def main():
+    logging.basicConfig(level=logging.INFO)
+
+    init_db()          # создаёт таблицу при первом запуске
+    init_hunt_db()     # создаёт таблицу боссов
+    init_leaders_db()  # создаёт таблицу статистики боссов для лидерборда
+    init_stats_db()    # создаёт таблицу онлайн-статистики
+
+    # ── Миграция: добавляем поля питомцев для старых пользователей ──
+    from database import get_all_users, save_user as _save_mig
+    for _u in get_all_users():
+        _changed = False
+        if "owned_pets" not in _u:
+            _u["owned_pets"] = []
+            _changed = True
+        if "pet_last_notify" not in _u:
+            _u["pet_last_notify"] = {}
+            _changed = True
+        if "pet_last_income" not in _u:
+            _u["pet_last_income"] = {}
+            _changed = True
+        if "pet_income_offset" not in _u:
+            _u["pet_income_offset"] = {}
+            _changed = True
+        if "pet_last_group_notify" not in _u:
+            _u["pet_last_group_notify"] = 0
+            _changed = True
+        # Миграция охоты
+        if "owned_swords" not in _u:
+            _u["owned_swords"] = []
+            _changed = True
+        if "equipped_sword" not in _u:
+            _u["equipped_sword"] = None
+            _changed = True
+        if "last_boss_hit" not in _u:
+            _u["last_boss_hit"] = 0
+            _changed = True
+        if _changed:
+            _save_mig(_u["id"], _u)
+
+    # ── Запускаем фоновую задачу питомцев ──
+    asyncio.create_task(_pets_loop())
+
+    # ── Запускаем фоновую задачу яда ──
+    asyncio.create_task(_poison_loop())
+
+    print("🤖 Бот запущен! БД: tgstellar.db")
+    await dp.start_polling(bot)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
