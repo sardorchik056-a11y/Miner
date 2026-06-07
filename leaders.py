@@ -28,12 +28,27 @@ PERIODS = {
     "alltime":   "Всё время",
 }
 
+PERIODS_EN = {
+    "today":     "Today",
+    "yesterday": "Yesterday",
+    "week":      "Week",
+    "month":     "Month",
+    "alltime":   "All Time",
+}
+
 # Категории
 CATEGORIES = {
     "kills":   "Убийства боссов",
     "balance": "Баланс",
     "level":   "Уровень",
     "damage":  "Урон боссу",
+}
+
+CATEGORIES_EN = {
+    "kills":   "Boss Kills",
+    "balance": "Balance",
+    "level":   "Level",
+    "damage":  "Boss Damage",
 }
 
 # ─────────────────────────────────────────
@@ -66,7 +81,7 @@ _CAT_ICONS = {
     "damage":  ("5373173798633752502", "💥"),
 }
 
-# Иконки периодов (все одно эмодзи)
+# Иконки периодов
 _PERIOD_ICONS = {
     "today":     ("5274055917766202507", "📅"),
     "yesterday": ("5274055917766202507", "📅"),
@@ -167,7 +182,6 @@ def _get_conn() -> sqlite3.Connection:
 
 
 def _leaders_kills(period: str) -> list[dict]:
-    """Топ по убийствам боссов за период."""
     ts_from, ts_to = _period_bounds(period)
     where = "WHERE killed=1"
     params: list = []
@@ -191,7 +205,6 @@ def _leaders_kills(period: str) -> list[dict]:
 
 
 def _leaders_damage(period: str) -> list[dict]:
-    """Топ по суммарному урону боссам за период."""
     ts_from, ts_to = _period_bounds(period)
     where = "WHERE 1=1"
     params: list = []
@@ -215,13 +228,10 @@ def _leaders_damage(period: str) -> list[dict]:
 
 
 def _leaders_balance(period: str) -> list[dict]:
-    """Топ по балансу (берётся из users.data_json, период не влияет на баланс)."""
     with _get_conn() as conn:
         rows = conn.execute("SELECT data_json FROM users").fetchall()
 
     users_all = [json.loads(r["data_json"]) for r in rows]
-    # Для периодов кроме alltime баланс всегда текущий — нет истории изменений.
-    # Оставляем честную логику: показываем текущий баланс всегда.
     ranked = sorted(users_all, key=lambda u: u.get("balance", 0), reverse=True)[:TOP_SIZE]
     return [
         {
@@ -235,7 +245,6 @@ def _leaders_balance(period: str) -> list[dict]:
 
 
 def _leaders_level(period: str) -> list[dict]:
-    """Топ по уровню (аналогично балансу — текущий уровень)."""
     with _get_conn() as conn:
         rows = conn.execute("SELECT data_json FROM users").fetchall()
 
@@ -254,7 +263,6 @@ def _leaders_level(period: str) -> list[dict]:
 
 
 def get_leaders(category: str, period: str) -> list[dict]:
-    """Возвращает топ-10 игроков для категории и периода."""
     if category == "kills":
         return _leaders_kills(period)
     if category == "damage":
@@ -271,7 +279,6 @@ def get_leaders(category: str, period: str) -> list[dict]:
 # ─────────────────────────────────────────
 
 def get_user_rank(uid: int, category: str, period: str) -> int | None:
-    """Возвращает место пользователя (1-based) или None если не в топе."""
     leaders = get_leaders(category, period)
     for i, row in enumerate(leaders):
         if row["uid"] == uid:
@@ -293,17 +300,16 @@ def _display_name(row: dict) -> str:
     return "Аноним"
 
 
-def _value_str(category: str, row: dict) -> str:
+def _value_str(category: str, row: dict, lang: str = "ru") -> str:
     val = row.get("value", 0)
     if category == "kills":
-        return f'{_fmt(val)} убийств'
+        return f'{_fmt(val)} {"kills" if lang == "en" else "убийств"}'
     if category == "damage":
-        return f'{_fmt(val)} урона'
+        return f'{_fmt(val)} {"dmg" if lang == "en" else "урона"}'
     if category == "balance":
         return f'{_fmt(val)}'
     if category == "level":
-        xp = row.get("xp", 0)
-        return f'Ур. {val}'
+        return f'{"Lv." if lang == "en" else "Ур."} {val}'
     return str(val)
 
 
@@ -312,30 +318,48 @@ def _value_icon(category: str) -> str:
     return _tg(eid, fb)
 
 
-def leaders_text(category: str, period: str, viewer_uid: int | None = None) -> str:
-    """Формирует текст лидерборда."""
+def leaders_text(category: str, period: str, viewer_uid: int | None = None, lang: str = "ru") -> str:
     leaders = get_leaders(category, period)
 
-    cat_name    = CATEGORIES[category]
-    period_name = PERIODS[period]
+    _PERIODS    = PERIODS_EN    if lang == "en" else PERIODS
+    _CATEGORIES = CATEGORIES_EN if lang == "en" else CATEGORIES
+
+    cat_name    = _CATEGORIES[category]
+    period_name = _PERIODS[period]
     p_eid, p_fb = _PERIOD_ICONS[period]
     c_eid, c_fb = _CAT_ICONS[category]
 
     # ── Заголовок ──
-    lines = [
-        f'<blockquote>'
-        f'{_tg(c_eid, c_fb)} <b>Лидеры · {cat_name}</b>\n'
-        f'{_tg(p_eid, p_fb)} <b>Период: {period_name}</b>'
-        f'</blockquote>\n'
-    ]
+    if lang == "en":
+        lines = [
+            f'<blockquote>'
+            f'{_tg(c_eid, c_fb)} <b>Leaderboard · {cat_name}</b>\n'
+            f'{_tg(p_eid, p_fb)} <b>Period: {period_name}</b>'
+            f'</blockquote>\n'
+        ]
+    else:
+        lines = [
+            f'<blockquote>'
+            f'{_tg(c_eid, c_fb)} <b>Лидеры · {cat_name}</b>\n'
+            f'{_tg(p_eid, p_fb)} <b>Период: {period_name}</b>'
+            f'</blockquote>\n'
+        ]
 
     if not leaders:
-        lines.append(
-            f'<blockquote>'
-            f'{_tg(_E["empty"], "🎟")} <b>Статистики пока нет.</b>\n'
-            f'<i>Будь первым — атакуй боссов!</i>'
-            f'</blockquote>'
-        )
+        if lang == "en":
+            lines.append(
+                f'<blockquote>'
+                f'{_tg(_E["empty"], "🎟")} <b>No stats yet.</b>\n'
+                f'<i>Be the first — attack the bosses!</i>'
+                f'</blockquote>'
+            )
+        else:
+            lines.append(
+                f'<blockquote>'
+                f'{_tg(_E["empty"], "🎟")} <b>Статистики пока нет.</b>\n'
+                f'<i>Будь первым — атакуй боссов!</i>'
+                f'</blockquote>'
+            )
         return "\n".join(lines)
 
     # ── Таблица ──
@@ -343,10 +367,9 @@ def leaders_text(category: str, period: str, viewer_uid: int | None = None) -> s
     for i, row in enumerate(leaders):
         place = i + 1
         name  = _display_name(row)
-        val   = _value_str(category, row)
+        val   = _value_str(category, row, lang)
         is_me = (viewer_uid is not None and row.get("uid") == viewer_uid)
 
-        # Место (кастомные эмодзи для топ-10)
         _PLACE_EMOJI = {
             1:  "5440539497383087970",
             2:  "5447203607294265305",
@@ -364,7 +387,6 @@ def leaders_text(category: str, period: str, viewer_uid: int | None = None) -> s
         else:
             place_str = f"<b>{place}.</b>"
 
-        # Выделение своей строки
         name_str = f"<b>{name}</b>" if is_me else name
         val_str  = f"<b>{val}</b>"  if is_me else val
         me_mark  = " ←" if is_me else ""
@@ -377,13 +399,20 @@ def leaders_text(category: str, period: str, viewer_uid: int | None = None) -> s
     if viewer_uid is not None:
         rank = get_user_rank(viewer_uid, category, period)
         if rank is None:
-            lines.append(
-                f'\n<blockquote>'
-                f'{_tg(_E["shield"], "🛡")} <b>Тебя нет в топ-{TOP_SIZE}</b>\n'
-                f'<i>Продолжай — и ты попадёшь в список!</i>'
-                f'</blockquote>'
-            )
-        # Если в топе — уже выделен в таблице
+            if lang == "en":
+                lines.append(
+                    f'\n<blockquote>'
+                    f'{_tg(_E["shield"], "🛡")} <b>You are not in the top {TOP_SIZE}</b>\n'
+                    f'<i>Keep going — you\'ll make the list!</i>'
+                    f'</blockquote>'
+                )
+            else:
+                lines.append(
+                    f'\n<blockquote>'
+                    f'{_tg(_E["shield"], "🛡")} <b>Тебя нет в топ-{TOP_SIZE}</b>\n'
+                    f'<i>Продолжай — и ты попадёшь в список!</i>'
+                    f'</blockquote>'
+                )
 
     return "\n".join(lines)
 
@@ -392,22 +421,21 @@ def leaders_text(category: str, period: str, viewer_uid: int | None = None) -> s
 #  КЛАВИАТУРЫ
 # ─────────────────────────────────────────
 
-def leaders_keyboard(category: str, period: str) -> InlineKeyboardMarkup:
-    """Клавиатура лидерборда: переключение категорий и периодов."""
+def leaders_keyboard(category: str, period: str, lang: str = "ru") -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
+
+    _CATEGORIES = CATEGORIES_EN if lang == "en" else CATEGORIES
+    _PERIODS    = PERIODS_EN    if lang == "en" else PERIODS
 
     # ── Строка категорий ──
     cat_buttons: list[InlineKeyboardButton] = []
-    for key, label in CATEGORIES.items():
+    _SHORT_RU = {"kills": "Убийства", "balance": "Баланс", "level": "Уровень", "damage": "Урон"}
+    _SHORT_EN = {"kills": "Kills",    "balance": "Balance", "level": "Level",   "damage": "Damage"}
+    _SHORT = _SHORT_EN if lang == "en" else _SHORT_RU
+
+    for key in CATEGORIES:
         eid, fb = _CAT_ICONS[key]
-        # Укорочённые подписи для кнопок
-        short = {
-            "kills":   "Убийства",
-            "balance": "Баланс",
-            "level":   "Уровень",
-            "damage":  "Урон",
-        }[key]
-        # Маркер активной категории
+        short    = _SHORT[key]
         btn_text = f"· {short} ·" if key == category else short
         cat_buttons.append(InlineKeyboardButton(
             text=btn_text,
@@ -415,14 +443,14 @@ def leaders_keyboard(category: str, period: str) -> InlineKeyboardMarkup:
             icon_custom_emoji_id=eid,
         ))
 
-    # Две кнопки в ряд
     builder.row(*cat_buttons[:2])
     builder.row(*cat_buttons[2:])
 
     # ── Строка периодов ──
     period_buttons: list[InlineKeyboardButton] = []
-    for key, label in PERIODS.items():
-        eid, fb = _PERIOD_ICONS[key]
+    for key in PERIODS:
+        eid, fb  = _PERIOD_ICONS[key]
+        label    = _PERIODS[key]
         btn_text = f"· {label} ·" if key == period else label
         period_buttons.append(InlineKeyboardButton(
             text=btn_text,
@@ -430,13 +458,12 @@ def leaders_keyboard(category: str, period: str) -> InlineKeyboardMarkup:
             icon_custom_emoji_id=eid,
         ))
 
-    # Три + два кнопки по строкам
     builder.row(*period_buttons[:3])
     builder.row(*period_buttons[3:])
 
     # ── Назад ──
     builder.row(InlineKeyboardButton(
-        text="Назад",
+        text="Back" if lang == "en" else "Назад",
         callback_data="back_to_menu",
         icon_custom_emoji_id=_E["back"],
     ))
@@ -445,16 +472,16 @@ def leaders_keyboard(category: str, period: str) -> InlineKeyboardMarkup:
 
 
 # ─────────────────────────────────────────
-#  ТОЧКА ВХОДА (для быстрого показа)
+#  ТОЧКА ВХОДА
 # ─────────────────────────────────────────
 
 DEFAULT_CATEGORY = "kills"
 DEFAULT_PERIOD   = "alltime"
 
 
-def leaders_main_text(viewer_uid: int | None = None) -> str:
-    return leaders_text(DEFAULT_CATEGORY, DEFAULT_PERIOD, viewer_uid)
+def leaders_main_text(viewer_uid: int | None = None, lang: str = "ru") -> str:
+    return leaders_text(DEFAULT_CATEGORY, DEFAULT_PERIOD, viewer_uid, lang)
 
 
-def leaders_main_keyboard() -> InlineKeyboardMarkup:
-    return leaders_keyboard(DEFAULT_CATEGORY, DEFAULT_PERIOD)
+def leaders_main_keyboard(lang: str = "ru") -> InlineKeyboardMarkup:
+    return leaders_keyboard(DEFAULT_CATEGORY, DEFAULT_PERIOD, lang)
