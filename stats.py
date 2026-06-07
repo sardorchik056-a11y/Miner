@@ -76,7 +76,8 @@ def _e(eid: str, fallback: str = "▪️") -> str:
     return f'<tg-emoji emoji-id="{eid}">{fallback}</tg-emoji>'
 
 
-def stats_text() -> str:
+def stats_text(lang: str = "ru") -> str:
+    from lang import t
     o5m  = _count_online(5 * 60)
     o24h = _count_online(24 * 3600)
     o7d  = _count_online(7 * 24 * 3600)
@@ -91,30 +92,31 @@ def stats_text() -> str:
 
     return (
         f'<blockquote>'
-        f'{_e(_EMOJI_ONLINE)} <b>Онлайн</b>\n\n'
-        f'{_e(_EMOJI_CLOCK)} За 5 минут — <b>{o5m}</b>\n'
-        f'{_e(_EMOJI_CLOCK)} За 24 часа — <b>{o24h}</b>\n'
-        f'{_e(_EMOJI_CLOCK)} За неделю — <b>{o7d}</b>\n'
-        f'{_e(_EMOJI_CLOCK)} За месяц — <b>{o30d}</b>'
+        f'{_e(_EMOJI_ONLINE)} <b>{t(lang, "stats_title_online")}</b>\n\n'
+        f'{_e(_EMOJI_CLOCK)} {t(lang, "stats_5min")} — <b>{o5m}</b>\n'
+        f'{_e(_EMOJI_CLOCK)} {t(lang, "stats_24h")} — <b>{o24h}</b>\n'
+        f'{_e(_EMOJI_CLOCK)} {t(lang, "stats_week")} — <b>{o7d}</b>\n'
+        f'{_e(_EMOJI_CLOCK)} {t(lang, "stats_month")} — <b>{o30d}</b>'
         f'</blockquote>'
         f'<blockquote>'
-        f'{_e(_EMOJI_USERS)} <b>Пользователи</b>\n\n'
-        f'{_e(_EMOJI_ARROW)} Всего — <b>{total:,}</b>\n'
-        f'{_e(_EMOJI_NEW)} За 5 минут — <b>{n5m}</b>\n'
-        f'{_e(_EMOJI_NEW)} За 24 часа — <b>{n24h}</b>\n'
-        f'{_e(_EMOJI_NEW)} За неделю — <b>{n7d}</b>\n'
-        f'{_e(_EMOJI_NEW)} За месяц — <b>{n30d}</b>'
+        f'{_e(_EMOJI_USERS)} <b>{t(lang, "stats_title_users")}</b>\n\n'
+        f'{_e(_EMOJI_ARROW)} {t(lang, "stats_total")} — <b>{total:,}</b>\n'
+        f'{_e(_EMOJI_NEW)} {t(lang, "stats_5min")} — <b>{n5m}</b>\n'
+        f'{_e(_EMOJI_NEW)} {t(lang, "stats_24h")} — <b>{n24h}</b>\n'
+        f'{_e(_EMOJI_NEW)} {t(lang, "stats_week")} — <b>{n7d}</b>\n'
+        f'{_e(_EMOJI_NEW)} {t(lang, "stats_month")} — <b>{n30d}</b>'
         f'</blockquote>'
     )
 
 
-def stats_keyboard():
+def stats_keyboard(lang: str = "ru"):
     from aiogram.utils.keyboard import InlineKeyboardBuilder
     from aiogram.types import InlineKeyboardButton
     from miner import EMOJI_BACK
+    from lang import t
     builder = InlineKeyboardBuilder()
     builder.row(InlineKeyboardButton(
-        text="Назад",
+        text=t(lang, "btn_back"),
         callback_data="back_to_menu",
         icon_custom_emoji_id=EMOJI_BACK
     ))
