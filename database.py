@@ -132,14 +132,15 @@ def days_on_project(joined_str: str) -> int:
     return (date.today() - date.fromisoformat(joined_str)).days
 
 
-def level_to_rank(level: int) -> str:
-    if level < 5:   return "Новичок"
-    if level < 10:  return "Опытный"
-    if level < 20:  return "Профи"
-    if level < 35:  return "Мастер"
-    if level < 50:  return "Эксперт"
-    if level < 75:  return "Элита"
-    return "Легенда"
+def level_to_rank(level: int, lang: str = "ru") -> str:
+    from lang import t
+    if level < 5:   return t(lang, "rank_novice")
+    if level < 10:  return t(lang, "rank_skilled")
+    if level < 20:  return t(lang, "rank_pro")
+    if level < 35:  return t(lang, "rank_master")
+    if level < 50:  return t(lang, "rank_expert")
+    if level < 75:  return t(lang, "rank_elite")
+    return t(lang, "rank_legend")
 
 
 def status_from_level(level: int) -> str:
@@ -187,9 +188,12 @@ def xp_bar(xp: int, xp_max: int, length: int = 10) -> str:
 # ---------- Текст профиля ----------
 
 def profile_text(d: dict) -> str:
+    from lang import t, get_lang
+    lang   = get_lang(d)
     uid    = d["id"]
     name   = d["first_name"] or d["username"]
-    uname  = f"@{d['username']}" if d["username"] != "Аноним" else "—"
+    anon   = t(lang, "profile_anon")
+    uname  = f"@{d['username']}" if d["username"] != anon and d["username"] != "Аноним" else "—"
     days   = days_on_project(d["joined"])
     level  = d["level"]
     xp     = d["xp"]
@@ -229,20 +233,20 @@ def profile_text(d: dict) -> str:
         mult = _multiplier_label(active["multiplier"])
         dur  = _DUR_LABELS[active["dur_key"]]
         left = _fmt_time_left(active["ends_at"] - _now_ts())
-        booster_lines += f'\n<tg-emoji emoji-id="5438571934210082705">⚡</tg-emoji> Кирка: {mult} на {dur} — <tg-emoji emoji-id="5382194935057372936">⏱</tg-emoji> {left}'
+        booster_lines += f'\n<tg-emoji emoji-id="5438571934210082705">⚡</tg-emoji> {t(lang, "boost_pickaxe")}: {mult} {t(lang, "boost_on")} {dur} — <tg-emoji emoji-id="5382194935057372936">⏱</tg-emoji> {left}'
     if xp_active:
         mult = _multiplier_label(xp_active["multiplier"])
         dur  = _DUR_LABELS[xp_active["dur_key"]]
         left = _fmt_time_left(xp_active["ends_at"] - _now_ts())
-        booster_lines += f'\n<tg-emoji emoji-id="5224607267797606837">🔮</tg-emoji> XP: ×{mult} на {dur} — <tg-emoji emoji-id="5382194935057372936">⏱</tg-emoji> {left}'
+        booster_lines += f'\n<tg-emoji emoji-id="5224607267797606837">🔮</tg-emoji> {t(lang, "boost_xp")}: ×{mult} {t(lang, "boost_on")} {dur} — <tg-emoji emoji-id="5382194935057372936">⏱</tg-emoji> {left}'
     if enh_active:
         mult = _multiplier_label(enh_active["multiplier"])
         dur  = _DUR_LABELS[enh_active["dur_key"]]
         left = _fmt_time_left(enh_active["ends_at"] - _now_ts())
-        booster_lines += f'\n<tg-emoji emoji-id="5256047523620995497">⚡</tg-emoji> Усилитель: ×{mult} на {dur} — <tg-emoji emoji-id="5382194935057372936">⏱</tg-emoji> {left}'
+        booster_lines += f'\n<tg-emoji emoji-id="5256047523620995497">⚡</tg-emoji> {t(lang, "boost_enhancer")}: ×{mult} {t(lang, "boost_on")} {dur} — <tg-emoji emoji-id="5382194935057372936">⏱</tg-emoji> {left}'
 
     booster_block = (
-        f'\n\n<blockquote><tg-emoji emoji-id="5258203794772085854">⚡</tg-emoji> <b>Активные бусты</b>{booster_lines}</blockquote>'
+        f'\n\n<blockquote><tg-emoji emoji-id="5258203794772085854">⚡</tg-emoji> <b>{t(lang, "boost_active")}</b>{booster_lines}</blockquote>'
         if booster_lines else ""
     )
 
@@ -253,15 +257,15 @@ def profile_text(d: dict) -> str:
         f'<tg-emoji emoji-id="5323442290708985472">🎟</tg-emoji> <b>{uname}</b>\n'
         f'</blockquote>'
         f'<blockquote>'
-        f'<tg-emoji emoji-id="5415655814079723871">🎟</tg-emoji> <b>Ранг — {level_to_rank(level)}</b>\n'
-        f'<tg-emoji emoji-id="5438496463044752972">🎟</tg-emoji> <b>Статус — {status_badge}</b>\n'
-        f'<tg-emoji emoji-id="5274055917766202507">🎟</tg-emoji> <b>Дней в проекте — {days}</b>\n'
+        f'<tg-emoji emoji-id="5415655814079723871">🎟</tg-emoji> <b>{t(lang, "profile_rank")} — {level_to_rank(level, lang)}</b>\n'
+        f'<tg-emoji emoji-id="5438496463044752972">🎟</tg-emoji> <b>{t(lang, "profile_status")} — {status_badge}</b>\n'
+        f'<tg-emoji emoji-id="5274055917766202507">🎟</tg-emoji> <b>{t(lang, "profile_days")} — {days}</b>\n'
         f'</blockquote>'
         f'<blockquote>'
-        f'<tg-emoji emoji-id="5375338737028841420">🎟</tg-emoji> <b>Уровень —</b> {lvl_line}\n'
-        f'<tg-emoji emoji-id="5341498088408234504">🎟</tg-emoji> <b>Опыт —</b> {xp_str}\n'
+        f'<tg-emoji emoji-id="5375338737028841420">🎟</tg-emoji> <b>{t(lang, "profile_level")} —</b> {lvl_line}\n'
+        f'<tg-emoji emoji-id="5341498088408234504">🎟</tg-emoji> <b>{t(lang, "profile_xp")} —</b> {xp_str}\n'
         f'{bar_str}'
         f'</blockquote>'
         f'{booster_block}'
-        f'<blockquote><tg-emoji emoji-id="5278467510604160626">🎟</tg-emoji> <b>Баланс — {d["balance"]:,}</b>{COIN}</blockquote>'
+        f'<blockquote><tg-emoji emoji-id="5278467510604160626">🎟</tg-emoji> <b>{t(lang, "profile_balance")} — {d["balance"]:,}</b>{COIN}</blockquote>'
     )
