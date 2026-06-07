@@ -1,18 +1,14 @@
 # ============================================================
 #  stats.py  —  Статистика бота TGStellar
-#  Хранение: таблица user_stats в tgstellar.db
-#  Вызывай track_user(uid) при каждом действии пользователя
 # ============================================================
 
 import sqlite3
 import time
-from database import DB_PATH, get_all_users
-from miner import COIN
+from database import DB_PATH
 
 # ---------- Инициализация ----------
 
 def init_stats_db():
-    """Создаёт таблицу статистики. Вызвать при старте."""
     with sqlite3.connect(DB_PATH) as conn:
         conn.execute("""
             CREATE TABLE IF NOT EXISTS user_stats (
@@ -27,7 +23,6 @@ def init_stats_db():
 # ---------- Трекинг ----------
 
 def track_user(uid: int, joined_ts: int = 0):
-    """Обновить last_seen для пользователя. Вызывать при каждом действии."""
     now = int(time.time())
     with sqlite3.connect(DB_PATH) as conn:
         conn.execute("""
@@ -38,10 +33,9 @@ def track_user(uid: int, joined_ts: int = 0):
         conn.commit()
 
 
-# ---------- Подсчёт онлайна ----------
+# ---------- Онлайн ----------
 
 def _count_online(seconds: int) -> int:
-    """Количество пользователей, активных за последние `seconds` секунд."""
     threshold = int(time.time()) - seconds
     with sqlite3.connect(DB_PATH) as conn:
         row = conn.execute(
@@ -51,13 +45,17 @@ def _count_online(seconds: int) -> int:
     return row[0] if row else 0
 
 
-def online_5min()  -> int: return _count_online(5 * 60)
-def online_24h()   -> int: return _count_online(24 * 3600)
-def online_week()  -> int: return _count_online(7 * 24 * 3600)
-def online_month() -> int: return _count_online(30 * 24 * 3600)
+# ---------- Новые пользователи ----------
 
+def _count_new(seconds: int) -> int:
+    threshold = int(time.time()) - seconds
+    with sqlite3.connect(DB_PATH) as conn:
+        row = conn.execute(
+            "SELECT COUNT(*) FROM user_stats WHERE joined_ts >= ?",
+            (threshold,)
+        ).fetchone()
+    return row[0] if row else 0
 
-# ---------- Общая статистика ----------
 
 def total_users() -> int:
     with sqlite3.connect(DB_PATH) as conn:
@@ -65,66 +63,13 @@ def total_users() -> int:
     return row[0] if row else 0
 
 
-def new_users_today() -> int:
-    threshold = int(time.time()) - 24 * 3600
-    with sqlite3.connect(DB_PATH) as conn:
-        row = conn.execute(
-            "SELECT COUNT(*) FROM user_stats WHERE joined_ts >= ?",
-            (threshold,)
-        ).fetchone()
-    return row[0] if row else 0
-
-
-def new_users_week() -> int:
-    threshold = int(time.time()) - 7 * 24 * 3600
-    with sqlite3.connect(DB_PATH) as conn:
-        row = conn.execute(
-            "SELECT COUNT(*) FROM user_stats WHERE joined_ts >= ?",
-            (threshold,)
-        ).fetchone()
-    return row[0] if row else 0
-
-
-def total_balance_in_game() -> int:
-    """Суммарный баланс всех игроков."""
-    users = get_all_users()
-    return sum(u.get("balance", 0) for u in users)
-
-
-def richest_players(limit: int = 3) -> list[dict]:
-    """Топ-N игроков по балансу."""
-    users = get_all_users()
-    return sorted(users, key=lambda u: u.get("balance", 0), reverse=True)[:limit]
-
-
-def avg_level() -> float:
-    users = get_all_users()
-    if not users:
-        return 0.0
-    return sum(u.get("level", 1) for u in users) / len(users)
-
-
-def total_ores_mined() -> int:
-    """Суммарное количество добытых руд по всем игрокам."""
-    users = get_all_users()
-    total = 0
-    for u in users:
-        ores = u.get("ores", {})
-        total += sum(ores.values())
-    return total
-
-
 # ---------- Текст и клавиатура ----------
 
-_EMOJI_ONLINE  = "5258203794772085854"   # молния
-_EMOJI_USERS   = "5406683434124859552"   # люди
-_EMOJI_NEW     = "5373026167722876724"   # звезда новый
-_EMOJI_COIN    = "5282843764451195532"   # монета
-_EMOJI_LEVEL   = "5375338737028841420"   # уровень
-_EMOJI_ORE     = "5197371802136892976"   # кирка
-_EMOJI_CROWN   = "5325547803936572038"   # корона
-_EMOJI_ARROW   = "5197288647275071607"   # стрелка
-_EMOJI_CLOCK   = "5382194935057372936"   # часы
+_EMOJI_ONLINE = "5258203794772085854"
+_EMOJI_USERS  = "5406683434124859552"
+_EMOJI_CLOCK  = "5382194935057372936"
+_EMOJI_ARROW  = "5197288647275071607"
+_EMOJI_NEW    = "5373026167722876724"
 
 
 def _e(eid: str, fallback: str = "▪️") -> str:
@@ -132,52 +77,33 @@ def _e(eid: str, fallback: str = "▪️") -> str:
 
 
 def stats_text() -> str:
-    o5m   = online_5min()
-    o24h  = online_24h()
-    o7d   = online_week()
-    o30d  = online_month()
-    total = total_users()
-    new_d = new_users_today()
-    new_w = new_users_week()
-    total_bal = total_balance_in_game()
-    avg_lvl   = avg_level()
-    ores      = total_ores_mined()
-    top       = richest_players(3)
+    o5m  = _count_online(5 * 60)
+    o24h = _count_online(24 * 3600)
+    o7d  = _count_online(7 * 24 * 3600)
+    o30d = _count_online(30 * 24 * 3600)
 
-    # Топ игроков
-    top_lines = ""
-    medals = ["🥇", "🥈", "🥉"]
-    for i, u in enumerate(top):
-        name = u.get("first_name") or u.get("username") or "Аноним"
-        bal  = u.get("balance", 0)
-        top_lines += f'\n{medals[i]} <b>{name}</b> — <b>{bal:,}</b>{COIN}'
+    n5m  = _count_new(5 * 60)
+    n24h = _count_new(24 * 3600)
+    n7d  = _count_new(7 * 24 * 3600)
+    n30d = _count_new(30 * 24 * 3600)
+
+    total = total_users()
 
     return (
         f'<blockquote>'
-        f'{_e(_EMOJI_ONLINE)}  <b>Онлайн</b>\n'
-        f'\n'
+        f'{_e(_EMOJI_ONLINE)} <b>Онлайн</b>\n\n'
         f'{_e(_EMOJI_CLOCK)} За 5 минут — <b>{o5m}</b>\n'
         f'{_e(_EMOJI_CLOCK)} За 24 часа — <b>{o24h}</b>\n'
         f'{_e(_EMOJI_CLOCK)} За неделю — <b>{o7d}</b>\n'
         f'{_e(_EMOJI_CLOCK)} За месяц — <b>{o30d}</b>'
         f'</blockquote>'
         f'<blockquote>'
-        f'{_e(_EMOJI_USERS)} <b>Пользователи</b>\n'
-        f'\n'
+        f'{_e(_EMOJI_USERS)} <b>Пользователи</b>\n\n'
         f'{_e(_EMOJI_ARROW)} Всего — <b>{total:,}</b>\n'
-        f'{_e(_EMOJI_NEW)} Новых сегодня — <b>{new_d}</b>\n'
-        f'{_e(_EMOJI_NEW)} Новых за неделю — <b>{new_w}</b>'
-        f'</blockquote>'
-        f'<blockquote>'
-        f'{_e(_EMOJI_COIN)} <b>Экономика</b>\n'
-        f'\n'
-        f'{_e(_EMOJI_COIN)} Монет в игре — <b>{total_bal:,}</b>{COIN}\n'
-        f'{_e(_EMOJI_LEVEL)} Средний уровень — <b>{avg_lvl:.1f}</b>\n'
-        f'{_e(_EMOJI_ORE)} Руды добыто — <b>{ores:,}</b>'
-        f'</blockquote>'
-        f'<blockquote>'
-        f'{_e(_EMOJI_CROWN)} <b>Богатейшие игроки</b>'
-        f'{top_lines}'
+        f'{_e(_EMOJI_NEW)} За 5 минут — <b>{n5m}</b>\n'
+        f'{_e(_EMOJI_NEW)} За 24 часа — <b>{n24h}</b>\n'
+        f'{_e(_EMOJI_NEW)} За неделю — <b>{n7d}</b>\n'
+        f'{_e(_EMOJI_NEW)} За месяц — <b>{n30d}</b>'
         f'</blockquote>'
     )
 
