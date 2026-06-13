@@ -522,7 +522,7 @@ async def handle_callback(call: CallbackQuery):
             return
 
         if cd == "shop_cases":
-            await edit(cases_shop_text(), cases_shop_keyboard())
+            await edit(cases_shop_text(data, lang), cases_shop_keyboard(lang))
             return
 
         # ===== КЕЙСЫ: карточка кейса (инфо + кнопка купить) =====
@@ -534,51 +534,51 @@ async def handle_callback(call: CallbackQuery):
                 await call.answer("❌ Кейс не найден.", show_alert=True)
                 return
             can_buy = data.get("balance", 0) >= case["cost"]
-            await edit(case_detail_text(data, case_key), case_detail_keyboard(case_key, can_buy))
+            await edit(case_detail_text(data, case_key, lang), case_detail_keyboard(case_key, can_buy, lang))
             return
 
         # ===== КЕЙСЫ: купить и открыть =====
         if cd.startswith("case_open_"):
             case_key = cd.removeprefix("case_open_")
-            ok, msg, instance = open_case(data, case_key)
+            ok, msg, instance = open_case(data, case_key, lang)
             if ok:
                 save_user(data["id"], data)
-                await edit(msg, cases_shop_keyboard())
+                await edit(msg, cases_shop_keyboard(lang))
             else:
                 await call.answer(_plain(msg), show_alert=True)
             return
 
         # ===== ИНВЕНТАРЬ — главная страница выбора раздела =====
         if cd == "profile_boosters":
-            await edit(inventory_main_text(data), inventory_main_keyboard())
+            await edit(inventory_main_text(data, lang), inventory_main_keyboard(lang))
             return
 
         # ===== ИНВЕНТАРЬ — раздел ускорителей кирки =====
         if cd == "inv_boosters":
-            await edit(boosters_inventory_text(data), boosters_inventory_keyboard(data))
+            await edit(boosters_inventory_text(data, lang), boosters_inventory_keyboard(data, lang))
             return
 
         # ===== ИНВЕНТАРЬ — раздел XP-предметов =====
         if cd == "inv_xp":
-            await edit(xp_inventory_text(data), xp_inventory_keyboard(data))
+            await edit(xp_inventory_text(data, lang), xp_inventory_keyboard(data, lang))
             return
 
         # ===== КАРТОЧКА УСКОРИТЕЛЯ КИРКИ =====
         if cd.startswith("boost_info_"):
             instance_id = cd.removeprefix("boost_info_")
-            await edit(booster_detail_text(data, instance_id), booster_detail_keyboard(data, instance_id))
+            await edit(booster_detail_text(data, instance_id, lang), booster_detail_keyboard(data, instance_id, lang))
             return
 
         # ===== АКТИВАЦИЯ УСКОРИТЕЛЯ КИРКИ =====
         if cd.startswith("boost_activate_"):
             instance_id = cd.removeprefix("boost_activate_")
-            ok, msg = activate_booster(data, instance_id)
+            ok, msg = activate_booster(data, instance_id, lang=lang)
             if ok:
                 save_user(data["id"], data)
-                await call.answer("⚡ Ускоритель активирован!", show_alert=True)
-                await edit(boosters_inventory_text(data), boosters_inventory_keyboard(data))
+                await call.answer("⚡ Ускоритель активирован!" if lang == "ru" else "⚡ Booster activated!", show_alert=True)
+                await edit(boosters_inventory_text(data, lang), boosters_inventory_keyboard(data, lang))
             elif msg.startswith("CONFIRM_REPLACE:"):
-                await edit(booster_confirm_replace_text(data, instance_id), booster_confirm_replace_keyboard(instance_id))
+                await edit(booster_confirm_replace_text(data, instance_id, lang), booster_confirm_replace_keyboard(instance_id, lang))
             else:
                 await call.answer(msg, show_alert=True)
             return
@@ -586,21 +586,21 @@ async def handle_callback(call: CallbackQuery):
         # ===== ПОДТВЕРЖДЕНИЕ ЗАМЕНЫ УСКОРИТЕЛЯ КИРКИ =====
         if cd.startswith("boost_replace_"):
             instance_id = cd.removeprefix("boost_replace_")
-            ok, msg = activate_booster(data, instance_id, force=True)
-            await call.answer("⚡ Ускоритель заменён!" if ok else msg, show_alert=True)
+            ok, msg = activate_booster(data, instance_id, force=True, lang=lang)
+            await call.answer(("⚡ Ускоритель заменён!" if lang == "ru" else "⚡ Booster replaced!") if ok else msg, show_alert=True)
             if ok:
                 save_user(data["id"], data)
-            await edit(boosters_inventory_text(data), boosters_inventory_keyboard(data))
+            await edit(boosters_inventory_text(data, lang), boosters_inventory_keyboard(data, lang))
             return
 
         # ===== ПРОДАЖА УСКОРИТЕЛЯ КИРКИ =====
         if cd.startswith("boost_sell_"):
             instance_id = cd.removeprefix("boost_sell_")
-            ok, msg, price = sell_booster(data, instance_id)
-            await call.answer(f" Продано за {price:,} монет!" if ok else msg, show_alert=True)
+            ok, msg, price = sell_booster(data, instance_id, lang)
+            await call.answer(f"💸 {'Продано' if lang == 'ru' else 'Sold'} {price:,}!" if ok else msg, show_alert=True)
             if ok:
                 save_user(data["id"], data)
-            await edit(boosters_inventory_text(data), boosters_inventory_keyboard(data))
+            await edit(boosters_inventory_text(data, lang), boosters_inventory_keyboard(data, lang))
             return
 
         # ===== КАРТОЧКА XP-ПРЕДМЕТА =====
@@ -612,19 +612,19 @@ async def handle_callback(call: CallbackQuery):
                 await call.answer("❌ Предмет не найден.", show_alert=True)
                 return
             is_boost = item["type"] == "xp_boost"
-            await edit(xp_item_detail_text(data, instance_id), xp_item_detail_keyboard(instance_id, is_boost))
+            await edit(xp_item_detail_text(data, instance_id, lang), xp_item_detail_keyboard(instance_id, is_boost, lang))
             return
 
         # ===== ИСПОЛЬЗОВАНИЕ XP-ПРЕДМЕТА =====
         if cd.startswith("xp_use_"):
             instance_id = cd.removeprefix("xp_use_")
-            ok, msg = use_xp_item(data, instance_id)
+            ok, msg = use_xp_item(data, instance_id, lang=lang)
             if ok:
                 save_user(data["id"], data)
-                await call.answer("✅ Применено!", show_alert=True)
-                await edit(xp_inventory_text(data), xp_inventory_keyboard(data))
+                await call.answer("✅ Применено!" if lang == "ru" else "✅ Applied!", show_alert=True)
+                await edit(xp_inventory_text(data, lang), xp_inventory_keyboard(data, lang))
             elif msg.startswith("CONFIRM_REPLACE_XP:"):
-                await edit(xp_confirm_replace_text(data, instance_id), xp_confirm_replace_keyboard(instance_id))
+                await edit(xp_confirm_replace_text(data, instance_id, lang), xp_confirm_replace_keyboard(instance_id, lang))
             else:
                 await call.answer(msg, show_alert=True)
             return
@@ -632,26 +632,26 @@ async def handle_callback(call: CallbackQuery):
         # ===== ПОДТВЕРЖДЕНИЕ ЗАМЕНЫ XP-УСКОРИТЕЛЯ =====
         if cd.startswith("xp_replace_"):
             instance_id = cd.removeprefix("xp_replace_")
-            ok, msg = use_xp_item(data, instance_id, force=True)
-            await call.answer(" XP-ускоритель заменён!" if ok else msg, show_alert=True)
+            ok, msg = use_xp_item(data, instance_id, force=True, lang=lang)
+            await call.answer(("✅ XP-ускоритель заменён!" if lang == "ru" else "✅ XP booster replaced!") if ok else msg, show_alert=True)
             if ok:
                 save_user(data["id"], data)
-            await edit(xp_inventory_text(data), xp_inventory_keyboard(data))
+            await edit(xp_inventory_text(data, lang), xp_inventory_keyboard(data, lang))
             return
 
         # ===== ПРОДАЖА XP-ПРЕДМЕТА =====
         if cd.startswith("xp_sell_"):
             instance_id = cd.removeprefix("xp_sell_")
-            ok, msg, price = sell_xp_item(data, instance_id)
-            await call.answer(f" Продано за {price:,} монет!" if ok else msg, show_alert=True)
+            ok, msg, price = sell_xp_item(data, instance_id, lang)
+            await call.answer(f"💸 {'Продано' if lang == 'ru' else 'Sold'} {price:,}!" if ok else msg, show_alert=True)
             if ok:
                 save_user(data["id"], data)
-            await edit(xp_inventory_text(data), xp_inventory_keyboard(data))
+            await edit(xp_inventory_text(data, lang), xp_inventory_keyboard(data, lang))
             return
 
         # ===== ИНВЕНТАРЬ — раздел усилителей и ядов =====
         if cd == "inv_enh":
-            await edit(enh_inventory_text(data), enh_inventory_keyboard(data))
+            await edit(enh_inventory_text(data, lang), enh_inventory_keyboard(data, lang))
             return
 
         # ===== КАРТОЧКА УСИЛИТЕЛЯ / ЯДА =====
@@ -662,19 +662,19 @@ async def handle_callback(call: CallbackQuery):
             if not item:
                 await call.answer("❌ Предмет не найден.", show_alert=True)
                 return
-            await edit(enh_item_detail_text(data, instance_id), enh_item_detail_keyboard(item["type"], instance_id))
+            await edit(enh_item_detail_text(data, instance_id, lang), enh_item_detail_keyboard(item["type"], instance_id, lang))
             return
 
         # ===== ПРИМЕНИТЬ ЯД =====
         if cd.startswith("enh_use_"):
             instance_id = cd.removeprefix("enh_use_")
-            ok, msg = use_poison(data, instance_id)
+            ok, msg = use_poison(data, instance_id, lang=lang)
             if ok:
                 save_user(data["id"], data)
-                await call.answer("☠️ Яд применён!", show_alert=True)
-                await edit(enh_inventory_text(data), enh_inventory_keyboard(data))
+                await call.answer("☠️ Яд применён!" if lang == "ru" else "☠️ Poison applied!", show_alert=True)
+                await edit(enh_inventory_text(data, lang), enh_inventory_keyboard(data, lang))
             elif msg.startswith("CONFIRM_REPLACE_POISON:"):
-                await edit(enh_confirm_replace_text(data, instance_id, "poison"), enh_confirm_replace_keyboard(instance_id, "poison"))
+                await edit(enh_confirm_replace_text(data, instance_id, "poison", lang), enh_confirm_replace_keyboard(instance_id, "poison", lang))
             else:
                 await call.answer(msg, show_alert=True)
             return
@@ -682,13 +682,13 @@ async def handle_callback(call: CallbackQuery):
         # ===== АКТИВИРОВАТЬ УСИЛИТЕЛЬ УРОНА =====
         if cd.startswith("enh_activate_"):
             instance_id = cd.removeprefix("enh_activate_")
-            ok, msg = activate_enh_boost(data, instance_id)
+            ok, msg = activate_enh_boost(data, instance_id, lang=lang)
             if ok:
                 save_user(data["id"], data)
-                await call.answer("⚡ Усилитель активирован!", show_alert=True)
-                await edit(enh_inventory_text(data), enh_inventory_keyboard(data))
+                await call.answer("⚡ Усилитель активирован!" if lang == "ru" else "⚡ Booster activated!", show_alert=True)
+                await edit(enh_inventory_text(data, lang), enh_inventory_keyboard(data, lang))
             elif msg.startswith("CONFIRM_REPLACE_ENH:"):
-                await edit(enh_confirm_replace_text(data, instance_id, "enh_boost"), enh_confirm_replace_keyboard(instance_id, "enh_boost"))
+                await edit(enh_confirm_replace_text(data, instance_id, "enh_boost", lang), enh_confirm_replace_keyboard(instance_id, "enh_boost", lang))
             else:
                 await call.answer(msg, show_alert=True)
             return
@@ -696,31 +696,31 @@ async def handle_callback(call: CallbackQuery):
         # ===== ПОДТВЕРЖДЕНИЕ ЗАМЕНЫ ЯДА =====
         if cd.startswith("enh_poison_replace_"):
             instance_id = cd.removeprefix("enh_poison_replace_")
-            ok, msg = use_poison(data, instance_id, force=True)
-            await call.answer("☠️ Яд заменён!" if ok else msg, show_alert=True)
+            ok, msg = use_poison(data, instance_id, force=True, lang=lang)
+            await call.answer(("☠️ Яд заменён!" if lang == "ru" else "☠️ Poison replaced!") if ok else msg, show_alert=True)
             if ok:
                 save_user(data["id"], data)
-            await edit(enh_inventory_text(data), enh_inventory_keyboard(data))
+            await edit(enh_inventory_text(data, lang), enh_inventory_keyboard(data, lang))
             return
 
         # ===== ПОДТВЕРЖДЕНИЕ ЗАМЕНЫ УСИЛИТЕЛЯ УРОНА =====
         if cd.startswith("enh_boost_replace_"):
             instance_id = cd.removeprefix("enh_boost_replace_")
-            ok, msg = activate_enh_boost(data, instance_id, force=True)
-            await call.answer("⚡ Усилитель заменён!" if ok else msg, show_alert=True)
+            ok, msg = activate_enh_boost(data, instance_id, force=True, lang=lang)
+            await call.answer(("⚡ Усилитель заменён!" if lang == "ru" else "⚡ Booster replaced!") if ok else msg, show_alert=True)
             if ok:
                 save_user(data["id"], data)
-            await edit(enh_inventory_text(data), enh_inventory_keyboard(data))
+            await edit(enh_inventory_text(data, lang), enh_inventory_keyboard(data, lang))
             return
 
         # ===== ПРОДАЖА УСИЛИТЕЛЯ / ЯДА =====
         if cd.startswith("enh_sell_"):
             instance_id = cd.removeprefix("enh_sell_")
-            ok, msg, price = sell_enh_item(data, instance_id)
-            await call.answer(f"💸 Продано за {price:,} монет!" if ok else msg, show_alert=True)
+            ok, msg, price = sell_enh_item(data, instance_id, lang)
+            await call.answer(f"💸 {'Продано' if lang == 'ru' else 'Sold'} {price:,}!" if ok else msg, show_alert=True)
             if ok:
                 save_user(data["id"], data)
-            await edit(enh_inventory_text(data), enh_inventory_keyboard(data))
+            await edit(enh_inventory_text(data, lang), enh_inventory_keyboard(data, lang))
             return
             await edit(shop_pickaxes_text(), shop_pickaxes_keyboard(data))
             return
@@ -1028,35 +1028,42 @@ async def handle_callback(call: CallbackQuery):
 
         # ===== КЕЙС АРТЕФАКТОВ: экран информации =====
         if cd == "artifact_case_info":
-            await edit(artifact_case_detail_text(data), artifact_case_keyboard())
+            await edit(artifact_case_detail_text(data, lang), artifact_case_keyboard(lang=lang))
             return
 
         # ===== КЕЙС АРТЕФАКТОВ: создать инвойс и обновить сообщение =====
         if cd == "artifact_case_buy":
-            invoice_url = None
+            if lang == "en":
+                _inv_title = "Artifact Case"
+                _inv_desc  = "Open a case and get a permanent artifact bonus forever!"
+                _inv_label = "Artifact Case"
+            else:
+                _inv_title = "Кейс Артефактов"
+                _inv_desc  = "Открой кейс и получи постоянный артефакт с бонусом навсегда!"
+                _inv_label = "Кейс Артефактов"
             try:
                 invoice_url = await bot.create_invoice_link(
-                    title="Кейс Артефактов",
-                    description="Открой кейс и получи постоянный артефакт с бонусом навсегда!",
+                    title=_inv_title,
+                    description=_inv_desc,
                     payload="artifact_case",
                     provider_token="",
                     currency="XTR",
-                    prices=[LabeledPrice(label="Кейс Артефактов", amount=ARTIFACT_CASE_COST_STARS)],
+                    prices=[LabeledPrice(label=_inv_label, amount=ARTIFACT_CASE_COST_STARS)],
                 )
             except Exception as e:
                 print(f"Artifact invoice error: {e}")
-                await call.answer("❌ Ошибка при создании инвойса.", show_alert=True)
+                await call.answer("❌ Ошибка при создании инвойса." if lang == "ru" else "❌ Invoice creation error.", show_alert=True)
                 return
             _pending_artifact_msg[call.from_user.id] = (
                 call.message.chat.id,
                 call.message.message_id,
             )
-            await edit(artifact_case_detail_text(data), artifact_case_keyboard(invoice_url=invoice_url))
+            await edit(artifact_case_detail_text(data, lang), artifact_case_keyboard(invoice_url=invoice_url, lang=lang))
             return
 
         # ===== КЕЙС АРТЕФАКТОВ: коллекция =====
         if cd == "artifact_collection":
-            await edit(artifact_collection_text(data), artifact_collection_keyboard())
+            await edit(artifact_collection_text(data, lang), artifact_collection_keyboard(lang))
             return
 
         # ===== СТАТУС: главный экран =====
@@ -1261,7 +1268,8 @@ async def handle_successful_payment(message: Message):
             data = get_user(uid)
             if not data:
                 return
-            ok, msg, chosen = open_artifact_case(data)
+            _lang = data.get("lang", "ru")
+            ok, msg, chosen = open_artifact_case(data, _lang)
             if ok:
                 save_user(data["id"], data)
 
@@ -1271,34 +1279,43 @@ async def handle_successful_payment(message: Message):
                 old_chat_id, old_msg_id = pending
                 try:
                     await bot.edit_message_text(
-                        artifact_case_detail_text(data),
+                        artifact_case_detail_text(data, _lang),
                         chat_id=old_chat_id,
                         message_id=old_msg_id,
-                        reply_markup=artifact_case_keyboard(),
+                        reply_markup=artifact_case_keyboard(lang=_lang),
                         parse_mode="HTML"
                     )
                 except Exception:
                     pass
 
             # 2) Сообщение об успехе
-            _effect_labels = {
-                "mine":   "к добыче руды",
-                "damage": "к урону по боссу",
-                "pets":   "к добыче питомцов",
-                "all":    "ко всем трём видам добычи",
-            }
-            effect_label = _effect_labels.get(chosen["effect"], "")
-            success_text = (
-                f'<tg-emoji emoji-id="5267500801240092311">⭐</tg-emoji> <b>Оплата прошла успешно!</b>\n'
-                f'━━━━━━━━━━━━━━━━━━━━\n\n'
-                f'<blockquote>'
-                f'<tg-emoji emoji-id="5442939099906325301">💎</tg-emoji> <b>Кейс Артефактов открыт!</b>\n'
-                f'<tg-emoji emoji-id="5397782960512444700">🎟</tg-emoji> <b>Артефакт: {chosen["name"]}</b>\n'
-                f'<tg-emoji emoji-id="5375338737028841420">🎟</tg-emoji> <b>Бонус: {chosen["multiplier"]}× {effect_label} навсегда</b>\n'
-                f'<tg-emoji emoji-id="5267500801240092311">🎟</tg-emoji> <b>Потрачено: {ARTIFACT_CASE_COST_STARS} {STAR}</b>'
-                f'</blockquote>\n\n'
-                f'<tg-emoji emoji-id="5206607081334906820">🎟</tg-emoji> <b>Артефакт добавлен в коллекцию!</b>'
-            )
+            from shop import _get_effect_label as _eff_lbl
+            effect_label = _eff_lbl(chosen["effect"], _lang)
+            art_name = chosen.get("name_en", chosen["name"]) if _lang == "en" else chosen["name"]
+            if _lang == "en":
+                success_text = (
+                    f'<tg-emoji emoji-id="5267500801240092311">⭐</tg-emoji> <b>Payment successful!</b>\n'
+                    f'━━━━━━━━━━━━━━━━━━━━\n\n'
+                    f'<blockquote>'
+                    f'<tg-emoji emoji-id="5442939099906325301">💎</tg-emoji> <b>Artifact Case opened!</b>\n'
+                    f'<tg-emoji emoji-id="5397782960512444700">🎟</tg-emoji> <b>Artifact: {art_name}</b>\n'
+                    f'<tg-emoji emoji-id="5375338737028841420">🎟</tg-emoji> <b>Bonus: {chosen["multiplier"]}× {effect_label} forever</b>\n'
+                    f'<tg-emoji emoji-id="5267500801240092311">🎟</tg-emoji> <b>Spent: {ARTIFACT_CASE_COST_STARS} {STAR}</b>'
+                    f'</blockquote>\n\n'
+                    f'<tg-emoji emoji-id="5206607081334906820">🎟</tg-emoji> <b>Artifact added to collection!</b>'
+                )
+            else:
+                success_text = (
+                    f'<tg-emoji emoji-id="5267500801240092311">⭐</tg-emoji> <b>Оплата прошла успешно!</b>\n'
+                    f'━━━━━━━━━━━━━━━━━━━━\n\n'
+                    f'<blockquote>'
+                    f'<tg-emoji emoji-id="5442939099906325301">💎</tg-emoji> <b>Кейс Артефактов открыт!</b>\n'
+                    f'<tg-emoji emoji-id="5397782960512444700">🎟</tg-emoji> <b>Артефакт: {art_name}</b>\n'
+                    f'<tg-emoji emoji-id="5375338737028841420">🎟</tg-emoji> <b>Бонус: {chosen["multiplier"]}× {effect_label} навсегда</b>\n'
+                    f'<tg-emoji emoji-id="5267500801240092311">🎟</tg-emoji> <b>Потрачено: {ARTIFACT_CASE_COST_STARS} {STAR}</b>'
+                    f'</blockquote>\n\n'
+                    f'<tg-emoji emoji-id="5206607081334906820">🎟</tg-emoji> <b>Артефакт добавлен в коллекцию!</b>'
+                )
             await bot.send_message(message.chat.id, success_text, parse_mode="HTML")
         return
 
