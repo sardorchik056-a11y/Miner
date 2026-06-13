@@ -30,6 +30,11 @@ def _back_btn(cb: str, label: str = "Назад") -> InlineKeyboardButton:
     return InlineKeyboardButton(text=label, callback_data=cb, icon_custom_emoji_id=EMOJI_BACK)
 
 
+def _L(lang: str, ru: str, en: str) -> str:
+    """Inline двуязычная строка без обращения к lang.py."""
+    return en if lang == "en" else ru
+
+
 _E = {
     "case":       "5438571934210082705",
     "xp_case":    "5404843113652970870",
@@ -265,14 +270,24 @@ _ARTIFACT_EFFECT_LABELS = {
     "all":    "ко всем трём видам добычи",
 }
 
-def _artifact_desc(a: dict) -> str:
-    effect_label = _ARTIFACT_EFFECT_LABELS.get(a["effect"], "")
+_ARTIFACT_EFFECT_LABELS_EN = {
+    "mine":   "to ore mining",
+    "damage": "to boss damage",
+    "pets":   "to pet income",
+    "all":    "to all three income types",
+}
+
+def _get_effect_label(effect: str, lang: str = "ru") -> str:
+    return (_ARTIFACT_EFFECT_LABELS_EN if lang == "en" else _ARTIFACT_EFFECT_LABELS).get(effect, "")
+
+def _artifact_desc(a: dict, lang: str = "ru") -> str:
+    effect_label = _get_effect_label(a["effect"], lang)
     eid = a.get("emoji_id", "")
     emoji = f'<tg-emoji emoji-id="{eid}">♦️</tg-emoji> ' if eid else ""
     return f'{emoji}<b>{a["name"]}</b> — {a["multiplier"]}× {effect_label}'
 
 
-def open_artifact_case(data: dict) -> tuple:
+def open_artifact_case(data: dict, lang: str = "ru") -> tuple:
     """Открыть кейс артефактов. Оплата Stars уже прошла — выдаём артефакт."""
     pool    = _ARTIFACT_POOL
     weights = [a["chance"] for a in pool]
@@ -282,22 +297,22 @@ def open_artifact_case(data: dict) -> tuple:
     already_have = any(entry["key"] == chosen["key"] for entry in artifacts)
     if not already_have:
         artifacts.append({"key": chosen["key"]})
-        added_msg = f"{_pe('ok', '✅')} <b>Артефакт добавлен в коллекцию!</b>"
+        added_msg = f"{_pe('ok', '✅')} <b>{_L(lang, 'Артефакт добавлен в коллекцию!', 'Artifact added to collection!')}</b>"
     else:
         # Дубликат — выдаём монеты по множителю артефакта
         _dup_rewards = {1.3: 5_000_000, 1.5: 8_000_000, 1.8: 15_000_000, 1.4: 50_000_000}
         _dup_coins = _dup_rewards.get(chosen["multiplier"], 5_000_000)
         data["balance"] = data.get("balance", 0) + _dup_coins
         added_msg = (
-            f"{_pe('warn', '⚠️')} <b>Этот артефакт у тебя уже есть!</b>\n"
-            f"{_pe('coin', '💰')} <b>Компенсация: +{_fmt_num(_dup_coins)} {COIN}</b>"
+            f"{_pe('warn', '⚠️')} <b>{_L(lang, 'Этот артефакт у тебя уже есть!', 'You already have this artifact!')}</b>\n"
+            f"{_pe('coin', '💰')} <b>{_L(lang, 'Компенсация', 'Compensation')}: +{_fmt_num(_dup_coins)} {COIN}</b>"
         )
 
     data["artifact_cases_opened"] = data.get("artifact_cases_opened", 0) + 1
 
     msg = (
-        f"<blockquote>{_pe('stats', '💎')} <b>Кейс Артефактов открыт!</b>\n"
-        f"{_pe('arrow', '➡️')} <b>Выпало: {_artifact_desc(chosen)}</b></blockquote>\n"
+        f"<blockquote>{_pe('stats', '💎')} <b>{_L(lang, 'Кейс Артефактов открыт!', 'Artifact Case opened!')}</b>\n"
+        f"{_pe('arrow', '➡️')} <b>{_L(lang, 'Выпало', 'Dropped')}: {_artifact_desc(chosen, lang)}</b></blockquote>\n"
         f"\n<blockquote>{added_msg}</blockquote>"
     )
     return True, msg, chosen
@@ -482,25 +497,25 @@ def _fmt_time_left(seconds: float, lang: str = "ru") -> str:
 #  ЛОГИКА
 # ============================================================
 
-def open_case(data: dict, case_key: str) -> tuple:
+def open_case(data: dict, case_key: str, lang: str = "ru") -> tuple:
     case = CASES.get(case_key)
     if not case:
-        return False, "❌ Неизвестный кейс.", None
+        return False, _L(lang, "❌ Неизвестный кейс.", "❌ Unknown case."), None
     cost = case["cost"]
     if data.get("balance", 0) < cost:
-        return False, f"❌ Недостаточно монет!\nНужно: {_fmt_num(cost)} {_pe('coin', '💰')}", None
+        return False, f"❌ {_L(lang, 'Недостаточно монет!', 'Not enough coins!')}\n{_L(lang, 'Нужно', 'Need')}: {_fmt_num(cost)} {_pe('coin', '💰')}", None
     if case["type"] == "booster":
         inv = data.setdefault("boosters_inventory", [])
         if len(inv) >= MAX_INVENTORY:
-            return False, f"❌ Инвентарь ускорителей полон!\nМаксимум {MAX_INVENTORY} шт. Активируй или продай лишние.", None
+            return False, f"❌ {_L(lang, 'Инвентарь ускорителей полон!', 'Booster inventory is full!')}\n{_L(lang, f'Максимум {MAX_INVENTORY} шт. Активируй или продай лишние.', f'Max {MAX_INVENTORY} items. Activate or sell some.')}", None
     elif case["type"] == "enhancer":
         inv = data.setdefault("enh_inventory", [])
         if len(inv) >= MAX_ENH_INVENTORY:
-            return False, f"❌ Инвентарь усилителей полон!\nМаксимум {MAX_ENH_INVENTORY} шт. Используй или продай лишние.", None
+            return False, f"❌ {_L(lang, 'Инвентарь усилителей полон!', 'Enhancer inventory is full!')}\n{_L(lang, f'Максимум {MAX_ENH_INVENTORY} шт. Используй или продай лишние.', f'Max {MAX_ENH_INVENTORY} items. Use or sell some.')}", None
     else:
         inv = data.setdefault("xp_inventory", [])
         if len(inv) >= MAX_XP_INVENTORY:
-            return False, f"❌ XP-инвентарь полон!\nМаксимум {MAX_XP_INVENTORY} шт. Используй или продай лишние.", None
+            return False, f"❌ {_L(lang, 'XP-инвентарь полон!', 'XP inventory is full!')}\n{_L(lang, f'Максимум {MAX_XP_INVENTORY} шт. Используй или продай лишние.', f'Max {MAX_XP_INVENTORY} items. Use or sell some.')}", None
     pool    = case["pool"]
     weights = [b["chance"] for b in pool]
     dropped = random.choices(pool, weights=weights, k=1)[0]
@@ -518,8 +533,8 @@ def open_case(data: dict, case_key: str) -> tuple:
             "chance":       dropped["chance"],
         }
         inv.append(instance)
-        name     = f"{_pe('boost', '⚡')} {_booster_name(dropped)}"
-        inv_line = f"В инвентаре: {len(inv)}/{MAX_INVENTORY}"
+        name     = f"{_pe('boost', '⚡')} {_booster_name(dropped, lang)}"
+        inv_line = f"{_L(lang, 'В инвентаре', 'In inventory')}: {len(inv)}/{MAX_INVENTORY}"
     elif case["type"] == "enhancer":
         instance = {
             "instance_id": instance_id,
@@ -537,8 +552,8 @@ def open_case(data: dict, case_key: str) -> tuple:
             instance["dur_key"]      = dropped["dur_key"]
             instance["duration_sec"] = _DUR[dropped["dur_key"]]
         inv.append(instance)
-        name     = _enh_item_name(instance)
-        inv_line = f"В инвентаре усилителей: {len(inv)}/{MAX_ENH_INVENTORY}"
+        name     = _enh_item_name(instance, lang)
+        inv_line = f"{_L(lang, 'В инвентаре усилителей', 'Enhancer inventory')}: {len(inv)}/{MAX_ENH_INVENTORY}"
     else:
         instance = {
             "instance_id": instance_id,
@@ -548,31 +563,31 @@ def open_case(data: dict, case_key: str) -> tuple:
         }
         if dropped["type"] == "xp_instant":
             instance["xp"] = dropped["xp"]
-            name = _xp_item_name(dropped)
+            name = _xp_item_name(dropped, lang)
         else:
             instance["multiplier"]   = dropped["multiplier"]
             instance["dur_key"]      = dropped["dur_key"]
             instance["duration_sec"] = _DUR[dropped["dur_key"]]
-            name = _xp_item_name(dropped)
+            name = _xp_item_name(dropped, lang)
         inv.append(instance)
-        inv_line = f"В XP-инвентаре: {len(inv)}/{MAX_XP_INVENTORY}"
+        inv_line = f"{_L(lang, 'В XP-инвентаре', 'XP inventory')}: {len(inv)}/{MAX_XP_INVENTORY}"
     data["cases_total_opened"] = data.get("cases_total_opened", 0) + 1
     data["cases_total_spent"]  = data.get("cases_total_spent",  0) + cost
     msg = (
-        f"<blockquote>{_pe('case', '📦')} <b>Кейс открыт!</b>\n"
-        f"{_pe('arrow', '➡️')} <b>Выпало:</b> {name}</blockquote>\n"
-        f"\n<blockquote>{_pe('spent', '💸')} <b>Потрачено: {_fmt_num(cost)}</b> {_pe('coin', '💰')}\n"
-        f"{_pe('balance', '💰')} <b>Баланс: {_fmt_num(data['balance'])}</b> {_pe('coin', '💰')}\n"
+        f"<blockquote>{_pe('case', '📦')} <b>{_L(lang, 'Кейс открыт!', 'Case opened!')}</b>\n"
+        f"{_pe('arrow', '➡️')} <b>{_L(lang, 'Выпало', 'Dropped')}:</b> {name}</blockquote>\n"
+        f"\n<blockquote>{_pe('spent', '💸')} <b>{_L(lang, 'Потрачено', 'Spent')}: {_fmt_num(cost)}</b> {_pe('coin', '💰')}\n"
+        f"{_pe('balance', '💰')} <b>{_L(lang, 'Баланс', 'Balance')}: {_fmt_num(data['balance'])}</b> {_pe('coin', '💰')}\n"
         f"{_pe('inv', '🎒')} <b>{inv_line}</b></blockquote>"
     )
     return True, msg, instance
 
 
-def activate_booster(data: dict, instance_id: str, force: bool = False) -> tuple:
+def activate_booster(data: dict, instance_id: str, force: bool = False, lang: str = "ru") -> tuple:
     inv  = data.get("boosters_inventory", [])
     item = next((x for x in inv if x["instance_id"] == instance_id), None)
     if not item:
-        return False, "❌ Ускоритель не найден."
+        return False, _L(lang, "❌ Ускоритель не найден.", "❌ Booster not found.")
     active     = data.get("active_booster")
     has_active = active and active.get("ends_at", 0) > _now_ts()
     if has_active and not force:
@@ -584,35 +599,35 @@ def activate_booster(data: dict, instance_id: str, force: bool = False) -> tuple
         "dur_key": item["dur_key"], "ends_at": ends_at,
     }
     mult = _multiplier_label(item["multiplier"])
-    dur  = _DUR_LABELS[item["dur_key"]]
+    dur  = _dur_label(item["dur_key"], lang)
     return True, (
-        f"<blockquote>{_pe('activate', '✅')} <b>Ускоритель активирован!</b>\n"
-        f"{_pe('boost', '⚡')} <b>{_booster_name(item)}</b>\n"
-        f"<b>Все показатели кирки ×{mult} на {dur}!</b></blockquote>"
+        f"<blockquote>{_pe('activate', '✅')} <b>{_L(lang, 'Ускоритель активирован!', 'Booster activated!')}</b>\n"
+        f"{_pe('boost', '⚡')} <b>{_booster_name(item, lang)}</b>\n"
+        f"<b>{_L(lang, 'Все показатели кирки', 'All pickaxe stats')} ×{mult} {_L(lang, 'на', 'for')} {dur}!</b></blockquote>"
     )
 
 
-def sell_booster(data: dict, instance_id: str) -> tuple:
+def sell_booster(data: dict, instance_id: str, lang: str = "ru") -> tuple:
     inv  = data.get("boosters_inventory", [])
     item = next((x for x in inv if x["instance_id"] == instance_id), None)
     if not item:
-        return False, "❌ Ускоритель не найден.", 0
+        return False, _L(lang, "❌ Ускоритель не найден.", "❌ Booster not found."), 0
     price = get_sell_price(item)
     data["boosters_inventory"] = [x for x in inv if x["instance_id"] != instance_id]
     data["balance"] = data.get("balance", 0) + price
     return True, (
-        f"<blockquote>{_pe('sell', '💸')} <b>Ускоритель продан!</b>\n"
-        f"{_pe('boost', '⚡')} <b>{_booster_name(item)}</b>\n"
+        f"<blockquote>{_pe('sell', '💸')} <b>{_L(lang, 'Ускоритель продан!', 'Booster sold!')}</b>\n"
+        f"{_pe('boost', '⚡')} <b>{_booster_name(item, lang)}</b>\n"
         f"{_pe('coin', '💰')} <b>+{_fmt_num(price)}</b>\n"
-        f"{_pe('balance', '💰')} <b>Баланс: {_fmt_num(data['balance'])}</b> {_pe('coin', '💰')}</blockquote>"
+        f"{_pe('balance', '💰')} <b>{_L(lang, 'Баланс', 'Balance')}: {_fmt_num(data['balance'])}</b> {_pe('coin', '💰')}</blockquote>"
     ), price
 
 
-def use_xp_item(data: dict, instance_id: str, force: bool = False) -> tuple:
+def use_xp_item(data: dict, instance_id: str, force: bool = False, lang: str = "ru") -> tuple:
     inv  = data.setdefault("xp_inventory", [])
     item = next((x for x in inv if x["instance_id"] == instance_id), None)
     if not item:
-        return False, "❌ Предмет не найден."
+        return False, _L(lang, "❌ Предмет не найден.", "❌ Item not found.")
     if item["type"] == "xp_boost":
         active     = data.get("active_xp_booster")
         has_active = active and active.get("ends_at", 0) > _now_ts()
@@ -625,10 +640,10 @@ def use_xp_item(data: dict, instance_id: str, force: bool = False) -> tuple:
             "dur_key": item["dur_key"], "ends_at": ends_at,
         }
         mult = _multiplier_label(item["multiplier"])
-        dur  = _DUR_LABELS[item["dur_key"]]
+        dur  = _dur_label(item["dur_key"], lang)
         return True, (
-            f"<blockquote>{_pe('xp_boost', '🔮')} <b>XP-ускоритель активирован!</b>\n"
-            f"{_pe('xp_instant', '✨')} <b>Множитель опыта ×{mult} на {dur}!</b></blockquote>"
+            f"<blockquote>{_pe('xp_boost', '🔮')} <b>{_L(lang, 'XP-ускоритель активирован!', 'XP booster activated!')}</b>\n"
+            f"{_pe('xp_instant', '✨')} <b>{_L(lang, 'Множитель опыта', 'XP multiplier')} ×{mult} {_L(lang, 'на', 'for')} {dur}!</b></blockquote>"
         )
     from miner import xp_for_level, MAX_LEVEL
     gained = item["xp"]
@@ -647,30 +662,35 @@ def use_xp_item(data: dict, instance_id: str, force: bool = False) -> tuple:
     data["level"]  = level
     data["xp"]     = xp
     data["xp_max"] = xp_max
-    lvl_msg = f"\n🎉 <b>Уровень повышен до {level}!</b>" * min(lvl_ups, 3)
-    if lvl_ups > 3:
-        lvl_msg = f"\n🎉 <b>Уровень повышен до {level} (+{lvl_ups} ур.)!</b>"
+    if lang == "en":
+        lvl_msg = f"\n🎉 <b>Level up to {level}!</b>" * min(lvl_ups, 3)
+        if lvl_ups > 3:
+            lvl_msg = f"\n🎉 <b>Level up to {level} (+{lvl_ups} lvl)!</b>"
+    else:
+        lvl_msg = f"\n🎉 <b>Уровень повышен до {level}!</b>" * min(lvl_ups, 3)
+        if lvl_ups > 3:
+            lvl_msg = f"\n🎉 <b>Уровень повышен до {level} (+{lvl_ups} ур.)!</b>"
     return True, (
-        f"<blockquote>{_pe('xp_instant', '✨')} <b>Опыт получен!</b>\n"
+        f"<blockquote>{_pe('xp_instant', '✨')} <b>{_L(lang, 'Опыт получен!', 'XP received!')}</b>\n"
         f"{_pe('xp_instant', '✨')} <b>+{_fmt_num(gained)} XP</b>{lvl_msg}</blockquote>\n"
-        f"\n<blockquote><b>Уровень: {level}</b>\n"
-        f"<b>Опыт: {_fmt_num(xp)}/{_fmt_num(xp_max)}</b></blockquote>"
+        f"\n<blockquote><b>{_L(lang, 'Уровень', 'Level')}: {level}</b>\n"
+        f"<b>{_L(lang, 'Опыт', 'XP')}: {_fmt_num(xp)}/{_fmt_num(xp_max)}</b></blockquote>"
     )
 
 
-def sell_xp_item(data: dict, instance_id: str) -> tuple:
+def sell_xp_item(data: dict, instance_id: str, lang: str = "ru") -> tuple:
     inv  = data.setdefault("xp_inventory", [])
     item = next((x for x in inv if x["instance_id"] == instance_id), None)
     if not item:
-        return False, "❌ Предмет не найден.", 0
+        return False, _L(lang, "❌ Предмет не найден.", "❌ Item not found."), 0
     price = get_xp_sell_price(item)
     data["xp_inventory"] = [x for x in inv if x["instance_id"] != instance_id]
     data["balance"] = data.get("balance", 0) + price
     return True, (
-        f"<blockquote>{_pe('sell', '💸')} <b>Продано!</b>\n"
-        f"{_xp_item_name(item)}\n"
+        f"<blockquote>{_pe('sell', '💸')} <b>{_L(lang, 'Продано!', 'Sold!')}</b>\n"
+        f"{_xp_item_name(item, lang)}\n"
         f"{_pe('coin', '💰')} <b>+{_fmt_num(price)}</b>\n"
-        f"{_pe('balance', '💰')} <b>Баланс: {_fmt_num(data['balance'])}</b> {_pe('coin', '💰')}</blockquote>"
+        f"{_pe('balance', '💰')} <b>{_L(lang, 'Баланс', 'Balance')}: {_fmt_num(data['balance'])}</b> {_pe('coin', '💰')}</blockquote>"
     ), price
 
 
@@ -750,11 +770,11 @@ def get_active_poison_info(data: dict) -> dict | None:
 #  ПРИМЕНЕНИЕ ЯДА
 # ============================================================
 
-def use_poison(data: dict, instance_id: str, force: bool = False) -> tuple:
+def use_poison(data: dict, instance_id: str, force: bool = False, lang: str = "ru") -> tuple:
     inv  = data.setdefault("enh_inventory", [])
     item = next((x for x in inv if x["instance_id"] == instance_id), None)
     if not item or item["type"] != "poison":
-        return False, "❌ Яд не найден."
+        return False, _L(lang, "❌ Яд не найден.", "❌ Poison not found.")
     active     = get_active_poison_info(data)
     has_active = active is not None
     if has_active and not force:
@@ -770,11 +790,17 @@ def use_poison(data: dict, instance_id: str, force: bool = False) -> tuple:
         "ends_at":  ends_at,
         "applied_at": _now_ts(),
     }
+    _poison_names_en = {
+        "Яд Гадюки": "Viper Venom", "Яд Кобры": "Cobra Venom",
+        "Яд Чёрной Мамбы": "Black Mamba Venom", "Яд Василиска": "Basilisk Venom",
+        "Яд Левиафана": "Leviathan Venom",
+    }
+    pname = _poison_names_en.get(item["name"], item["name"]) if lang == "en" else item["name"]
     return True, (
-        f'<blockquote><tg-emoji emoji-id="5456584142286250164">☠️</tg-emoji> <b>Яд применён!</b>\n'
-        f'<b>{item["name"]}</b>\n'
-        f'<tg-emoji emoji-id="{_E["timer"]}">⏱</tg-emoji> <b>Урон наносится 30 минут автоматически</b>\n'
-        f'<b>Суммарный урон боссу: {_fmt_num(item["damage"])}</b></blockquote>'
+        f'<blockquote><tg-emoji emoji-id="5456584142286250164">☠️</tg-emoji> <b>{_L(lang, "Яд применён!", "Poison applied!")}</b>\n'
+        f'<b>{pname}</b>\n'
+        f'<tg-emoji emoji-id="{_E["timer"]}">⏱</tg-emoji> <b>{_L(lang, "Урон наносится 30 минут автоматически", "Damage applied automatically for 30 minutes")}</b>\n'
+        f'<b>{_L(lang, "Суммарный урон боссу", "Total boss damage")}: {_fmt_num(item["damage"])}</b></blockquote>'
     )
 
 
@@ -782,19 +808,19 @@ def use_poison(data: dict, instance_id: str, force: bool = False) -> tuple:
 #  ПРОДАЖА предмета из инвентаря усилителей
 # ============================================================
 
-def sell_enh_item(data: dict, instance_id: str) -> tuple:
+def sell_enh_item(data: dict, instance_id: str, lang: str = "ru") -> tuple:
     inv  = data.setdefault("enh_inventory", [])
     item = next((x for x in inv if x["instance_id"] == instance_id), None)
     if not item:
-        return False, "❌ Предмет не найден.", 0
+        return False, _L(lang, "❌ Предмет не найден.", "❌ Item not found."), 0
     price = get_enh_sell_price(item)
     data["enh_inventory"] = [x for x in inv if x["instance_id"] != instance_id]
     data["balance"] = data.get("balance", 0) + price
     return True, (
-        f'<blockquote>{_pe("sell", "💸")} <b>Продано!</b>\n'
-        f'{_enh_item_name(item)}\n'
+        f'{_pe("sell", "💸")} <b>{_L(lang, "Продано!", "Sold!")}</b>\n'
+        f'{_enh_item_name(item, lang)}\n'
         f'{_pe("coin", "💰")} <b>+{_fmt_num(price)}</b>\n'
-        f'{_pe("balance", "💰")} <b>Баланс: {_fmt_num(data["balance"])}</b> {_pe("coin", "💰")}</blockquote>'
+        f'{_pe("balance", "💰")} <b>{_L(lang, "Баланс", "Balance")}: {_fmt_num(data["balance"])}</b> {_pe("coin", "💰")}'
     ), price
 
 
@@ -802,11 +828,11 @@ def sell_enh_item(data: dict, instance_id: str) -> tuple:
 #  АКТИВАЦИЯ ускорителя из кейса усилителей
 # ============================================================
 
-def activate_enh_boost(data: dict, instance_id: str, force: bool = False) -> tuple:
+def activate_enh_boost(data: dict, instance_id: str, force: bool = False, lang: str = "ru") -> tuple:
     inv  = data.setdefault("enh_inventory", [])
     item = next((x for x in inv if x["instance_id"] == instance_id), None)
     if not item or item["type"] != "enh_boost":
-        return False, "❌ Усилитель не найден."
+        return False, _L(lang, "❌ Усилитель не найден.", "❌ Enhancer not found.")
     active     = data.get("active_enh_booster")
     has_active = active and active.get("ends_at", 0) > _now_ts()
     if has_active and not force:
@@ -821,10 +847,10 @@ def activate_enh_boost(data: dict, instance_id: str, force: bool = False) -> tup
         "ends_at":    ends_at,
     }
     mult = _multiplier_label(item["multiplier"])
-    dur  = _DUR_LABELS[item["dur_key"]]
+    dur  = _dur_label(item["dur_key"], lang)
     return True, (
-        f'<blockquote>{_pe("enh_boost", "⚡")} <b>Усилитель активирован!</b>\n'
-        f'<b>Урон ×{mult} на {dur}!</b></blockquote>'
+        f'{_pe("enh_boost", "⚡")} <b>{_L(lang, "Усилитель активирован!", "Enhancer activated!")}</b>\n'
+        f'<b>{_L(lang, "Урон", "Damage")} ×{mult} {_L(lang, "на", "for")} {dur}!</b>'
     )
 
 
@@ -832,149 +858,175 @@ def activate_enh_boost(data: dict, instance_id: str, force: bool = False) -> tup
 #  UI — ИНВЕНТАРЬ УСИЛИТЕЛЕЙ
 # ============================================================
 
-def enh_inventory_text(data: dict) -> str:
+def enh_inventory_text(data: dict, lang: str = "ru") -> str:
     inv      = data.setdefault("enh_inventory", [])
     poison   = get_active_poison_info(data)
     enh_act  = get_active_enh_booster_info(data)
-    lines    = [f'<blockquote><tg-emoji emoji-id="5256047523620995497">⚡</tg-emoji> <b>УСИЛИТЕЛИ И ЯДЫ</b>\n']
+    lines    = [f'<blockquote><tg-emoji emoji-id="5256047523620995497">⚡</tg-emoji> <b>{_L(lang, "УСИЛИТЕЛИ И ЯДЫ", "BOOSTERS & POISONS")}</b>\n']
     if enh_act:
-        left = _fmt_time_left(enh_act["ends_at"] - _now_ts())
+        left = _fmt_time_left(enh_act["ends_at"] - _now_ts(), lang)
         mult = _multiplier_label(enh_act["multiplier"])
         lines.append(
-            f'<tg-emoji emoji-id="5256047523620995497">⚡</tg-emoji> <b>Активен усилитель: ×{mult}</b>\n'
-            f'{_pe("timer", "⏱")} <b>Осталось: {left}</b>\n'
+            f'<tg-emoji emoji-id="5256047523620995497">⚡</tg-emoji> <b>{_L(lang, "Активен усилитель", "Active booster")}: ×{mult}</b>\n'
+            f'{_pe("timer", "⏱")} <b>{_L(lang, "Осталось", "Left")}: {left}</b>\n'
         )
     else:
-        lines.append(f'<tg-emoji emoji-id="5256047523620995497">⚡</tg-emoji> <b>Нет активного усилителя.</b>\n')
+        lines.append(f'<tg-emoji emoji-id="5256047523620995497">⚡</tg-emoji> <b>{_L(lang, "Нет активного усилителя.", "No active booster.")}</b>\n')
     if poison:
-        left = _fmt_time_left(poison["ends_at"] - _now_ts())
+        left = _fmt_time_left(poison["ends_at"] - _now_ts(), lang)
         dmg  = _fmt_num(poison["damage"])
+        _poison_names_en = {
+            "Яд Гадюки": "Viper Venom", "Яд Кобры": "Cobra Venom",
+            "Яд Чёрной Мамбы": "Black Mamba Venom", "Яд Василиска": "Basilisk Venom",
+            "Яд Левиафана": "Leviathan Venom",
+        }
+        pname = _poison_names_en.get(poison["name"], poison["name"]) if lang == "en" else poison["name"]
+        dmg_label = "dmg" if lang == "en" else "урона"
         lines.append(
-            f'{_pe("ok", "✅")} <b>Яд: {poison["name"]} — {dmg} урона</b>\n'
-            f'{_pe("timer", "⏱")} <b>Осталось: {left}</b>'
+            f'{_pe("ok", "✅")} <b>{_L(lang, "Яд", "Poison")}: {pname} — {dmg} {dmg_label}</b>\n'
+            f'{_pe("timer", "⏱")} <b>{_L(lang, "Осталось", "Left")}: {left}</b>'
         )
     else:
-        lines.append(f'{_pe("cancel", "❌")} <b>Нет активного яда.</b>')
+        lines.append(f'{_pe("cancel", "❌")} <b>{_L(lang, "Нет активного яда.", "No active poison.")}</b>')
     lines.append("</blockquote>")
     if not inv:
         lines.append(
             f'\n<blockquote><tg-emoji emoji-id="5256047523620995497">⚡</tg-emoji>'
-            f' <b>Инвентарь пуст. Открой Кейс усилителей!</b></blockquote>'
+            f' <b>{_L(lang, "Инвентарь пуст. Открой Кейс усилителей!", "Inventory empty. Open an Enhancer case!")}</b></blockquote>'
         )
     else:
-        lines.append(f'\n<blockquote><b>В инвентаре ({len(inv)}/{MAX_ENH_INVENTORY}):</b>')
+        lines.append(f'\n<blockquote><b>{_L(lang, "В инвентаре", "In inventory")} ({len(inv)}/{MAX_ENH_INVENTORY}):</b>')
         for i, item in enumerate(inv, 1):
             price = get_enh_sell_price(item)
-            lines.append(f'\n<b>{i}. {_enh_item_name(item)}</b>\n{_pe("coin", "💰")} <b>{_fmt_num(price)}</b>')
+            lines.append(f'\n<b>{i}. {_enh_item_name(item, lang)}</b>\n{_pe("coin", "💰")} <b>{_fmt_num(price)}</b>')
         lines.append('</blockquote>')
     return "".join(lines)
 
 
-def enh_inventory_keyboard(data: dict) -> InlineKeyboardMarkup:
+def enh_inventory_keyboard(data: dict, lang: str = "ru") -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     inv = data.get("enh_inventory", [])
     for item in inv[:MAX_ENH_INVENTORY]:
         e_key = "poison" if item["type"] == "poison" else "enh_boost"
-        builder.row(_btn(_E[e_key], _enh_item_name_plain(item), f'enh_info_{item["instance_id"]}'))
-    builder.row(_back_btn("profile_boosters", "Инвентарь"))
+        builder.row(_btn(_E[e_key], _enh_item_name_plain(item, lang), f'enh_info_{item["instance_id"]}'))
+    builder.row(_back_btn("profile_boosters", _L(lang, "Инвентарь", "Inventory")))
     return builder.as_markup()
 
 
-def enh_item_detail_text(data: dict, instance_id: str) -> str:
+def enh_item_detail_text(data: dict, instance_id: str, lang: str = "ru") -> str:
     inv  = data.get("enh_inventory", [])
     item = next((x for x in inv if x["instance_id"] == instance_id), None)
     if not item:
-        return "❌ Предмет не найден."
+        return _L(lang, "❌ Предмет не найден.", "❌ Item not found.")
     price = get_enh_sell_price(item)
     if item["type"] == "poison":
         poison_act = get_active_poison_info(data)
         warning    = ""
         if poison_act:
-            left = _fmt_time_left(poison_act["ends_at"] - _now_ts())
+            left = _fmt_time_left(poison_act["ends_at"] - _now_ts(), lang)
+            _poison_names_en = {
+                "Яд Гадюки": "Viper Venom", "Яд Кобры": "Cobra Venom",
+                "Яд Чёрной Мамбы": "Black Mamba Venom", "Яд Василиска": "Basilisk Venom",
+                "Яд Левиафана": "Leviathan Venom",
+            }
+            aname = _poison_names_en.get(poison_act["name"], poison_act["name"]) if lang == "en" else poison_act["name"]
             warning = (
-                f'\n\n<blockquote>{_pe("warn", "⚠️")} <b>Уже активен: {poison_act["name"]}</b>\n'
-                f'{_pe("timer", "⏱")} <b>Осталось: {left}</b></blockquote>'
+                f'\n\n<blockquote>{_pe("warn", "⚠️")} <b>{_L(lang, "Уже активен", "Already active")}: {aname}</b>\n'
+                f'{_pe("timer", "⏱")} <b>{_L(lang, "Осталось", "Left")}: {left}</b></blockquote>'
             )
+        _poison_names_en2 = {
+            "Яд Гадюки": "Viper Venom", "Яд Кобры": "Cobra Venom",
+            "Яд Чёрной Мамбы": "Black Mamba Venom", "Яд Василиска": "Basilisk Venom",
+            "Яд Левиафана": "Leviathan Venom",
+        }
+        pname = _poison_names_en2.get(item["name"], item["name"]) if lang == "en" else item["name"]
         return (
             f'<blockquote><tg-emoji emoji-id="5456584142286250164">☠️</tg-emoji>'
-            f' <b>{item["name"]}</b>\n'
-            f'{_pe("timer", "⏱")} <b>Длительность: 30 минут</b>\n'
-            f'<b>Суммарный урон боссу: {_fmt_num(item["damage"])}</b></blockquote>\n'
-            f'\n<blockquote><b>Яд действует автоматически — урон списывается равномерно каждую минуту.</b>\n'
-            f'<b>Работает на текущего активного босса.</b></blockquote>\n'
-            f'\n<blockquote>{_pe("coin", "💰")} <b>Цена продажи: {_fmt_num(price)}</b></blockquote>'
+            f' <b>{pname}</b>\n'
+            f'{_pe("timer", "⏱")} <b>{_L(lang, "Длительность: 30 минут", "Duration: 30 minutes")}</b>\n'
+            f'<b>{_L(lang, "Суммарный урон боссу", "Total boss damage")}: {_fmt_num(item["damage"])}</b></blockquote>\n'
+            f'\n<blockquote><b>{_L(lang, "Яд действует автоматически — урон списывается равномерно каждую минуту.", "Poison works automatically — damage applied evenly each minute.")}</b>\n'
+            f'<b>{_L(lang, "Работает на текущего активного босса.", "Works on the current active boss.")}</b></blockquote>\n'
+            f'\n<blockquote>{_pe("coin", "💰")} <b>{_L(lang, "Цена продажи", "Sell price")}: {_fmt_num(price)}</b></blockquote>'
             f'{warning}'
         )
     # enh_boost
     mult     = _multiplier_label(item["multiplier"])
-    dur      = _DUR_LABELS[item["dur_key"]]
+    dur      = _dur_label(item["dur_key"], lang)
     active   = data.get("active_enh_booster")
     warning  = ""
     if active and active.get("ends_at", 0) > _now_ts():
-        left     = _fmt_time_left(active["ends_at"] - _now_ts())
+        left     = _fmt_time_left(active["ends_at"] - _now_ts(), lang)
         act_mult = _multiplier_label(active["multiplier"])
-        act_dur  = _DUR_LABELS[active["dur_key"]]
+        act_dur  = _dur_label(active["dur_key"], lang)
         warning  = (
-            f'\n\n<blockquote>{_pe("warn", "⚠️")} <b>Активен: {act_mult} на {act_dur}</b>\n'
-            f'{_pe("timer", "⏱")} <b>Осталось: {left}</b></blockquote>'
+            f'\n\n<blockquote>{_pe("warn", "⚠️")} <b>{_L(lang, "Активен", "Active")}: {act_mult} {_L(lang, "на", "for")} {act_dur}</b>\n'
+            f'{_pe("timer", "⏱")} <b>{_L(lang, "Осталось", "Left")}: {left}</b></blockquote>'
         )
     return (
         f'<blockquote><tg-emoji emoji-id="5256047523620995497">⚡</tg-emoji>'
-        f' <b>Усилитель урона {mult}</b>\n'
-        f'{_pe("timer", "⏱")} <b>Длительность: {dur}</b>\n'
-        f'{_pe("mult", "🔢")} <b>Множитель: {mult}</b></blockquote>\n'
-        f'\n<blockquote><b>Увеличивает весь урон по боссу в {mult} на {dur}.</b></blockquote>\n'
-        f'\n<blockquote>{_pe("coin", "💰")} <b>Цена продажи: {_fmt_num(price)}</b></blockquote>'
+        f' <b>{_L(lang, "Усилитель урона", "Damage booster")} {mult}</b>\n'
+        f'{_pe("timer", "⏱")} <b>{_L(lang, "Длительность", "Duration")}: {dur}</b>\n'
+        f'{_pe("mult", "🔢")} <b>{_L(lang, "Множитель", "Multiplier")}: {mult}</b></blockquote>\n'
+        f'\n<blockquote><b>{_L(lang, f"Увеличивает весь урон по боссу в {mult} на {dur}.", f"Increases all boss damage by {mult} for {dur}.")}</b></blockquote>\n'
+        f'\n<blockquote>{_pe("coin", "💰")} <b>{_L(lang, "Цена продажи", "Sell price")}: {_fmt_num(price)}</b></blockquote>'
         f'{warning}'
     )
 
 
-def enh_item_detail_keyboard(item_type: str, instance_id: str) -> InlineKeyboardMarkup:
+def enh_item_detail_keyboard(item_type: str, instance_id: str, lang: str = "ru") -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     if item_type == "poison":
-        builder.row(_btn(_E["poison"], "Применить яд", f"enh_use_{instance_id}"))
+        builder.row(_btn(_E["poison"], _L(lang, "Применить яд", "Apply poison"), f"enh_use_{instance_id}"))
     else:
-        builder.row(_btn(_E["enh_boost"], "Активировать", f"enh_activate_{instance_id}"))
-    builder.row(_btn(_E["sell"], "Продать", f"enh_sell_{instance_id}"))
-    builder.row(_back_btn("inv_enh", "Назад"))
+        builder.row(_btn(_E["enh_boost"], _L(lang, "Активировать", "Activate"), f"enh_activate_{instance_id}"))
+    builder.row(_btn(_E["sell"], _L(lang, "Продать", "Sell"), f"enh_sell_{instance_id}"))
+    builder.row(_back_btn("inv_enh", _L(lang, "Назад", "Back")))
     return builder.as_markup()
 
 
-def enh_confirm_replace_text(data: dict, instance_id: str, replace_type: str) -> str:
+def enh_confirm_replace_text(data: dict, instance_id: str, replace_type: str, lang: str = "ru") -> str:
     inv  = data.get("enh_inventory", [])
     item = next((x for x in inv if x["instance_id"] == instance_id), None)
     if not item:
-        return "❌ Ошибка."
+        return "❌ Ошибка." if lang == "ru" else "❌ Error."
     if replace_type == "poison":
         active = get_active_poison_info(data)
         if not active:
-            return "❌ Ошибка."
-        left = _fmt_time_left(active["ends_at"] - _now_ts())
+            return "❌ Ошибка." if lang == "ru" else "❌ Error."
+        left = _fmt_time_left(active["ends_at"] - _now_ts(), lang)
+        _poison_names_en = {
+            "Яд Гадюки": "Viper Venom", "Яд Кобры": "Cobra Venom",
+            "Яд Чёрной Мамбы": "Black Mamba Venom", "Яд Василиска": "Basilisk Venom",
+            "Яд Левиафана": "Leviathan Venom",
+        }
+        aname = _poison_names_en.get(active["name"], active["name"]) if lang == "en" else active["name"]
+        iname = _poison_names_en.get(item["name"], item["name"]) if lang == "en" else item["name"]
         return (
-            f'<blockquote>{_pe("warn", "⚠️")} <b>Замена яда</b>\n'
-            f'<b>Сейчас активен: {active["name"]}</b>\n'
-            f'{_pe("timer", "⏱")} <b>Осталось: {left}</b></blockquote>\n'
-            f'\n<blockquote><b>Заменить на: {item["name"]}?</b>\n'
-            f'{_pe("warn", "⚠️")} <b>Текущий яд будет потерян!</b></blockquote>'
+            f'<blockquote>{_pe("warn", "⚠️")} <b>{_L(lang, "Замена яда", "Replace poison")}</b>\n'
+            f'<b>{_L(lang, "Сейчас активен", "Currently active")}: {aname}</b>\n'
+            f'{_pe("timer", "⏱")} <b>{_L(lang, "Осталось", "Left")}: {left}</b></blockquote>\n'
+            f'\n<blockquote><b>{_L(lang, "Заменить на", "Replace with")}: {iname}?</b>\n'
+            f'{_pe("warn", "⚠️")} <b>{_L(lang, "Текущий яд будет потерян!", "Current poison will be lost!")}</b></blockquote>'
         )
-    active = data.get("active_booster")
+    active = data.get("active_enh_booster")
     if not active:
-        return "❌ Ошибка."
-    left     = _fmt_time_left(active["ends_at"] - _now_ts())
+        return "❌ Ошибка." if lang == "ru" else "❌ Error."
+    left     = _fmt_time_left(active["ends_at"] - _now_ts(), lang)
     act_mult = _multiplier_label(active["multiplier"])
-    act_dur  = _DUR_LABELS[active["dur_key"]]
+    act_dur  = _dur_label(active["dur_key"], lang)
     new_mult = _multiplier_label(item["multiplier"])
-    new_dur  = _DUR_LABELS[item["dur_key"]]
+    new_dur  = _dur_label(item["dur_key"], lang)
     return (
-        f'<blockquote>{_pe("warn", "⚠️")} <b>Замена усилителя</b>\n'
-        f'<b>Сейчас активен: {act_mult} на {act_dur}</b>\n'
-        f'{_pe("timer", "⏱")} <b>Осталось: {left}</b></blockquote>\n'
-        f'\n<blockquote><b>Заменить на: {new_mult} на {new_dur}?</b>\n'
-        f'{_pe("warn", "⚠️")} <b>Старый усилитель будет потерян!</b></blockquote>'
+        f'<blockquote>{_pe("warn", "⚠️")} <b>{_L(lang, "Замена усилителя", "Replace booster")}</b>\n'
+        f'<b>{_L(lang, "Сейчас активен", "Currently active")}: {act_mult} {_L(lang, "на", "for")} {act_dur}</b>\n'
+        f'{_pe("timer", "⏱")} <b>{_L(lang, "Осталось", "Left")}: {left}</b></blockquote>\n'
+        f'\n<blockquote><b>{_L(lang, "Заменить на", "Replace with")}: {new_mult} {_L(lang, "на", "for")} {new_dur}?</b>\n'
+        f'{_pe("warn", "⚠️")} <b>{_L(lang, "Старый усилитель будет потерян!", "Old booster will be lost!")}</b></blockquote>'
     )
 
 
-def enh_confirm_replace_keyboard(instance_id: str, replace_type: str) -> InlineKeyboardMarkup:
+def enh_confirm_replace_keyboard(instance_id: str, replace_type: str, lang: str = "ru") -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     if replace_type == "poison":
         yes_cb = f"enh_poison_replace_{instance_id}"
@@ -983,16 +1035,25 @@ def enh_confirm_replace_keyboard(instance_id: str, replace_type: str) -> InlineK
         yes_cb = f"enh_boost_replace_{instance_id}"
         no_cb  = f"enh_info_{instance_id}"
     builder.row(
-        InlineKeyboardButton(text="Да, заменить", callback_data=yes_cb, icon_custom_emoji_id=_E["ok"]),
-        InlineKeyboardButton(text="Отмена",       callback_data=no_cb,  icon_custom_emoji_id=_E["cancel"]),
+        InlineKeyboardButton(text=_L(lang, "Да, заменить", "Yes, replace"), callback_data=yes_cb, icon_custom_emoji_id=_E["ok"]),
+        InlineKeyboardButton(text=_L(lang, "Отмена", "Cancel"),             callback_data=no_cb,  icon_custom_emoji_id=_E["cancel"]),
     )
     return builder.as_markup()
 
 
 # ============================================================
-def cases_shop_text(data: dict = None) -> str:
+def cases_shop_text(data: dict = None, lang: str = "ru") -> str:
     total_opened = (data or {}).get("cases_total_opened", 0)
     total_spent  = (data or {}).get("cases_total_spent",  0)
+    if lang == "en":
+        return (
+            f"<blockquote>{_pe('shop', '🛒')} <b>CASE SHOP</b>\n"
+            f"<b>Open cases and get bonuses!</b></blockquote>\n"
+            f'\n<blockquote><tg-emoji emoji-id="5231200819986047254">🎟</tg-emoji> <b>Your stats</b>\n'
+            f"<b>Cases opened: {total_opened:,}</b>\n"
+            f"{_pe('spent', '💸')} <b>Spent: {_fmt_num(total_spent)}</b> {_pe('coin', '💰')}</blockquote>\n"
+            f'\n<blockquote><tg-emoji emoji-id="5269531045165816230">🎟</tg-emoji> <b>Good luck! May something great drop</b><tg-emoji emoji-id="5269531045165816230">🎟</tg-emoji></blockquote>'
+        )
     return (
         f"<blockquote>{_pe('shop', '🛒')} <b>МАГАЗИН КЕЙСОВ</b>\n"
         f"<b>Открывай кейсы и получай бонусы!</b></blockquote>\n"
@@ -1003,8 +1064,13 @@ def cases_shop_text(data: dict = None) -> str:
     )
 
 
-def cases_shop_keyboard() -> InlineKeyboardMarkup:
+def cases_shop_keyboard(lang: str = "ru") -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
+    _CASE_NAMES = {
+        "common":   ("Ускорителей", "Booster"),
+        "xp":       ("XP",          "XP"),
+        "enhancer": ("Усилителей",  "Enhancer"),
+    }
     for c in CASES.values():
         if c["type"] == "booster":
             e_key = "case"
@@ -1012,63 +1078,102 @@ def cases_shop_keyboard() -> InlineKeyboardMarkup:
             e_key = "xp_case"
         else:
             e_key = "enh_case"
-        builder.row(_btn(_E[e_key], f'{c["name"]} кейс', f'case_info_{c["key"]}'))
-    builder.row(InlineKeyboardButton(text="Кейс Артефактов", callback_data="artifact_case_info", icon_custom_emoji_id="5229011542011299168"))
-    builder.row(_back_btn("back_to_menu", "Назад в меню"))
+        names = _CASE_NAMES.get(c["key"], (c["name"], c["name"]))
+        cname = names[1] if lang == "en" else names[0]
+        builder.row(_btn(_E[e_key], f'{cname} {"case" if lang == "en" else "кейс"}', f'case_info_{c["key"]}'))
+    builder.row(InlineKeyboardButton(
+        text=_L(lang, "Кейс Артефактов", "Artifact Case"),
+        callback_data="artifact_case_info",
+        icon_custom_emoji_id="5229011542011299168"
+    ))
+    builder.row(_back_btn("back_to_menu", _L(lang, "Назад в меню", "Back to menu")))
     return builder.as_markup()
 
 
-def case_detail_text(data: dict, case_key: str) -> str:
+def case_detail_text(data: dict, case_key: str, lang: str = "ru") -> str:
     case    = CASES[case_key]
     balance = data.get("balance", 0)
     can_buy = balance >= case["cost"]
     bal_str = f"{_fmt_num(balance)} {_pe('coin', '💰')}"
     if case["type"] == "booster":
-        loot_lines = (
-            f"{_pe('boost', '⚡')} <b>Ускоритель 1.2× — 10мин до 24ч</b>\n"
-            f"{_pe('boost', '⚡')} <b>Ускоритель 1.5× — 10мин до 24ч</b>\n"
-            f"{_pe('boost', '⚡')} <b>Ускоритель 2× — 10мин до 24ч</b>"
-        )
+        if lang == "en":
+            loot_lines = (
+                f"{_pe('boost', '⚡')} <b>Booster 1.2× — 10min to 24h</b>\n"
+                f"{_pe('boost', '⚡')} <b>Booster 1.5× — 10min to 24h</b>\n"
+                f"{_pe('boost', '⚡')} <b>Booster 2× — 10min to 24h</b>"
+            )
+        else:
+            loot_lines = (
+                f"{_pe('boost', '⚡')} <b>Ускоритель 1.2× — 10мин до 24ч</b>\n"
+                f"{_pe('boost', '⚡')} <b>Ускоритель 1.5× — 10мин до 24ч</b>\n"
+                f"{_pe('boost', '⚡')} <b>Ускоритель 2× — 10мин до 24ч</b>"
+            )
     elif case["type"] == "enhancer":
-        loot_lines = (
-            f'<tg-emoji emoji-id="5256047523620995497">⚡</tg-emoji> <b>Усилитель урона 1.2× — 5мин до 24ч</b>\n'
-            f'<tg-emoji emoji-id="5256047523620995497">⚡</tg-emoji> <b>Усилитель урона 1.5× — 5мин до 24ч</b>\n'
-            f'<tg-emoji emoji-id="5256047523620995497">⚡</tg-emoji> <b>Усилитель урона 2× — 5мин до 24ч</b>\n'
-            f'<tg-emoji emoji-id="5456584142286250164">☠️</tg-emoji> <b>Яд Гадюки — 100 000 урона (5%)</b>\n'
-            f'<tg-emoji emoji-id="5456584142286250164">☠️</tg-emoji> <b>Яд Кобры — 150 000 урона (3%)</b>\n'
-            f'<tg-emoji emoji-id="5456584142286250164">☠️</tg-emoji> <b>Яд Чёрной Мамбы — 225 000 урона (2%)</b>\n'
-            f'<tg-emoji emoji-id="5456584142286250164">☠️</tg-emoji> <b>Яд Василиска — 350 000 урона (1%)</b>\n'
-            f'<tg-emoji emoji-id="5456584142286250164">☠️</tg-emoji> <b>Яд Левиафана — 500 000 урона (0.5%)</b>'
-        )
+        if lang == "en":
+            loot_lines = (
+                f'<tg-emoji emoji-id="5256047523620995497">⚡</tg-emoji> <b>Damage booster 1.2× — 5min to 24h</b>\n'
+                f'<tg-emoji emoji-id="5256047523620995497">⚡</tg-emoji> <b>Damage booster 1.5× — 5min to 24h</b>\n'
+                f'<tg-emoji emoji-id="5256047523620995497">⚡</tg-emoji> <b>Damage booster 2× — 5min to 24h</b>\n'
+                f'<tg-emoji emoji-id="5456584142286250164">☠️</tg-emoji> <b>Viper Venom — 100 000 dmg (5%)</b>\n'
+                f'<tg-emoji emoji-id="5456584142286250164">☠️</tg-emoji> <b>Cobra Venom — 150 000 dmg (3%)</b>\n'
+                f'<tg-emoji emoji-id="5456584142286250164">☠️</tg-emoji> <b>Black Mamba Venom — 225 000 dmg (2%)</b>\n'
+                f'<tg-emoji emoji-id="5456584142286250164">☠️</tg-emoji> <b>Basilisk Venom — 350 000 dmg (1%)</b>\n'
+                f'<tg-emoji emoji-id="5456584142286250164">☠️</tg-emoji> <b>Leviathan Venom — 500 000 dmg (0.5%)</b>'
+            )
+        else:
+            loot_lines = (
+                f'<tg-emoji emoji-id="5256047523620995497">⚡</tg-emoji> <b>Усилитель урона 1.2× — 5мин до 24ч</b>\n'
+                f'<tg-emoji emoji-id="5256047523620995497">⚡</tg-emoji> <b>Усилитель урона 1.5× — 5мин до 24ч</b>\n'
+                f'<tg-emoji emoji-id="5256047523620995497">⚡</tg-emoji> <b>Усилитель урона 2× — 5мин до 24ч</b>\n'
+                f'<tg-emoji emoji-id="5456584142286250164">☠️</tg-emoji> <b>Яд Гадюки — 100 000 урона (5%)</b>\n'
+                f'<tg-emoji emoji-id="5456584142286250164">☠️</tg-emoji> <b>Яд Кобры — 150 000 урона (3%)</b>\n'
+                f'<tg-emoji emoji-id="5456584142286250164">☠️</tg-emoji> <b>Яд Чёрной Мамбы — 225 000 урона (2%)</b>\n'
+                f'<tg-emoji emoji-id="5456584142286250164">☠️</tg-emoji> <b>Яд Василиска — 350 000 урона (1%)</b>\n'
+                f'<tg-emoji emoji-id="5456584142286250164">☠️</tg-emoji> <b>Яд Левиафана — 500 000 урона (0.5%)</b>'
+            )
     else:
-        loot_lines = (
-            f"{_pe('xp_instant', '✨')} <b>Моментальный опыт: 100 / 225 / 750 / 2 000 / 5 000 XP</b>\n"
-            f"{_pe('xp_boost', '🔮')} <b>XP-ускоритель ×1.4 — от 30 мин до 48 ч</b>\n"
-            f"{_pe('xp_boost', '🔮')} <b>XP-ускоритель ×1.8 — от 30 мин до 48 ч</b>"
-        )
+        if lang == "en":
+            loot_lines = (
+                f"{_pe('xp_instant', '✨')} <b>Instant XP: 100 / 225 / 750 / 2 000 / 5 000</b>\n"
+                f"{_pe('xp_boost', '🔮')} <b>XP booster ×1.4 — 30min to 48h</b>\n"
+                f"{_pe('xp_boost', '🔮')} <b>XP booster ×1.8 — 30min to 48h</b>"
+            )
+        else:
+            loot_lines = (
+                f"{_pe('xp_instant', '✨')} <b>Моментальный опыт: 100 / 225 / 750 / 2 000 / 5 000 XP</b>\n"
+                f"{_pe('xp_boost', '🔮')} <b>XP-ускоритель ×1.4 — от 30 мин до 48 ч</b>\n"
+                f"{_pe('xp_boost', '🔮')} <b>XP-ускоритель ×1.8 — от 30 мин до 48 ч</b>"
+            )
     if case["type"] == "booster":
         e_key = "case"
     elif case["type"] == "enhancer":
         e_key = "enh_case"
     else:
         e_key = "xp_case"
-    status = f"{_pe('ok', '✅')} <b>Хватает монет</b>" if can_buy else f"{_pe('cancel', '❌')} <b>Недостаточно монет</b>"
+    _CASE_NAMES_EN = {"common": "Booster", "xp": "XP", "enhancer": "Enhancer"}
+    cname = _CASE_NAMES_EN.get(case["key"], case["name"]) if lang == "en" else case["name"]
+    case_label = "case" if lang == "en" else "кейс"
+    status = (
+        f"{_pe('ok', '✅')} <b>{_L(lang, 'Хватает монет', 'Enough coins')}</b>"
+        if can_buy else
+        f"{_pe('cancel', '❌')} <b>{_L(lang, 'Недостаточно монет', 'Not enough coins')}</b>"
+    )
     return (
-        f"<blockquote>{_pe(e_key, '📦')} <b>{case['name']} кейс</b>\n"
-        f"{_pe('coin', '💰')} <b>Цена:</b> <b>{_fmt_num(case['cost'])}</b>\n"
-        f"{_pe('balance', '💰')} <b>Баланс:</b> <b>{bal_str}</b></blockquote>\n"
-        f"\n<blockquote><b>Возможный лут:</b>\n{loot_lines}</blockquote>\n"
+        f"<blockquote>{_pe(e_key, '📦')} <b>{cname} {case_label}</b>\n"
+        f"{_pe('coin', '💰')} <b>{_L(lang, 'Цена', 'Price')}:</b> <b>{_fmt_num(case['cost'])}</b>\n"
+        f"{_pe('balance', '💰')} <b>{_L(lang, 'Баланс', 'Balance')}:</b> <b>{bal_str}</b></blockquote>\n"
+        f"\n<blockquote><b>{_L(lang, 'Возможный лут', 'Possible loot')}:</b>\n{loot_lines}</blockquote>\n"
         f"\n<blockquote>{status}</blockquote>"
     )
 
 
-def case_detail_keyboard(case_key: str, can_buy: bool) -> InlineKeyboardMarkup:
+def case_detail_keyboard(case_key: str, can_buy: bool, lang: str = "ru") -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     if can_buy:
-        builder.row(_btn(_E["shop"], "Купить и открыть", f"case_open_{case_key}"))
+        builder.row(_btn(_E["shop"], _L(lang, "Купить и открыть", "Buy and open"), f"case_open_{case_key}"))
     else:
-        builder.row(_btn(_E["cancel"], "Недостаточно монет", "noop"))
-    builder.row(_back_btn("shop_cases", "Назад"))
+        builder.row(_btn(_E["cancel"], _L(lang, "Недостаточно монет", "Not enough coins"), "noop"))
+    builder.row(_back_btn("shop_cases", _L(lang, "Назад", "Back")))
     return builder.as_markup()
 
 
@@ -1076,7 +1181,7 @@ def case_detail_keyboard(case_key: str, can_buy: bool) -> InlineKeyboardMarkup:
 #  UI — КЕЙС АРТЕФАКТОВ
 # ============================================================
 
-def artifact_case_detail_text(data: dict) -> str:
+def artifact_case_detail_text(data: dict, lang: str = "ru") -> str:
     opened = data.get("artifact_cases_opened", 0)
     owned  = data.get("artifacts", [])
 
@@ -1085,14 +1190,12 @@ def artifact_case_detail_text(data: dict) -> str:
     _E_PETS   = "5208535779348864977"
     _E_BONUS  = "5438496463044752972"
 
-    _EFFECT_ICONS = {"mine": _E_MINE, "damage": _E_DMG, "pets": _E_PETS, "all": _E_BONUS}
-
     def _ae(a):
         eid = a.get("emoji_id", "")
         return f'<tg-emoji emoji-id="{eid}">💎</tg-emoji>' if eid else "💎"
 
     def _row(a, pct):
-        eff_label = _ARTIFACT_EFFECT_LABELS.get(a["effect"], "")
+        eff_label = _get_effect_label(a["effect"], lang)
         return (
             f'{_ae(a)} <b>{a["name"]}</b> — '
             f'<b><i>{a["multiplier"]}× {eff_label}</i></b> <b>({pct}%)</b>\n'
@@ -1101,45 +1204,49 @@ def artifact_case_detail_text(data: dict) -> str:
     loot = "".join(_row(a, a["chance"]) for a in _ARTIFACT_POOL)
 
     return (
-        f'<blockquote><tg-emoji emoji-id="5442939099906325301">💎</tg-emoji> <b>Кейс Артефактов</b>\n'
-        f'<tg-emoji emoji-id="5262643974912355126">⭐</tg-emoji> <b>Цена: {ARTIFACT_CASE_COST_STARS} Telegram Stars</b></blockquote>\n'
-        f'\n<blockquote><b>Возможный лут:</b>\n{loot}</blockquote>\n'
+        f'<blockquote><tg-emoji emoji-id="5442939099906325301">💎</tg-emoji> <b>{_L(lang, "Кейс Артефактов", "Artifact Case")}</b>\n'
+        f'<tg-emoji emoji-id="5262643974912355126">⭐</tg-emoji> <b>{_L(lang, "Цена", "Price")}: {ARTIFACT_CASE_COST_STARS} Telegram Stars</b></blockquote>\n'
+        f'\n<blockquote><b>{_L(lang, "Возможный лут", "Possible loot")}:</b>\n{loot}</blockquote>\n'
         f'\n<blockquote>'
-        f'<tg-emoji emoji-id="{_E_BONUS}">✨</tg-emoji> <b>Артефакты дают постоянный бонус навсегда!</b>\n'
-        f'{_pe("warn", "⚠️")} <b>Дубликат — компенсация монетами.</b></blockquote>\n'
-        f'\n<blockquote><tg-emoji emoji-id="5359664288241829619">📦</tg-emoji> <b>Открыто кейсов: {opened}</b>  |  '
-        f'{_pe("stats", "💎")} <b>Коллекция: {len(owned)}/10</b></blockquote>'
+        f'<tg-emoji emoji-id="{_E_BONUS}">✨</tg-emoji> <b>{_L(lang, "Артефакты дают постоянный бонус навсегда!", "Artifacts give a permanent bonus forever!")}</b>\n'
+        f'{_pe("warn", "⚠️")} <b>{_L(lang, "Дубликат — компенсация монетами.", "Duplicate — compensated with coins.")}</b></blockquote>\n'
+        f'\n<blockquote><tg-emoji emoji-id="5359664288241829619">📦</tg-emoji> <b>{_L(lang, "Открыто кейсов", "Cases opened")}: {opened}</b>  |  '
+        f'{_pe("stats", "💎")} <b>{_L(lang, "Коллекция", "Collection")}: {len(owned)}/10</b></blockquote>'
     )
 
 
-def artifact_case_keyboard(invoice_url: str = None) -> InlineKeyboardMarkup:
+def artifact_case_keyboard(invoice_url: str = None, lang: str = "ru") -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     if invoice_url:
         builder.row(InlineKeyboardButton(
-            text=f"Открыть за {ARTIFACT_CASE_COST_STARS} ⭐",
+            text=f"{'Open' if lang == 'en' else 'Открыть'} {ARTIFACT_CASE_COST_STARS} ⭐",
             url=invoice_url,
             icon_custom_emoji_id="5999336376342940892",
             style="success"
         ))
     else:
-        builder.row(_btn(_E["stats"], f"Открыть за {ARTIFACT_CASE_COST_STARS} ⭐", "artifact_case_buy"))
+        builder.row(_btn(_E["stats"], f"{'Open' if lang == 'en' else 'Открыть'} {ARTIFACT_CASE_COST_STARS} ⭐", "artifact_case_buy"))
     builder.row(InlineKeyboardButton(
-        text="Мои звёзды",
+        text=_L(lang, "Мои звёзды", "My stars"),
         url="tg://stars/",
         icon_custom_emoji_id="5348570868752595928"
     ))
-    builder.row(InlineKeyboardButton(text="Моя коллекция", callback_data="artifact_collection", icon_custom_emoji_id="5222113468051629260"))
-    builder.row(_back_btn("shop_cases", "Назад"))
+    builder.row(InlineKeyboardButton(
+        text=_L(lang, "Моя коллекция", "My collection"),
+        callback_data="artifact_collection",
+        icon_custom_emoji_id="5222113468051629260"
+    ))
+    builder.row(_back_btn("shop_cases", _L(lang, "Назад", "Back")))
     return builder.as_markup()
 
 
-def artifact_collection_text(data: dict) -> str:
+def artifact_collection_text(data: dict, lang: str = "ru") -> str:
     owned = data.get("artifacts", [])
     if not owned:
         return (
-            f'<blockquote><tg-emoji emoji-id="5442939099906325301">💎</tg-emoji> <b>МОЯ КОЛЛЕКЦИЯ АРТЕФАКТОВ</b>\n'
-            f'{_pe("cancel", "❌")} <b>У тебя пока нет артефактов.</b>\n'
-            f'Открой Кейс Артефактов, чтобы получить первый!</blockquote>'
+            f'<blockquote><tg-emoji emoji-id="5442939099906325301">💎</tg-emoji> <b>{_L(lang, "МОЯ КОЛЛЕКЦИЯ АРТЕФАКТОВ", "MY ARTIFACT COLLECTION")}</b>\n'
+            f'{_pe("cancel", "❌")} <b>{_L(lang, "У тебя пока нет артефактов.", "You have no artifacts yet.")}</b>\n'
+            f'{_L(lang, "Открой Кейс Артефактов, чтобы получить первый!", "Open an Artifact Case to get your first one!")}</blockquote>'
         )
 
     mine_mult   = get_artifact_mine_multiplier(data)
@@ -1150,7 +1257,6 @@ def artifact_collection_text(data: dict) -> str:
     _E_DMG   = "5373173798633752502"
     _E_PETS  = "5208535779348864977"
     _E_BONUS = "5438496463044752972"
-    _EFFECT_ICONS = {"mine": _E_MINE, "damage": _E_DMG, "pets": _E_PETS, "all": _E_BONUS}
 
     artifact_lines = []
     for entry in owned:
@@ -1158,7 +1264,7 @@ def artifact_collection_text(data: dict) -> str:
         if a:
             eid = a.get("emoji_id", "")
             ae  = f'<tg-emoji emoji-id="{eid}">💎</tg-emoji>' if eid else "💎"
-            effect_label = _ARTIFACT_EFFECT_LABELS.get(a["effect"], "")
+            effect_label = _get_effect_label(a["effect"], lang)
             artifact_lines.append(
                 f'{ae} <b>{a["name"]}</b> — '
                 f'<b><i>{a["multiplier"]}× {effect_label}</i></b>\n'
@@ -1171,20 +1277,20 @@ def artifact_collection_text(data: dict) -> str:
 
     return (
         f'<blockquote><tg-emoji emoji-id="5442939099906325301">💎</tg-emoji> '
-        f'<b>МОЯ КОЛЛЕКЦИЯ ({len(owned)}/10)</b></blockquote>\n'
+        f'<b>{_L(lang, "МОЯ КОЛЛЕКЦИЯ", "MY COLLECTION")} ({len(owned)}/10)</b></blockquote>\n'
         f'\n<blockquote>'
-        f'{bonus_icon} <b>Итоговые бонусы:</b>\n'
-        f'{mine_icon} <b>Руда: ×{mine_mult}</b>\n'
-        f'{dmg_icon} <b>Босс: ×{damage_mult}</b>\n'
-        f'{pets_icon} <b>Питомцы: ×{pets_mult}</b>'
+        f'{bonus_icon} <b>{_L(lang, "Итоговые бонусы", "Total bonuses")}:</b>\n'
+        f'{mine_icon} <b>{_L(lang, "Руда", "Ore")}: ×{mine_mult}</b>\n'
+        f'{dmg_icon} <b>{_L(lang, "Босс", "Boss")}: ×{damage_mult}</b>\n'
+        f'{pets_icon} <b>{_L(lang, "Питомцы", "Pets")}: ×{pets_mult}</b>'
         f'</blockquote>\n'
-        f'\n<blockquote><b>Артефакты:</b>\n' + "".join(artifact_lines) + '</blockquote>'
+        f'\n<blockquote><b>{_L(lang, "Артефакты", "Artifacts")}:</b>\n' + "".join(artifact_lines) + '</blockquote>'
     )
 
 
-def artifact_collection_keyboard() -> InlineKeyboardMarkup:
+def artifact_collection_keyboard(lang: str = "ru") -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    builder.row(_back_btn("artifact_case_info", "К кейсу"))
+    builder.row(_back_btn("artifact_case_info", _L(lang, "К кейсу", "To case")))
     return builder.as_markup()
 
 
@@ -1305,62 +1411,62 @@ def boosters_inventory_keyboard(data: dict, lang: str = "ru") -> InlineKeyboardM
     return builder.as_markup()
 
 
-def booster_detail_text(data: dict, instance_id: str) -> str:
+def booster_detail_text(data: dict, instance_id: str, lang: str = "ru") -> str:
     inv  = data.get("boosters_inventory", [])
     item = next((x for x in inv if x["instance_id"] == instance_id), None)
     if not item:
-        return "❌ Ускоритель не найден."
+        return _L(lang, "❌ Ускоритель не найден.", "❌ Booster not found.")
     mult   = _multiplier_label(item["multiplier"])
-    dur    = _DUR_LABELS[item["dur_key"]]
+    dur    = _dur_label(item["dur_key"], lang)
     price  = get_sell_price(item)
     active = get_active_booster_info(data)
     warning = ""
     if active:
-        left     = _fmt_time_left(active["ends_at"] - _now_ts())
+        left     = _fmt_time_left(active["ends_at"] - _now_ts(), lang)
         act_mult = _multiplier_label(active["multiplier"])
-        act_dur  = _DUR_LABELS[active["dur_key"]]
+        act_dur  = _dur_label(active["dur_key"], lang)
         warning  = (
-            f"\n\n<blockquote>{_pe('warn', '⚠️')} <b>Активен: {act_mult} на {act_dur}</b>\n"
-            f"{_pe('timer', '⏱')} <b>Осталось: {left}</b></blockquote>"
+            f"\n\n<blockquote>{_pe('warn', '⚠️')} <b>{_L(lang, 'Активен', 'Active')}: {act_mult} {_L(lang, 'на', 'for')} {act_dur}</b>\n"
+            f"{_pe('timer', '⏱')} <b>{_L(lang, 'Осталось', 'Left')}: {left}</b></blockquote>"
         )
     return (
-        f"<blockquote>{_pe('boost', '⚡')} <b>{_booster_name(item)}</b>\n"
-        f"{_pe('timer', '⏱')} <b>Длительность: {dur}</b>\n"
-        f"{_pe('mult', '🔢')} <b>Множитель: {mult}</b></blockquote>\n"
-        f"\n<blockquote><b>Эффект (все показатели кирки):</b>\n"
-        f"<b>• Ударов за кампанию: ×{mult}</b>\n"
-        f"<b>• Монет в час: ×{mult}</b>\n"
-        f"<b>• Скорость добычи: ×{mult}</b></blockquote>\n"
-        f"\n<blockquote>{_pe('coin', '💰')} <b>Цена продажи: {_fmt_num(price)}</b></blockquote>"
+        f"<blockquote>{_pe('boost', '⚡')} <b>{_booster_name(item, lang)}</b>\n"
+        f"{_pe('timer', '⏱')} <b>{_L(lang, 'Длительность', 'Duration')}: {dur}</b>\n"
+        f"{_pe('mult', '🔢')} <b>{_L(lang, 'Множитель', 'Multiplier')}: {mult}</b></blockquote>\n"
+        f"\n<blockquote><b>{_L(lang, 'Эффект (все показатели кирки):', 'Effect (all pickaxe stats):')} </b>\n"
+        f"<b>• {_L(lang, 'Ударов за кампанию', 'Hits per campaign')}: ×{mult}</b>\n"
+        f"<b>• {_L(lang, 'Монет в час', 'Coins per hour')}: ×{mult}</b>\n"
+        f"<b>• {_L(lang, 'Скорость добычи', 'Mining speed')}: ×{mult}</b></blockquote>\n"
+        f"\n<blockquote>{_pe('coin', '💰')} <b>{_L(lang, 'Цена продажи', 'Sell price')}: {_fmt_num(price)}</b></blockquote>"
         f"{warning}"
     )
 
 
-def booster_detail_keyboard(data: dict, instance_id: str) -> InlineKeyboardMarkup:
+def booster_detail_keyboard(data: dict, instance_id: str, lang: str = "ru") -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    builder.row(_btn(_E["activate"], "Активировать", f"boost_activate_{instance_id}"))
-    builder.row(_btn(_E["sell"],     "Продать",       f"boost_sell_{instance_id}"))
-    builder.row(_back_btn("inv_boosters", "Назад"))
+    builder.row(_btn(_E["activate"], _L(lang, "Активировать", "Activate"), f"boost_activate_{instance_id}"))
+    builder.row(_btn(_E["sell"],     _L(lang, "Продать", "Sell"),          f"boost_sell_{instance_id}"))
+    builder.row(_back_btn("inv_boosters", _L(lang, "Назад", "Back")))
     return builder.as_markup()
 
 
-def booster_confirm_replace_text(data: dict, instance_id: str) -> str:
+def booster_confirm_replace_text(data: dict, instance_id: str, lang: str = "ru") -> str:
     inv    = data.get("boosters_inventory", [])
     item   = next((x for x in inv if x["instance_id"] == instance_id), None)
     active = get_active_booster_info(data)
     if not item or not active:
-        return "❌ Ошибка."
-    left     = _fmt_time_left(active["ends_at"] - _now_ts())
+        return "❌ Ошибка." if lang == "ru" else "❌ Error."
+    left     = _fmt_time_left(active["ends_at"] - _now_ts(), lang)
     act_mult = _multiplier_label(active["multiplier"])
-    act_dur  = _DUR_LABELS[active["dur_key"]]
+    act_dur  = _dur_label(active["dur_key"], lang)
     new_mult = _multiplier_label(item["multiplier"])
-    new_dur  = _DUR_LABELS[item["dur_key"]]
+    new_dur  = _dur_label(item["dur_key"], lang)
     return (
-        f"<blockquote>{_pe('warn', '⚠️')} <b>Замена ускорителя</b>\n"
-        f"<b>Сейчас активен: {act_mult} на {act_dur}</b>\n"
-        f"{_pe('timer', '⏱')} <b>Осталось: {left}</b></blockquote>\n"
-        f"\n<blockquote><b>Заменить на: {new_mult} на {new_dur}?</b>\n"
-        f"{_pe('warn', '⚠️')} <b>Старый ускоритель будет потерян!</b></blockquote>"
+        f"<blockquote>{_pe('warn', '⚠️')} <b>{_L(lang, 'Замена ускорителя', 'Replace booster')}</b>\n"
+        f"<b>{_L(lang, 'Сейчас активен', 'Currently active')}: {act_mult} {_L(lang, 'на', 'for')} {act_dur}</b>\n"
+        f"{_pe('timer', '⏱')} <b>{_L(lang, 'Осталось', 'Left')}: {left}</b></blockquote>\n"
+        f"\n<blockquote><b>{_L(lang, 'Заменить на', 'Replace with')}: {new_mult} {_L(lang, 'на', 'for')} {new_dur}?</b>\n"
+        f"{_pe('warn', '⚠️')} <b>{_L(lang, 'Старый ускоритель будет потерян!', 'Old booster will be lost!')}</b></blockquote>"
     )
 
 
