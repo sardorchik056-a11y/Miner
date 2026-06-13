@@ -245,19 +245,19 @@ MAX_ENH_INVENTORY = 10
 
 _ARTIFACT_POOL = [
     # ── 50% шанс — множитель 1.3× ──────────────────────────
-    {"key": "art_kulon_iskazheniya",   "type": "artifact", "name": "Кулон Искажения",      "emoji_id": "5938541999031325561", "effect": "mine",   "multiplier": 1.3, "chance": 50},
-    {"key": "art_oracle",              "type": "artifact", "name": "Оракул",               "emoji_id": "5165898384870999138", "effect": "damage", "multiplier": 1.3, "chance": 50},
-    {"key": "art_amulet_hranitelya",   "type": "artifact", "name": "Амулет Хранителя",     "emoji_id": "5938082716703528871", "effect": "pets",   "multiplier": 1.3, "chance": 50},
+    {"key": "art_kulon_iskazheniya",   "type": "artifact", "name": "Кулон Искажения",      "name_en": "Distortion Pendant",    "emoji_id": "5938541999031325561", "effect": "mine",   "multiplier": 1.3, "chance": 50},
+    {"key": "art_oracle",              "type": "artifact", "name": "Оракул",               "name_en": "Oracle",                "emoji_id": "5165898384870999138", "effect": "damage", "multiplier": 1.3, "chance": 50},
+    {"key": "art_amulet_hranitelya",   "type": "artifact", "name": "Амулет Хранителя",     "name_en": "Guardian Amulet",       "emoji_id": "5938082716703528871", "effect": "pets",   "multiplier": 1.3, "chance": 50},
     # ── 25% шанс — множитель 1.5× ──────────────────────────
-    {"key": "art_lunnaya_relikviya",   "type": "artifact", "name": "Лунная Реликвия",      "emoji_id": "5226662903569989373", "effect": "mine",   "multiplier": 1.5, "chance": 25},
-    {"key": "art_sfera_zhadnosti",     "type": "artifact", "name": "Сфера Жадности",       "emoji_id": "5080262187302257610", "effect": "damage", "multiplier": 1.5, "chance": 25},
-    {"key": "art_amulet_zhizni",       "type": "artifact", "name": "Амулет Жизни и Смерти","emoji_id": "6228938636428052300", "effect": "pets",   "multiplier": 1.5, "chance": 25},
+    {"key": "art_lunnaya_relikviya",   "type": "artifact", "name": "Лунная Реликвия",      "name_en": "Lunar Relic",           "emoji_id": "5226662903569989373", "effect": "mine",   "multiplier": 1.5, "chance": 25},
+    {"key": "art_sfera_zhadnosti",     "type": "artifact", "name": "Сфера Жадности",       "name_en": "Sphere of Greed",       "emoji_id": "5080262187302257610", "effect": "damage", "multiplier": 1.5, "chance": 25},
+    {"key": "art_amulet_zhizni",       "type": "artifact", "name": "Амулет Жизни и Смерти","name_en": "Amulet of Life & Death","emoji_id": "6228938636428052300", "effect": "pets",   "multiplier": 1.5, "chance": 25},
     # ── 15% шанс — множитель 1.8× ──────────────────────────
-    {"key": "art_sfera_illyuziy",      "type": "artifact", "name": "Сфера Иллюзий",        "emoji_id": "5343583990815156847", "effect": "mine",   "multiplier": 1.8, "chance": 15},
-    {"key": "art_serdtse_morey",       "type": "artifact", "name": "Сердце Морей",          "emoji_id": "6201647288947839133", "effect": "damage", "multiplier": 1.8, "chance": 15},
-    {"key": "art_kristall_egzorcizma", "type": "artifact", "name": "Кристалл Экзорцизма",  "emoji_id": "5451889386549425709", "effect": "pets",   "multiplier": 1.8, "chance": 15},
+    {"key": "art_sfera_illyuziy",      "type": "artifact", "name": "Сфера Иллюзий",        "name_en": "Sphere of Illusions",   "emoji_id": "5343583990815156847", "effect": "mine",   "multiplier": 1.8, "chance": 15},
+    {"key": "art_serdtse_morey",       "type": "artifact", "name": "Сердце Морей",          "name_en": "Heart of the Seas",     "emoji_id": "6201647288947839133", "effect": "damage", "multiplier": 1.8, "chance": 15},
+    {"key": "art_kristall_egzorcizma", "type": "artifact", "name": "Кристалл Экзорцизма",  "name_en": "Exorcism Crystal",      "emoji_id": "5451889386549425709", "effect": "pets",   "multiplier": 1.8, "chance": 15},
     # ── 1% шанс — комбо-артефакт ────────────────────────────
-    {"key": "art_vsevlastniy",         "type": "artifact", "name": "Кольцо Перерождений",  "emoji_id": "5872990619021875271", "effect": "all",    "multiplier": 1.4, "chance": 1},
+    {"key": "art_vsevlastniy",         "type": "artifact", "name": "Кольцо Перерождений",  "name_en": "Ring of Rebirths",      "emoji_id": "5872990619021875271", "effect": "all",    "multiplier": 1.4, "chance": 1},
 ]
 
 ARTIFACT_POOL_BY_KEY = {a["key"]: a for a in _ARTIFACT_POOL}
@@ -282,9 +282,10 @@ def _get_effect_label(effect: str, lang: str = "ru") -> str:
 
 def _artifact_desc(a: dict, lang: str = "ru") -> str:
     effect_label = _get_effect_label(a["effect"], lang)
-    eid = a.get("emoji_id", "")
+    eid  = a.get("emoji_id", "")
     emoji = f'<tg-emoji emoji-id="{eid}">♦️</tg-emoji> ' if eid else ""
-    return f'{emoji}<b>{a["name"]}</b> — {a["multiplier"]}× {effect_label}'
+    name = a.get("name_en", a["name"]) if lang == "en" else a["name"]
+    return f'{emoji}<b>{name}</b> — {a["multiplier"]}× {effect_label}'
 
 
 def open_artifact_case(data: dict, lang: str = "ru") -> tuple:
@@ -1262,11 +1263,12 @@ def artifact_collection_text(data: dict, lang: str = "ru") -> str:
     for entry in owned:
         a = ARTIFACT_POOL_BY_KEY.get(entry["key"])
         if a:
-            eid = a.get("emoji_id", "")
-            ae  = f'<tg-emoji emoji-id="{eid}">💎</tg-emoji>' if eid else "💎"
+            eid  = a.get("emoji_id", "")
+            ae   = f'<tg-emoji emoji-id="{eid}">💎</tg-emoji>' if eid else "💎"
             effect_label = _get_effect_label(a["effect"], lang)
+            aname = a.get("name_en", a["name"]) if lang == "en" else a["name"]
             artifact_lines.append(
-                f'{ae} <b>{a["name"]}</b> — '
+                f'{ae} <b>{aname}</b> — '
                 f'<b><i>{a["multiplier"]}× {effect_label}</i></b>\n'
             )
 
@@ -1470,121 +1472,121 @@ def booster_confirm_replace_text(data: dict, instance_id: str, lang: str = "ru")
     )
 
 
-def booster_confirm_replace_keyboard(instance_id: str) -> InlineKeyboardMarkup:
+def booster_confirm_replace_keyboard(instance_id: str, lang: str = "ru") -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.row(
-        InlineKeyboardButton(text="Да, заменить", callback_data=f"boost_replace_{instance_id}", icon_custom_emoji_id=_E["ok"]),
-        InlineKeyboardButton(text="Отмена",       callback_data=f"boost_info_{instance_id}",    icon_custom_emoji_id=_E["cancel"]),
+        InlineKeyboardButton(text=_L(lang, "Да, заменить", "Yes, replace"), callback_data=f"boost_replace_{instance_id}", icon_custom_emoji_id=_E["ok"]),
+        InlineKeyboardButton(text=_L(lang, "Отмена", "Cancel"),             callback_data=f"boost_info_{instance_id}",    icon_custom_emoji_id=_E["cancel"]),
     )
     return builder.as_markup()
 
 
-def xp_inventory_text(data: dict) -> str:
+def xp_inventory_text(data: dict, lang: str = "ru") -> str:
     inv    = data.setdefault("xp_inventory", [])
     xp_act = get_active_xp_booster_info(data)
-    lines = [f"<blockquote>{_pe('xp_boost', '🔮')} <b>XP-ПРЕДМЕТЫ</b>\n"]
+    lines = [f"<blockquote>{_pe('xp_boost', '🔮')} <b>{_L(lang, 'XP-ПРЕДМЕТЫ', 'XP ITEMS')}</b>\n"]
     if xp_act:
-        left = _fmt_time_left(xp_act["ends_at"] - _now_ts())
+        left = _fmt_time_left(xp_act["ends_at"] - _now_ts(), lang)
         mult = _multiplier_label(xp_act["multiplier"])
-        dur  = _DUR_LABELS[xp_act["dur_key"]]
+        dur  = _dur_label(xp_act["dur_key"], lang)
         lines.append(
-            f"{_pe('ok', '✅')} <b>Активен XP-ускоритель: ×{mult} на {dur}</b>\n"
-            f"{_pe('timer', '⏱')} <b>Осталось: {left}</b>"
+            f"{_pe('ok', '✅')} <b>{_L(lang, 'Активен XP-ускоритель', 'Active XP booster')}: ×{mult} {_L(lang, 'на', 'for')} {dur}</b>\n"
+            f"{_pe('timer', '⏱')} <b>{_L(lang, 'Осталось', 'Left')}: {left}</b>"
         )
     else:
-        lines.append(f"{_pe('cancel', '❌')} <b>Нет активного XP-ускорителя.</b>")
+        lines.append(f"{_pe('cancel', '❌')} <b>{_L(lang, 'Нет активного XP-ускорителя.', 'No active XP booster.')}</b>")
     lines.append("</blockquote>")
     if not inv:
-        lines.append(f"\n<blockquote>{_pe('xp_case', '🔮')} <b>XP-инвентарь пуст. Открой XP-кейс!</b></blockquote>")
+        lines.append(f"\n<blockquote>{_pe('xp_case', '🔮')} <b>{_L(lang, 'XP-инвентарь пуст. Открой XP-кейс!', 'XP inventory empty. Open an XP case!')}</b></blockquote>")
     else:
-        inv_lines = [f"\n<blockquote><b>В инвентаре ({len(inv)}/{MAX_XP_INVENTORY}):</b>"]
+        inv_lines = [f"\n<blockquote><b>{_L(lang, 'В инвентаре', 'In inventory')} ({len(inv)}/{MAX_XP_INVENTORY}):</b>"]
         for i, item in enumerate(inv, 1):
             price = get_xp_sell_price(item)
-            inv_lines.append(f"\n<b>{i}. {_xp_item_name(item)}</b>\n{_pe('coin', '💰')} <b>{_fmt_num(price)}</b>")
+            inv_lines.append(f"\n<b>{i}. {_xp_item_name(item, lang)}</b>\n{_pe('coin', '💰')} <b>{_fmt_num(price)}</b>")
         inv_lines.append("</blockquote>")
         lines.extend(inv_lines)
     return "".join(lines)
 
 
-def xp_inventory_keyboard(data: dict) -> InlineKeyboardMarkup:
+def xp_inventory_keyboard(data: dict, lang: str = "ru") -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     inv = data.get("xp_inventory", [])
     for item in inv[:MAX_XP_INVENTORY]:
-        builder.row(_btn(_E["xp_boost"], _xp_item_name_plain(item), f'xp_info_{item["instance_id"]}'))
-    builder.row(_back_btn("profile_boosters", "Инвентарь"))
+        builder.row(_btn(_E["xp_boost"], _xp_item_name_plain(item, lang), f'xp_info_{item["instance_id"]}'))
+    builder.row(_back_btn("profile_boosters", _L(lang, "Инвентарь", "Inventory")))
     return builder.as_markup()
 
 
-def xp_item_detail_text(data: dict, instance_id: str) -> str:
+def xp_item_detail_text(data: dict, instance_id: str, lang: str = "ru") -> str:
     inv  = data.get("xp_inventory", [])
     item = next((x for x in inv if x["instance_id"] == instance_id), None)
     if not item:
-        return "❌ Предмет не найден."
+        return _L(lang, "❌ Предмет не найден.", "❌ Item not found.")
     price  = get_xp_sell_price(item)
     xp_act = get_active_xp_booster_info(data)
     if item["type"] == "xp_instant":
         return (
-            f"<blockquote>{_pe('xp_instant', '✨')} <b>Моментальный опыт</b>\n"
-            f"{_pe('xp_instant', '✨')} <b>Опыт: +{_fmt_num(item['xp'])} XP</b></blockquote>\n"
-            f"\n<blockquote><b>Применить — сразу получишь опыт.</b>\n"
-            f"<b>Учитывает активный XP-ускоритель!</b></blockquote>\n"
-            f"\n<blockquote>{_pe('coin', '💰')} <b>Цена продажи: {_fmt_num(price)}</b></blockquote>"
+            f"<blockquote>{_pe('xp_instant', '✨')} <b>{_L(lang, 'Моментальный опыт', 'Instant XP')}</b>\n"
+            f"{_pe('xp_instant', '✨')} <b>{_L(lang, 'Опыт', 'XP')}: +{_fmt_num(item['xp'])} XP</b></blockquote>\n"
+            f"\n<blockquote><b>{_L(lang, 'Применить — сразу получишь опыт.', 'Apply — you get XP immediately.')}</b>\n"
+            f"<b>{_L(lang, 'Учитывает активный XP-ускоритель!', 'Counts active XP booster!')}</b></blockquote>\n"
+            f"\n<blockquote>{_pe('coin', '💰')} <b>{_L(lang, 'Цена продажи', 'Sell price')}: {_fmt_num(price)}</b></blockquote>"
         )
     mult = _multiplier_label(item["multiplier"])
-    dur  = _DUR_LABELS[item["dur_key"]]
+    dur  = _dur_label(item["dur_key"], lang)
     warning = ""
     if xp_act:
-        left = _fmt_time_left(xp_act["ends_at"] - _now_ts())
+        left = _fmt_time_left(xp_act["ends_at"] - _now_ts(), lang)
         act_mult = _multiplier_label(xp_act["multiplier"])
-        act_dur  = _DUR_LABELS[xp_act["dur_key"]]
+        act_dur  = _dur_label(xp_act["dur_key"], lang)
         warning  = (
-            f"\n\n<blockquote>{_pe('warn', '⚠️')} <b>Активен: ×{act_mult} на {act_dur}</b>\n"
-            f"{_pe('timer', '⏱')} <b>Осталось: {left}</b></blockquote>"
+            f"\n\n<blockquote>{_pe('warn', '⚠️')} <b>{_L(lang, 'Активен', 'Active')}: ×{act_mult} {_L(lang, 'на', 'for')} {act_dur}</b>\n"
+            f"{_pe('timer', '⏱')} <b>{_L(lang, 'Осталось', 'Left')}: {left}</b></blockquote>"
         )
     return (
-        f"<blockquote>{_pe('xp_boost', '🔮')} <b>XP-ускоритель {mult}</b>\n"
-        f"{_pe('mult', '🔢')} <b>Множитель: ×{mult}</b>\n"
-        f"{_pe('timer', '⏱')} <b>Длительность: {dur}</b></blockquote>\n"
-        f"\n<blockquote><b>Умножает весь получаемый опыт на {mult} на {dur}.</b></blockquote>\n"
-        f"\n<blockquote>{_pe('coin', '💰')} <b>Цена продажи: {_fmt_num(price)}</b></blockquote>"
+        f"<blockquote>{_pe('xp_boost', '🔮')} <b>{_L(lang, 'XP-ускоритель', 'XP booster')} {mult}</b>\n"
+        f"{_pe('mult', '🔢')} <b>{_L(lang, 'Множитель', 'Multiplier')}: ×{mult}</b>\n"
+        f"{_pe('timer', '⏱')} <b>{_L(lang, 'Длительность', 'Duration')}: {dur}</b></blockquote>\n"
+        f"\n<blockquote><b>{_L(lang, f'Умножает весь получаемый опыт на {mult} на {dur}.', f'Multiplies all XP gained by {mult} for {dur}.')}</b></blockquote>\n"
+        f"\n<blockquote>{_pe('coin', '💰')} <b>{_L(lang, 'Цена продажи', 'Sell price')}: {_fmt_num(price)}</b></blockquote>"
         f"{warning}"
     )
 
 
-def xp_item_detail_keyboard(instance_id: str, is_boost: bool) -> InlineKeyboardMarkup:
+def xp_item_detail_keyboard(instance_id: str, is_boost: bool, lang: str = "ru") -> InlineKeyboardMarkup:
     builder  = InlineKeyboardBuilder()
-    label    = "Активировать" if is_boost else "Применить"
+    label    = _L(lang, "Активировать", "Activate") if is_boost else _L(lang, "Применить", "Apply")
     e_key    = "xp_boost" if is_boost else "xp_instant"
-    builder.row(_btn(_E[e_key],  label,    f"xp_use_{instance_id}"))
-    builder.row(_btn(_E["sell"], "Продать", f"xp_sell_{instance_id}"))
-    builder.row(_back_btn("inv_xp", "Назад"))
+    builder.row(_btn(_E[e_key],  label,                      f"xp_use_{instance_id}"))
+    builder.row(_btn(_E["sell"], _L(lang, "Продать", "Sell"), f"xp_sell_{instance_id}"))
+    builder.row(_back_btn("inv_xp", _L(lang, "Назад", "Back")))
     return builder.as_markup()
 
 
-def xp_confirm_replace_text(data: dict, instance_id: str) -> str:
+def xp_confirm_replace_text(data: dict, instance_id: str, lang: str = "ru") -> str:
     inv    = data.get("xp_inventory", [])
     item   = next((x for x in inv if x["instance_id"] == instance_id), None)
     xp_act = get_active_xp_booster_info(data)
     if not item or not xp_act:
-        return "❌ Ошибка."
-    left     = _fmt_time_left(xp_act["ends_at"] - _now_ts())
+        return "❌ Ошибка." if lang == "ru" else "❌ Error."
+    left     = _fmt_time_left(xp_act["ends_at"] - _now_ts(), lang)
     act_mult = _multiplier_label(xp_act["multiplier"])
-    act_dur  = _DUR_LABELS[xp_act["dur_key"]]
+    act_dur  = _dur_label(xp_act["dur_key"], lang)
     new_mult = _multiplier_label(item["multiplier"])
-    new_dur  = _DUR_LABELS[item["dur_key"]]
+    new_dur  = _dur_label(item["dur_key"], lang)
     return (
-        f"<blockquote>{_pe('warn', '⚠️')} <b>Замена XP-ускорителя</b>\n"
-        f"<b>Сейчас активен: ×{act_mult} на {act_dur}</b>\n"
-        f"{_pe('timer', '⏱')} <b>Осталось: {left}</b></blockquote>\n"
-        f"\n<blockquote><b>Заменить на: ×{new_mult} на {new_dur}?</b>\n"
-        f"{_pe('warn', '⚠️')} <b>Старый XP-ускоритель будет потерян!</b></blockquote>"
+        f"<blockquote>{_pe('warn', '⚠️')} <b>{_L(lang, 'Замена XP-ускорителя', 'Replace XP booster')}</b>\n"
+        f"<b>{_L(lang, 'Сейчас активен', 'Currently active')}: ×{act_mult} {_L(lang, 'на', 'for')} {act_dur}</b>\n"
+        f"{_pe('timer', '⏱')} <b>{_L(lang, 'Осталось', 'Left')}: {left}</b></blockquote>\n"
+        f"\n<blockquote><b>{_L(lang, 'Заменить на', 'Replace with')}: ×{new_mult} {_L(lang, 'на', 'for')} {new_dur}?</b>\n"
+        f"{_pe('warn', '⚠️')} <b>{_L(lang, 'Старый XP-ускоритель будет потерян!', 'Old XP booster will be lost!')}</b></blockquote>"
     )
 
 
-def xp_confirm_replace_keyboard(instance_id: str) -> InlineKeyboardMarkup:
+def xp_confirm_replace_keyboard(instance_id: str, lang: str = "ru") -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.row(
-        InlineKeyboardButton(text="Да, заменить", callback_data=f"xp_replace_{instance_id}", icon_custom_emoji_id=_E["ok"]),
-        InlineKeyboardButton(text="Отмена",       callback_data=f"xp_info_{instance_id}",    icon_custom_emoji_id=_E["cancel"]),
+        InlineKeyboardButton(text=_L(lang, "Да, заменить", "Yes, replace"), callback_data=f"xp_replace_{instance_id}",  icon_custom_emoji_id=_E["ok"]),
+        InlineKeyboardButton(text=_L(lang, "Отмена", "Cancel"),             callback_data=f"xp_info_{instance_id}",     icon_custom_emoji_id=_E["cancel"]),
     )
     return builder.as_markup()
