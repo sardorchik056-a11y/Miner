@@ -1197,8 +1197,9 @@ def artifact_case_detail_text(data: dict, lang: str = "ru") -> str:
 
     def _row(a, pct):
         eff_label = _get_effect_label(a["effect"], lang)
+        aname = a.get("name_en", a["name"]) if lang == "en" else a["name"]
         return (
-            f'{_ae(a)} <b>{a["name"]}</b> — '
+            f'{_ae(a)} <b>{aname}</b> — '
             f'<b><i>{a["multiplier"]}× {eff_label}</i></b> <b>({pct}%)</b>\n'
         )
 
