@@ -65,9 +65,7 @@ def lang_choose_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.row(
         InlineKeyboardButton(text="🇷🇺 Русский", callback_data="set_lang_ru",
-                              icon_custom_emoji_id=_E_LANGUAGE),
         InlineKeyboardButton(text="🇬🇧 English", callback_data="set_lang_en",
-                              icon_custom_emoji_id=_E_LANGUAGE),
     )
     return builder.as_markup()
 
