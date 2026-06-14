@@ -511,9 +511,7 @@ async def reply_btn_menu(message: Message):
 @dp.message(F.text == "⚔️ Клан")
 async def reply_btn_clan(message: Message):
     await message.answer(
-        "⚔️ <b>Клан</b>
-
-<blockquote>Система кланов скоро будет доступна!</blockquote>",
+        "⚔️ <b>Клан</b>\n\n<blockquote>Система кланов скоро будет доступна!</blockquote>",
         parse_mode="HTML",
     )
 
