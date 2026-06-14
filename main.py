@@ -85,7 +85,6 @@ from status import (
 )
 from refs import (
     init_refs_db,
-    is_new_user,
     register_referral,
     is_captcha_passed, is_captcha_blocked,
     get_captcha_state, create_captcha, check_captcha,
@@ -484,11 +483,48 @@ async def cmd_getstatus(message: Message):
 
 
 
+async def _send_onboarding_step(message: Message, uid: int) -> bool:
+    """
+    Показывает очередной шаг онбординга нового пользователя:
+    1) капча (если не пройдена / если есть блок)
+    2) выбор языка (когда капча уже пройдена)
+    Возвращает True всегда — обработку сообщения нужно прекратить.
+    """
+    # 1) Проверяем, не заблокирован ли пользователь капчей
+    blocked, secs_left = is_captcha_blocked(uid)
+    if blocked:
+        mins = (secs_left + 59) // 60
+        await message.answer(
+            captcha_blocked_text(mins),
+            parse_mode="HTML",
+            reply_markup=captcha_back_keyboard(),
+        )
+        return True
+
+    # 2) Капча ещё не пройдена → показываем (или повторяем) вопрос
+    if not is_captcha_passed(uid):
+        state = create_captcha(uid)
+        await message.answer(
+            captcha_start_text(state["question"]),
+            parse_mode="HTML",
+        )
+        return True
+
+    # 3) Капча пройдена, но язык ещё не выбран → выбор языка
+    await message.answer(
+        lang_choose_text("ru"),
+        parse_mode="HTML",
+        reply_markup=lang_choose_keyboard_start(),
+    )
+    return True
+
+
 @dp.message(Command("start", "menu"))
 async def send_welcome(message: Message):
     from database import _load_raw
-    uid      = message.from_user.id
-    existing = _load_raw(uid)
+    uid          = message.from_user.id
+    existing     = _load_raw(uid)
+    is_brand_new = existing is None
 
     # ── Определяем пригласителя из deep-link (?start=ref_XXXXX) ──
     args        = message.text.split()
@@ -501,47 +537,23 @@ async def send_welcome(message: Message):
         except (ValueError, IndexError):
             pass
 
-    new_user = is_new_user(uid)
-
     # Создаём/получаем пользователя в БД бота
     u = get_or_create_user(message.from_user)
     track_user(uid)
 
-    # Регистрируем в реф. таблице (игнорирует повторный вызов)
-    register_referral(uid, inviter_uid)
+    # Регистрируем в реф. таблице — только для совсем новых пользователей,
+    # чтобы повторные /start не теряли и не путали данные о пригласителе
+    if is_brand_new:
+        register_referral(uid, inviter_uid)
 
-    # ── Новый пользователь → выбор языка ──
-    if existing is None:
-        await message.answer(
-            lang_choose_text("ru"),
-            parse_mode="HTML",
-            reply_markup=lang_choose_keyboard_start(),
-        )
+    # ── Новый пользователь → онбординг: капча → язык → меню ──
+    if not u.get("onboarded", True):
+        await _send_onboarding_step(message, uid)
         return
 
     lang = get_lang(u)
 
-    # ── Проверяем статус капчи ──
-    blocked, secs_left = is_captcha_blocked(uid)
-    if blocked:
-        mins = (secs_left + 59) // 60
-        await message.answer(
-            captcha_blocked_text(mins),
-            parse_mode="HTML",
-            reply_markup=captcha_back_keyboard(),
-        )
-        return
-
-    if new_user and not is_captcha_passed(uid):
-        # Новый пользователь — показываем капчу
-        state = create_captcha(uid)
-        await message.answer(
-            captcha_start_text(state["question"]),
-            parse_mode="HTML",
-        )
-        return
-
-    # ── Старый пользователь или капча пройдена → главное меню ──
+    # ── Уже онбордженный пользователь → главное меню ──
     await message.answer(
         "🎮",
         reply_markup=main_reply_keyboard(),
@@ -562,15 +574,9 @@ async def reply_btn_menu(message: Message):
     lang = get_lang(u)
     track_user(uid)
 
-    # Если капча не пройдена — перехватываем
-    blocked, secs_left = is_captcha_blocked(uid)
-    if blocked:
-        mins = (secs_left + 59) // 60
-        await message.answer(captcha_blocked_text(mins), parse_mode="HTML", reply_markup=captcha_back_keyboard())
-        return
-    state = get_captcha_state(uid)
-    if state and not state["passed"]:
-        await message.answer(captcha_start_text(state["question"]), parse_mode="HTML")
+    # Если онбординг (капча/язык) ещё не пройден — продолжаем его
+    if not u.get("onboarded", True):
+        await _send_onboarding_step(message, uid)
         return
 
     await message.answer(
@@ -583,82 +589,91 @@ async def reply_btn_menu(message: Message):
 
 @dp.message(F.text & ~F.text.startswith("/"))
 async def handle_captcha_answer(message: Message):
-    """Перехватчик текстовых сообщений для проверки капчи."""
-    uid   = message.from_user.id
-    u     = get_or_create_user(message.from_user)
-    lang  = get_lang(u)
+    """Перехватчик текстовых сообщений для прохождения капчи при онбординге."""
+    uid = message.from_user.id
+    u   = get_or_create_user(message.from_user)
 
-    # Если капча не пройдена — обрабатываем ответ
-    if not is_captcha_passed(uid):
-        blocked, secs_left = is_captcha_blocked(uid)
-        if blocked:
-            mins = (secs_left + 59) // 60
-            await message.answer(captcha_blocked_text(mins), parse_mode="HTML", reply_markup=captcha_back_keyboard())
-            return
+    # Этот хендлер нужен только пока пользователь проходит онбординг
+    if u.get("onboarded", True):
+        return
 
-        # Пробуем распарсить число
-        try:
-            user_ans = int(message.text.strip())
-        except ValueError:
-            state = get_captcha_state(uid)
-            if state:
-                await message.answer(
-                    f'<tg-emoji emoji-id="5274099962099903948">❌</tg-emoji> '
-                    f'Введи <b>число</b>!\n\n'
-                    f'<tg-emoji emoji-id="5373050352963117218">📐</tg-emoji> <b>{state["question"]} = ?</b>',
-                    parse_mode="HTML",
-                )
-            return
+    # Если заблокирован — сообщаем и не пытаемся парсить ответ
+    blocked, secs_left = is_captcha_blocked(uid)
+    if blocked:
+        mins = (secs_left + 59) // 60
+        await message.answer(captcha_blocked_text(mins), parse_mode="HTML", reply_markup=captcha_back_keyboard())
+        return
 
-        result = check_captcha(uid, user_ans)
+    # Капча уже пройдена, осталось только выбрать язык
+    if is_captcha_passed(uid):
+        await message.answer(
+            lang_choose_text("ru"),
+            parse_mode="HTML",
+            reply_markup=lang_choose_keyboard_start(),
+        )
+        return
 
-        if result["status"] == "ok":
-            # Капча пройдена — начисляем награду пригласителю
-            is_premium       = bool(getattr(message.from_user, "is_premium", False))
-            rewarded, amount = reward_inviter(uid, is_premium)
-
+    # Пробуем распарсить число
+    try:
+        user_ans = int(message.text.strip())
+    except ValueError:
+        state = get_captcha_state(uid)
+        if state:
             await message.answer(
-                captcha_ok_text(rewarded, amount, is_premium),
+                f'<tg-emoji emoji-id="5274099962099903948">❌</tg-emoji> '
+                f'Введи <b>число</b>!\n\n'
+                f'<tg-emoji emoji-id="5373050352963117218">📐</tg-emoji> <b>{state["question"]} = ?</b>',
                 parse_mode="HTML",
-                reply_markup=main_reply_keyboard(),
-            )
-
-            # Уведомление пригласителю
-            if rewarded:
-                inv_uid = get_inviter(uid)
-                if inv_uid:
-                    name = message.from_user.first_name or message.from_user.username or "Новый игрок"
-                    try:
-                        await bot.send_message(
-                            inv_uid,
-                            refs_notif_text(name, amount, is_premium),
-                            parse_mode="HTML",
-                        )
-                    except Exception:
-                        pass
-
-            # Главное меню
-            await message.answer(
-                t(lang, "welcome"),
-                parse_mode="HTML",
-                disable_web_page_preview=True,
-                reply_markup=main_menu_keyboard(lang),
-            )
-
-        elif result["status"] == "wrong":
-            state = get_captcha_state(uid)
-            await message.answer(
-                captcha_wrong_text(state["question"], result["tries_left"]),
-                parse_mode="HTML",
-            )
-
-        elif result["status"] == "blocked":
-            await message.answer(
-                captcha_blocked_text(result["unblock_in_min"]),
-                parse_mode="HTML",
-                reply_markup=captcha_back_keyboard(),
             )
         return
+
+    result = check_captcha(uid, user_ans)
+
+    if result["status"] == "ok":
+        # Капча пройдена — начисляем награду пригласителю
+        is_premium       = bool(getattr(message.from_user, "is_premium", False))
+        rewarded, amount = reward_inviter(uid, is_premium)
+
+        await message.answer(
+            captcha_ok_text(rewarded, amount, is_premium),
+            parse_mode="HTML",
+            reply_markup=main_reply_keyboard(),
+        )
+
+        # Уведомление пригласителю
+        if rewarded:
+            inv_uid = get_inviter(uid)
+            if inv_uid:
+                name = message.from_user.first_name or message.from_user.username or "Новый игрок"
+                try:
+                    await bot.send_message(
+                        inv_uid,
+                        refs_notif_text(name, amount, is_premium),
+                        parse_mode="HTML",
+                    )
+                except Exception:
+                    pass
+
+        # Капча пройдена → переходим к выбору языка
+        await message.answer(
+            lang_choose_text("ru"),
+            parse_mode="HTML",
+            reply_markup=lang_choose_keyboard_start(),
+        )
+
+    elif result["status"] == "wrong":
+        state = get_captcha_state(uid)
+        await message.answer(
+            captcha_wrong_text(state["question"], result["tries_left"]),
+            parse_mode="HTML",
+        )
+
+    elif result["status"] == "blocked":
+        await message.answer(
+            captcha_blocked_text(result["unblock_in_min"]),
+            parse_mode="HTML",
+            reply_markup=captcha_back_keyboard(),
+        )
 
 
 @dp.message(F.text == "⚔️ Клан")
@@ -1468,6 +1483,7 @@ async def handle_callback(call: CallbackQuery):
         if cd in ("start_lang_ru", "start_lang_en"):
             new_lang = "ru" if cd == "start_lang_ru" else "en"
             data["lang"] = new_lang
+            data["onboarded"] = True
             save_user(data["id"], data)
             await call.message.edit_text(
                 t(new_lang, "welcome"),
