@@ -592,7 +592,7 @@ def workshop_keyboard(data: dict, page: int = 0, lang: str = "ru") -> InlineKeyb
         if key == current:
             btn = InlineKeyboardButton(text=label, callback_data=f"pick_info_{key}", icon_custom_emoji_id=EMOJI_SELECTED)
         elif key in owned:
-            btn = InlineKeyboardButton(text=label, callback_data=f"pick_info_{key}")
+            btn = InlineKeyboardButton(text=label, callback_data=f"pick_info_{key}", icon_custom_emoji_id=EMOJI_SELECTED, style="success")
         else:
             btn = InlineKeyboardButton(text=label, callback_data=f"pick_info_{key}", icon_custom_emoji_id=EMOJI_NOT_BOUGHT)
         buttons.append(btn)
@@ -645,7 +645,7 @@ def pickaxe_detail_keyboard(data: dict, pick_key: str, page: int = -1, lang: str
         if can_afford:
             builder.row(InlineKeyboardButton(text=f"{_fmt_num(p['cost'])} ", callback_data=f"pick_buy_{pick_key}", icon_custom_emoji_id=EMOJI_BTN_BUY_COINS, style="success"))
         else:
-            builder.row(_prem_btn(EMOJI_BTN_BUY_COINS, f"{_fmt_num(p['cost'])} ", f"pick_buy_{pick_key}"))
+            builder.row(InlineKeyboardButton(text=f"{_fmt_num(p['cost'])} ", callback_data=f"pick_buy_{pick_key}", icon_custom_emoji_id=EMOJI_BTN_BUY_COINS, style="destructive"))
         builder.row(InlineKeyboardButton(text=f"{cost_stars:,} ", callback_data=f"pick_buy_stars_{pick_key}", icon_custom_emoji_id=EMOJI_BTN_BUY_STARS, style="success"))
     builder.row(_back_btn(f"mine_workshop_{page}", f" {_back_lbl}"))
     return builder.as_markup()
