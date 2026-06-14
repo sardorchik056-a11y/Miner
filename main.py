@@ -212,7 +212,7 @@ def stars_confirm_keyboard(pick_key: str, page: int, invoice_url: str = None) ->
         text="Мои звёзды",
         url="tg://stars/",
         icon_custom_emoji_id="5348570868752595928",
-        style="link"
+        style="primary"
     ))
     builder.row(_back_btn(f"pick_info_{pick_key}", "Назад"))
     return builder.as_markup()
