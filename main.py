@@ -133,6 +133,9 @@ import asyncio as _asyncio
 _user_locks: dict[int, _asyncio.Lock] = {}
 _user_locks_mutex = _asyncio.Lock()
 
+# Хранит message_id экрана капчи: uid -> (chat_id, message_id)
+_captcha_msg: dict[int, tuple] = {}
+
 # Хранит message_id экрана кирки перед оплатой: uid -> (chat_id, message_id, pick_key)
 _pending_stars_msg: dict[int, tuple] = {}
 
@@ -504,10 +507,11 @@ async def _send_onboarding_step(message: Message, uid: int) -> bool:
     # 2) Капча ещё не пройдена → показываем (или повторяем) вопрос
     if not is_captcha_passed(uid):
         state = create_captcha(uid)
-        await message.answer(
+        sent = await message.answer(
             captcha_start_text(state["question"]),
             parse_mode="HTML",
         )
+        _captcha_msg[uid] = (sent.chat.id, sent.message_id)
         return True
 
     # 3) Капча пройдена, но язык ещё не выбран → выбор языка
@@ -597,15 +601,21 @@ async def handle_captcha_answer(message: Message):
     if u.get("onboarded", True):
         return
 
-    # Если заблокирован — сообщаем и не пытаемся парсить ответ
+    # Если заблокирован — просто игнорируем (сообщение от пользователя удаляем)
     blocked, secs_left = is_captcha_blocked(uid)
     if blocked:
-        mins = (secs_left + 59) // 60
-        await message.answer(captcha_blocked_text(mins), parse_mode="HTML", reply_markup=captcha_back_keyboard())
+        try:
+            await message.delete()
+        except Exception:
+            pass
         return
 
     # Капча уже пройдена, осталось только выбрать язык
     if is_captcha_passed(uid):
+        try:
+            await message.delete()
+        except Exception:
+            pass
         await message.answer(
             lang_choose_text("ru"),
             parse_mode="HTML",
@@ -617,17 +627,25 @@ async def handle_captcha_answer(message: Message):
     try:
         user_ans = int(message.text.strip())
     except ValueError:
-        state = get_captcha_state(uid)
-        if state:
-            await message.answer(
-                f'<tg-emoji emoji-id="5373050352963117218">📐</tg-emoji> <b>{state["question"]} = ?</b>',
-                parse_mode="HTML",
-            )
+        try:
+            await message.delete()
+        except Exception:
+            pass
         return
 
     result = check_captcha(uid, user_ans)
 
+    # Удаляем сообщение пользователя с ответом
+    try:
+        await message.delete()
+    except Exception:
+        pass
+
+    pending = _captcha_msg.get(uid)
+
     if result["status"] == "ok":
+        _captcha_msg.pop(uid, None)
+
         # Капча пройдена — начисляем награду пригласителю
         is_premium       = bool(getattr(message.from_user, "is_premium", False))
         rewarded, amount = reward_inviter(uid, is_premium)
@@ -646,7 +664,19 @@ async def handle_captcha_answer(message: Message):
                 except Exception:
                     pass
 
-        # Капча пройдена → переходим к выбору языка
+        # Капча пройдена → обновляем старое сообщение на выбор языка
+        if pending:
+            try:
+                await bot.edit_message_text(
+                    lang_choose_text("ru"),
+                    chat_id=pending[0],
+                    message_id=pending[1],
+                    parse_mode="HTML",
+                    reply_markup=lang_choose_keyboard_start(),
+                )
+                return
+            except Exception:
+                pass
         await message.answer(
             lang_choose_text("ru"),
             parse_mode="HTML",
@@ -655,12 +685,37 @@ async def handle_captcha_answer(message: Message):
 
     elif result["status"] == "wrong":
         state = get_captcha_state(uid)
-        await message.answer(
+        if pending:
+            try:
+                await bot.edit_message_text(
+                    captcha_wrong_text(state["question"], result["tries_left"]),
+                    chat_id=pending[0],
+                    message_id=pending[1],
+                    parse_mode="HTML",
+                )
+                return
+            except Exception:
+                pass
+        sent = await message.answer(
             captcha_wrong_text(state["question"], result["tries_left"]),
             parse_mode="HTML",
         )
+        _captcha_msg[uid] = (sent.chat.id, sent.message_id)
 
     elif result["status"] == "blocked":
+        _captcha_msg.pop(uid, None)
+        if pending:
+            try:
+                await bot.edit_message_text(
+                    captcha_blocked_text(result["unblock_in_min"]),
+                    chat_id=pending[0],
+                    message_id=pending[1],
+                    parse_mode="HTML",
+                    reply_markup=captcha_back_keyboard(),
+                )
+                return
+            except Exception:
+                pass
         await message.answer(
             captcha_blocked_text(result["unblock_in_min"]),
             parse_mode="HTML",
@@ -736,6 +791,7 @@ async def handle_callback(call: CallbackQuery):
                             captcha_start_text(state["question"]),
                             parse_mode="HTML",
                         )
+                        _captcha_msg[user.id] = (call.message.chat.id, call.message.message_id)
                     except Exception:
                         pass
                 await call.answer("✅ Блок снят! Введи ответ.")
