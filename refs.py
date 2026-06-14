@@ -68,11 +68,11 @@ def _conn():
 def _gen_question() -> tuple[str, int]:
     op = random.choice(["+", "-"])
     if op == "+":
-        a, b   = random.randint(1, 20), random.randint(1, 20)
+        a, b   = random.randint(1, 9), random.randint(1, 9)
         answer = a + b
         text   = f"{a} + {b}"
     else:
-        a = random.randint(5, 25)
+        a = random.randint(1, 9)
         b = random.randint(1, a)
         answer = a - b
         text   = f"{a} − {b}"
@@ -267,10 +267,7 @@ def captcha_wrong_text(question: str, tries_left: int) -> str:
 
 
 def captcha_blocked_text(unblock_in_min: int) -> str:
-    return (
-        f'<tg-emoji emoji-id="{_E_TIMER}">⏱</tg-emoji> <b>Слишком много попыток</b>\n'
-        f'Подожди: <b>{unblock_in_min} мин</b>'
-    )
+    return f'🔄 <b>Вы заблокированы на {unblock_in_min} мин!</b>'
 
 
 def refs_notif_text(new_user_name: str, reward: int, is_premium: bool) -> str:
@@ -358,14 +355,5 @@ def refs_list_keyboard() -> InlineKeyboardMarkup:
         text="Назад",
         callback_data="refs_main",
         icon_custom_emoji_id=EMOJI_BACK
-    ))
-    return builder.as_markup()
-
-
-def captcha_back_keyboard() -> InlineKeyboardMarkup:
-    builder = InlineKeyboardBuilder()
-    builder.row(InlineKeyboardButton(
-        text="🔄 Проверить блок",
-        callback_data="captcha_check_block"
     ))
     return builder.as_markup()
