@@ -74,9 +74,7 @@ def lang_choose_keyboard_start() -> InlineKeyboardMarkup:
     """Клавиатура выбора языка при первом старте (без кнопки назад)."""
     builder = InlineKeyboardBuilder()
     builder.row(
-        InlineKeyboardButton(text="🇷🇺 Русский", callback_data="start_lang_ru",
-                              icon_custom_emoji_id=_E_LANGUAGE),
-        InlineKeyboardButton(text="🇬🇧 English", callback_data="start_lang_en",
-                              icon_custom_emoji_id=_E_LANGUAGE),
+        InlineKeyboardButton(text="🇷🇺 Русский", callback_data="start_lang_ru"),
+        InlineKeyboardButton(text="🇬🇧 English", callback_data="start_lang_en"),
     )
     return builder.as_markup()
