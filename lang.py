@@ -7,10 +7,6 @@
 _STRINGS: dict[str, dict[str, str]] = {
 
     # ── Выбор языка при старте ──
-    "lang_choose": {
-        "ru": "🌐 <b>Выбери язык / Choose language:</b>",
-        "en": "🌐 <b>Choose language / Выбери язык:</b>",
-    },
     "lang_btn_ru": {
         "ru": "🇷🇺 Русский",
         "en": "🇷🇺 Русский",
@@ -62,14 +58,54 @@ _STRINGS: dict[str, dict[str, str]] = {
         "ru": '<tg-emoji emoji-id="5341715473882955310">⚙️</tg-emoji> <b>НАСТРОЙКИ</b>',
         "en": '<tg-emoji emoji-id="5341715473882955310">⚙️</tg-emoji> <b>SETTINGS</b>',
     },
-    "settings_language": {
-        "ru": "🌐 Язык — <b>Русский 🇷🇺</b>",
-        "en": "🌐 Language — <b>English 🇬🇧</b>",
+    "settings_subtitle": {
+        "ru": "<b>Здесь можно сменить язык бота и быстро перейти в наш чат, канал или поддержку.</b>",
+        "en": "<b>Here you can change the bot language and quickly jump to our chat, channel or support.</b>",
     },
-    "btn_chat":     {"ru": "💬 Чат",        "en": "💬 Chat"},
-    "btn_channel":  {"ru": "📢 Канал",      "en": "📢 Channel"},
-    "btn_support":  {"ru": "🛠 Поддержка",  "en": "🛠 Support"},
-    "btn_language": {"ru": "🌐 Язык",       "en": "🌐 Language"},
+    "settings_language": {
+        "ru": '<tg-emoji emoji-id="5447410659077661506">🌐</tg-emoji> <b>Текущий язык — Русский 🇷🇺</b>',
+        "en": '<tg-emoji emoji-id="5447410659077661506">🌐</tg-emoji> <b>Current language — English 🇬🇧</b>',
+    },
+    "settings_lang_hint": {
+        "ru": "Сменить язык можно в любой момент кнопкой ниже",
+        "en": "You can change the language anytime using the button below",
+    },
+    "settings_links_title": {
+        "ru": '<tg-emoji emoji-id="5424818078833715060">📢</tg-emoji> <b>Полезные ссылки</b>',
+        "en": '<tg-emoji emoji-id="5424818078833715060">📢</tg-emoji> <b>Useful links</b>',
+    },
+    "settings_chat_desc": {
+        "ru": '<tg-emoji emoji-id="5443038326535759644">💬</tg-emoji> <b>Чат</b> — общайся с другими игроками',
+        "en": '<tg-emoji emoji-id="5443038326535759644">💬</tg-emoji> <b>Chat</b> — talk with other players',
+    },
+    "settings_channel_desc": {
+        "ru": '<tg-emoji emoji-id="5424818078833715060">📢</tg-emoji> <b>Канал</b> — новости и обновления проекта',
+        "en": '<tg-emoji emoji-id="5424818078833715060">📢</tg-emoji> <b>Channel</b> — news and project updates',
+    },
+    "settings_support_desc": {
+        "ru": '<tg-emoji emoji-id="5357069174512303778">🛠</tg-emoji> <b>Поддержка</b> — помощь от администрации',
+        "en": '<tg-emoji emoji-id="5357069174512303778">🛠</tg-emoji> <b>Support</b> — help from the admin team',
+    },
+    "btn_chat":     {"ru": "Чат",      "en": "Chat"},
+    "btn_channel":  {"ru": "Канал",    "en": "Channel"},
+    "btn_support":  {"ru": "Поддержка","en": "Support"},
+    "btn_language": {"ru": "Язык",     "en": "Language"},
+
+    # ── Выбор языка (из настроек) ──
+    "lang_choose": {
+        "ru": (
+            '<tg-emoji emoji-id="5447410659077661506">🌐</tg-emoji> <b>ВЫБОР ЯЗЫКА</b>\n\n'
+            '<blockquote><b>Выбери язык интерфейса бота:</b>\n'
+            '<tg-emoji emoji-id="5447410659077661506">🌐</tg-emoji> <b>Текущий язык — Русский 🇷🇺</b></blockquote>\n\n'
+            '<b>Все тексты, кнопки и уведомления будут отображаться на выбранном языке</b>'
+        ),
+        "en": (
+            '<tg-emoji emoji-id="5447410659077661506">🌐</tg-emoji> <b>LANGUAGE SELECTION</b>\n\n'
+            '<blockquote><b>Choose the bot interface language:</b>\n'
+            '<tg-emoji emoji-id="5447410659077661506">🌐</tg-emoji> <b>Current language — English 🇬🇧</b></blockquote>\n\n'
+            '<b>All texts, buttons and notifications will be shown in the selected language</b>'
+        ),
+    },
 
     # ── Статистика ──
     "stats_title_online": {
