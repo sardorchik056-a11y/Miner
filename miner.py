@@ -662,7 +662,7 @@ def duration_shop_keyboard(data: dict, lang: str = "ru") -> InlineKeyboardMarkup
         if key == current:
             buttons.append(InlineKeyboardButton(text=label, callback_data=f"dur_info_{key}", icon_custom_emoji_id=EMOJI_SELECTED))
         elif key in owned_durs:
-            buttons.append(InlineKeyboardButton(text=label, callback_data=f"dur_info_{key}"))
+            buttons.append(InlineKeyboardButton(text=label, callback_data=f"dur_info_{key}", style="success"))
         else:
             buttons.append(InlineKeyboardButton(text=label, callback_data=f"dur_info_{key}", icon_custom_emoji_id=EMOJI_NOT_BOUGHT))
     builder.add(*buttons)
@@ -683,12 +683,17 @@ def duration_detail_keyboard(data: dict, dur_key: str, lang: str = "ru") -> Inli
         _already_active = "Уже активна"
         _select         = "Выбрать"
         _back_lbl       = "Назад"
+    balance = data.get("balance", 0)
     if dur_key == data.get("mine_duration_key", "5min"):
         builder.row(_prem_btn(EMOJI_BTN_ACTIVE, _already_active, "noop"))
     elif dur_key in owned_durs:
-        builder.row(_prem_btn(EMOJI_BTN_SELECT, _select, f"dur_select_{dur_key}"))
+        builder.row(InlineKeyboardButton(text=_select, callback_data=f"dur_select_{dur_key}", icon_custom_emoji_id=EMOJI_BTN_SELECT, style="success"))
     else:
-        builder.row(_prem_btn(EMOJI_BTN_DUR_BUY, f"{_fmt_num(d['cost'])} ", f"dur_buy_{dur_key}"))
+        can_afford = balance >= d["cost"]
+        if can_afford:
+            builder.row(InlineKeyboardButton(text=f"{_fmt_num(d['cost'])} ", callback_data=f"dur_buy_{dur_key}", icon_custom_emoji_id=EMOJI_BTN_DUR_BUY, style="success"))
+        else:
+            builder.row(InlineKeyboardButton(text=f"{_fmt_num(d['cost'])} ", callback_data=f"dur_buy_{dur_key}", icon_custom_emoji_id=EMOJI_BTN_DUR_BUY, style="danger"))
     builder.row(_back_btn("mine_duration_shop", _back_lbl))
     return builder.as_markup()
 
