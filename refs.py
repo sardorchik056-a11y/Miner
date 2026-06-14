@@ -25,6 +25,7 @@ _E_LEVEL   = "5375338737028841420"
 _E_BAL     = "5278467510604160626"
 _E_STAR    = "5267500801240092311"
 _E_STATUS  = "5438496463044752972"
+_E_FRIENDS = "5332724926216428039"
 
 COIN = f'<tg-emoji emoji-id="{_E_COIN}">🪙</tg-emoji>'
 
@@ -239,37 +240,39 @@ def refs_main_text(uid: int, bot_username: str) -> str:
     earned   = stats["earned_coins"]
 
     return (
-        f'<tg-emoji emoji-id="{_E_STATUS}">✨</tg-emoji> <b>Реферальная программа</b>\n'
-        f'━━━━━━━━━━━━━━━━━━━━\n\n'
+        f'<tg-emoji emoji-id="{_E_FRIENDS}">👥</tg-emoji> <b>Реферальная программа</b>\n\n'
         f'<blockquote>'
-        f'Делись ссылкой с друзьями и получай монеты за каждого, кто присоединится!\n\n'
-        f'<tg-emoji emoji-id="{_E_COIN}">🪙</tg-emoji> Обычный реферал — <b>{REF_REWARD_NORMAL:,}</b> {COIN}\n'
-        f'<tg-emoji emoji-id="{_E_PREMIUM}">⭐</tg-emoji> Реферал с Telegram Premium — <b>{REF_REWARD_PREMIUM:,}</b> {COIN}'
+        f'<tg-emoji emoji-id="{_E_STAR}">🎯</tg-emoji> <b>Как это работает</b>\n\n'
+        f'Отправь свою ссылку друзьям — как только они зайдут в TGStellar и пройдут проверку, '
+        f'тебе сразу начислится награда:\n\n'
+        f'<tg-emoji emoji-id="{_E_COIN}">🪙</tg-emoji> Обычный игрок — <b>+{REF_REWARD_NORMAL:,}</b> {COIN}\n'
+        f'<tg-emoji emoji-id="{_E_PREMIUM}">⭐</tg-emoji> Игрок с Telegram Premium — <b>+{REF_REWARD_PREMIUM:,}</b> {COIN}'
         f'</blockquote>\n'
         f'<blockquote>'
-        f'<tg-emoji emoji-id="{_E_LEVEL}">📊</tg-emoji> <b>Статистика</b>\n\n'
-        f'<tg-emoji emoji-id="{_E_STATUS}">👤</tg-emoji> Приглашено: <b>{total}</b>\n'
-        f'<tg-emoji emoji-id="{_E_PREMIUM}">⭐</tg-emoji> С Premium: <b>{premium}</b>\n'
-        f'<tg-emoji emoji-id="{_E_COIN}">🪙</tg-emoji> Заработано: <b>{earned:,}</b> {COIN}'
+        f'<tg-emoji emoji-id="{_E_LEVEL}">📊</tg-emoji> <b>Твоя статистика</b>\n\n'
+        f'<tg-emoji emoji-id="{_E_FRIENDS}">👤</tg-emoji> Приглашено всего — <b>{total}</b>\n'
+        f'<tg-emoji emoji-id="{_E_PREMIUM}">⭐</tg-emoji> Из них с Premium — <b>{premium}</b>\n'
+        f'<tg-emoji emoji-id="{_E_COIN}">🪙</tg-emoji> Заработано монет — <b>{earned:,}</b> {COIN}'
         f'</blockquote>\n'
         f'<blockquote>'
-        f'<tg-emoji emoji-id="{_E_BAL}">🔗</tg-emoji> <b>Реферальная ссылка</b>\n\n'
-        f'<code>{ref_link}</code>'
+        f'<tg-emoji emoji-id="{_E_BAL}">🔗</tg-emoji> <b>Твоя реферальная ссылка</b>\n\n'
+        f'<code>{ref_link}</code>\n\n'
+        f'<i>Нажми, чтобы скопировать, или отправь друзьям кнопкой ниже</i> 👇'
         f'</blockquote>'
     )
 
 
 def captcha_start_text(question: str) -> str:
     return (
-        f'<tg-emoji emoji-id="{_E_STAR}">🛡</tg-emoji> <b>Добро пожаловать в TGStellar!</b>\n'
-        f'━━━━━━━━━━━━━━━━━━━━\n\n'
+        f'<tg-emoji emoji-id="{_E_STAR}">🛡</tg-emoji> <b>Добро пожаловать в TGStellar!</b>\n\n'
         f'<blockquote>'
         f'Прежде чем начать — убедимся, что ты не робот 🤖\n\n'
         f'<tg-emoji emoji-id="{_E_LEVEL}">📐</tg-emoji> <b>Реши пример:</b>\n\n'
         f'<b>{question} = ?</b>\n\n'
         f'Напиши ответ в чат — это единственное, что нужно сделать.'
         f'</blockquote>\n\n'
-        f'<i>Доступно {CAPTCHA_MAX_TRIES} попыток. После исчерпания — пауза 30 минут.</i>'
+        f'<i>Доступно {CAPTCHA_MAX_TRIES} попыток, после — пауза 30 минут.\n'
+        f'Дальше останется выбрать язык — и можно начинать игру 🚀</i>'
     )
 
 
@@ -277,8 +280,7 @@ def captcha_wrong_text(question: str, tries_left: int) -> str:
     filled = CAPTCHA_MAX_TRIES - tries_left
     bars   = "🟥" * filled + "⬜" * tries_left
     return (
-        f'<tg-emoji emoji-id="{_E_LEVEL}">📐</tg-emoji> <b>Не совсем верно — попробуй ещё раз</b>\n'
-        f'━━━━━━━━━━━━━━━━━━━━\n\n'
+        f'<tg-emoji emoji-id="{_E_LEVEL}">📐</tg-emoji> <b>Не совсем верно — попробуй ещё раз</b>\n\n'
         f'<blockquote>'
         f'<b>{question} = ?</b>\n\n'
         f'{bars}\n\n'
@@ -289,8 +291,7 @@ def captcha_wrong_text(question: str, tries_left: int) -> str:
 
 def captcha_blocked_text(unblock_in_min: int) -> str:
     return (
-        f'<tg-emoji emoji-id="{_E_TIMER}">⏱</tg-emoji> <b>Слишком много попыток</b>\n'
-        f'━━━━━━━━━━━━━━━━━━━━\n\n'
+        f'<tg-emoji emoji-id="{_E_TIMER}">⏱</tg-emoji> <b>Слишком много попыток</b>\n\n'
         f'<blockquote>'
         f'Доступ временно ограничен. Загляни чуть позже!\n\n'
         f'<tg-emoji emoji-id="{_E_TIMER}">⏱</tg-emoji> Осталось ждать: <b>{unblock_in_min} мин</b>\n\n'
@@ -303,21 +304,20 @@ def captcha_ok_text(is_new_ref: bool, reward: int, is_premium: bool) -> str:
     ref_block = ""
     if is_new_ref and reward:
         tag = (
-            f'<tg-emoji emoji-id="{_E_PREMIUM}">⭐</tg-emoji> Premium'
-            if is_premium else "обычный"
+            f'<tg-emoji emoji-id="{_E_PREMIUM}">⭐</tg-emoji> Premium-реферал'
+            if is_premium else "обычный реферал"
         )
         ref_block = (
             f'\n\n<blockquote>'
             f'<tg-emoji emoji-id="{_E_COIN}">🪙</tg-emoji> Твой пригласитель получил <b>+{reward:,}</b> {COIN}\n'
-            f'<i>({tag} реферал)</i>'
+            f'<i>(засчитан как {tag})</i>'
             f'</blockquote>'
         )
     return (
-        f'<tg-emoji emoji-id="{_E_STAR}">✅</tg-emoji> <b>Всё верно — добро пожаловать!</b>\n'
-        f'━━━━━━━━━━━━━━━━━━━━\n\n'
+        f'<tg-emoji emoji-id="{_E_STAR}">✅</tg-emoji> <b>Проверка пройдена — добро пожаловать!</b>\n\n'
         f'<blockquote>'
-        f'Ты успешно прошёл проверку и теперь часть TGStellar 🚀\n\n'
-        f'Исследуй шахты, питомцев, охоту и многое другое!'
+        f'Ты подтвердил, что не робот, и теперь часть TGStellar 🚀\n\n'
+        f'Остался последний шаг — выбери язык интерфейса 🌐'
         f'</blockquote>'
         f'{ref_block}'
     )
@@ -326,16 +326,14 @@ def captcha_ok_text(is_new_ref: bool, reward: int, is_premium: bool) -> str:
 def refs_notif_text(new_user_name: str, reward: int, is_premium: bool) -> str:
     if is_premium:
         header = f'<tg-emoji emoji-id="{_E_PREMIUM}">⭐</tg-emoji> <b>Premium-реферал!</b>'
-        note   = f'<tg-emoji emoji-id="{_E_PREMIUM}">⭐</tg-emoji> <i>У него Telegram Premium</i>'
+        note   = f'\n<tg-emoji emoji-id="{_E_PREMIUM}">⭐</tg-emoji> <i>У него есть Telegram Premium</i>'
     else:
-        header = f'<tg-emoji emoji-id="{_E_STATUS}">✨</tg-emoji> <b>Новый реферал!</b>'
+        header = f'<tg-emoji emoji-id="{_E_FRIENDS}">✨</tg-emoji> <b>Новый реферал!</b>'
         note   = ""
     return (
-        f'{header}\n'
-        f'━━━━━━━━━━━━━━━━━━━━\n\n'
+        f'{header}\n\n'
         f'<blockquote>'
-        f'<b>{new_user_name}</b> присоединился по твоей ссылке\n'
-        f'{note}\n\n'
+        f'<b>{new_user_name}</b> присоединился по твоей ссылке{note}\n\n'
         f'<tg-emoji emoji-id="{_E_COIN}">🪙</tg-emoji> Начислено: <b>+{reward:,}</b> {COIN}'
         f'</blockquote>'
     )
@@ -346,26 +344,33 @@ def refs_list_text(uid: int) -> str:
     stats = get_ref_stats(uid)
 
     if not refs:
-        body = "<i>Ты ещё никого не пригласил — поделись ссылкой!</i>"
+        body = (
+            f'<blockquote>'
+            f'<tg-emoji emoji-id="{_E_FRIENDS}">📭</tg-emoji> <i>Здесь появятся игроки, приглашённые тобой.</i>\n\n'
+            f'<i>Поделись своей ссылкой — и список начнёт заполняться!</i>'
+            f'</blockquote>'
+        )
     else:
+        from datetime import datetime, timezone
         lines = []
         for i, r in enumerate(refs[:20], 1):
-            from datetime import datetime, timezone
             dt    = datetime.fromtimestamp(r["joined_ts"], tz=timezone.utc).strftime("%d.%m.%Y")
             check = "✅" if r["rewarded"] else "⏳"
-            lines.append(f"{i}. <code>{r['uid']}</code>  {check}  <i>{dt}</i>")
-        body = "\n".join(lines)
-        if len(refs) > 20:
-            body += f"\n<i>...и ещё {len(refs)-20} рефералов</i>"
+            lines.append(f"<b>{i:>2}.</b> <code>{r['uid']}</code>  {check}  <i>{dt}</i>")
+        more = f"\n\n<i>...и ещё {len(refs)-20} рефералов</i>" if len(refs) > 20 else ""
+        body = (
+            f'<blockquote>' + "\n".join(lines) + more + '</blockquote>\n'
+            f'<i><tg-emoji emoji-id="{_E_TIMER}">⏳</tg-emoji> — ожидает проверки  '
+            f'·  ✅ — награда начислена</i>'
+        )
 
     return (
-        f'<tg-emoji emoji-id="{_E_STATUS}">👥</tg-emoji> <b>Мои рефералы</b>\n'
-        f'━━━━━━━━━━━━━━━━━━━━\n\n'
+        f'<tg-emoji emoji-id="{_E_FRIENDS}">👥</tg-emoji> <b>Мои рефералы</b>\n\n'
         f'<blockquote>'
-        f'<tg-emoji emoji-id="{_E_STATUS}">📋</tg-emoji> Всего: <b>{stats["total_refs"]}</b> · '
-        f'<tg-emoji emoji-id="{_E_PREMIUM}">⭐</tg-emoji> Premium: <b>{stats["premium_refs"]}</b>\n'
-        f'<tg-emoji emoji-id="{_E_COIN}">🪙</tg-emoji> Заработано: <b>{stats["earned_coins"]:,}</b> {COIN}'
-        f'</blockquote>\n\n'
+        f'<tg-emoji emoji-id="{_E_LEVEL}">📋</tg-emoji> Всего приглашено — <b>{stats["total_refs"]}</b>\n'
+        f'<tg-emoji emoji-id="{_E_PREMIUM}">⭐</tg-emoji> С Telegram Premium — <b>{stats["premium_refs"]}</b>\n'
+        f'<tg-emoji emoji-id="{_E_COIN}">🪙</tg-emoji> Заработано всего — <b>{stats["earned_coins"]:,}</b> {COIN}'
+        f'</blockquote>\n'
         f'{body}'
     )
 
