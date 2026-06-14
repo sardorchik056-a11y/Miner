@@ -93,7 +93,6 @@ from refs import (
     refs_list_text, refs_list_keyboard,
     captcha_start_text, captcha_wrong_text,
     captcha_blocked_text,
-    captcha_back_keyboard,
     refs_notif_text,
 )
 from shop import (
@@ -500,7 +499,6 @@ async def _send_onboarding_step(message: Message, uid: int) -> bool:
         await message.answer(
             captcha_blocked_text(mins),
             parse_mode="HTML",
-            reply_markup=captcha_back_keyboard(),
         )
         return True
 
@@ -711,7 +709,6 @@ async def handle_captcha_answer(message: Message):
                     chat_id=pending[0],
                     message_id=pending[1],
                     parse_mode="HTML",
-                    reply_markup=captcha_back_keyboard(),
                 )
                 return
             except Exception:
@@ -719,7 +716,6 @@ async def handle_captcha_answer(message: Message):
         await message.answer(
             captcha_blocked_text(result["unblock_in_min"]),
             parse_mode="HTML",
-            reply_markup=captcha_back_keyboard(),
         )
 
 
@@ -776,25 +772,6 @@ async def handle_callback(call: CallbackQuery):
         if cd == "refs_list":
             await edit(refs_list_text(user.id), refs_list_keyboard())
             await call.answer()
-            return
-
-        if cd == "captcha_check_block":
-            blocked, secs = is_captcha_blocked(user.id)
-            if blocked:
-                mins = (secs + 59) // 60
-                await call.answer(f"⏳ Ещё {mins} мин. Подожди!", show_alert=True)
-            else:
-                state = get_captcha_state(user.id)
-                if state and not state["passed"]:
-                    try:
-                        await call.message.edit_text(
-                            captcha_start_text(state["question"]),
-                            parse_mode="HTML",
-                        )
-                        _captcha_msg[user.id] = (call.message.chat.id, call.message.message_id)
-                    except Exception:
-                        pass
-                await call.answer("✅ Блок снят! Введи ответ.")
             return
 
         # ===== NOOP =====
