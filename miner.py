@@ -628,20 +628,25 @@ def pickaxe_detail_keyboard(data: dict, pick_key: str, page: int = -1, lang: str
         _coins_unavail  = "Монеты недоступны"
         _free           = "Бесплатно"
         _back_lbl       = "Назад"
+    balance = data.get("balance", 0)
     if pick_key == data.get("pickaxe", "wood_1"):
         builder.row(_prem_btn(EMOJI_BTN_ACTIVE, _already_active, "noop"))
     elif pick_key in owned:
-        builder.row(_prem_btn(EMOJI_BTN_SELECT, _select, f"pick_select_{pick_key}"))
+        builder.row(InlineKeyboardButton(text=_select, callback_data=f"pick_select_{pick_key}", icon_custom_emoji_id=EMOJI_BTN_SELECT, style="success"))
     elif p["currency"] == "stars":
         builder.row(_prem_btn(EMOJI_BTN_NO_COINS, _coins_unavail, "noop"))
-        builder.row(_prem_btn(EMOJI_BTN_BUY_STARS, f"{p['cost_stars']:,} ", f"pick_buy_stars_{pick_key}"))
+        builder.row(InlineKeyboardButton(text=f"{p['cost_stars']:,} ", callback_data=f"pick_buy_stars_{pick_key}", icon_custom_emoji_id=EMOJI_BTN_BUY_STARS, style="success"))
     elif p["cost"] == 0:
-        builder.row(_prem_btn(EMOJI_BTN_FREE, _free, f"pick_buy_{pick_key}"))
-        builder.row(_prem_btn(EMOJI_BTN_FREE, _free, f"pick_buy_stars_{pick_key}"))
+        builder.row(InlineKeyboardButton(text=_free, callback_data=f"pick_buy_{pick_key}", icon_custom_emoji_id=EMOJI_BTN_FREE, style="success"))
+        builder.row(InlineKeyboardButton(text=_free, callback_data=f"pick_buy_stars_{pick_key}", icon_custom_emoji_id=EMOJI_BTN_FREE, style="success"))
     else:
         cost_stars = p.get("cost_stars", 0)
-        builder.row(_prem_btn(EMOJI_BTN_BUY_COINS, f"{_fmt_num(p['cost'])} ", f"pick_buy_{pick_key}"))
-        builder.row(_prem_btn(EMOJI_BTN_BUY_STARS, f"{cost_stars:,} ", f"pick_buy_stars_{pick_key}"))
+        can_afford = balance >= p["cost"]
+        if can_afford:
+            builder.row(InlineKeyboardButton(text=f"{_fmt_num(p['cost'])} ", callback_data=f"pick_buy_{pick_key}", icon_custom_emoji_id=EMOJI_BTN_BUY_COINS, style="success"))
+        else:
+            builder.row(_prem_btn(EMOJI_BTN_BUY_COINS, f"{_fmt_num(p['cost'])} ", f"pick_buy_{pick_key}"))
+        builder.row(InlineKeyboardButton(text=f"{cost_stars:,} ", callback_data=f"pick_buy_stars_{pick_key}", icon_custom_emoji_id=EMOJI_BTN_BUY_STARS, style="success"))
     builder.row(_back_btn(f"mine_workshop_{page}", f" {_back_lbl}"))
     return builder.as_markup()
 
