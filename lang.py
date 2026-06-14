@@ -71,8 +71,8 @@ _STRINGS: dict[str, dict[str, str]] = {
         "en": "You can change the language anytime using the button below",
     },
     "settings_links_title": {
-        "ru": '<tg-emoji emoji-id="5424818078833715060">📢</tg-emoji> <b>Полезные ссылки</b>',
-        "en": '<tg-emoji emoji-id="5424818078833715060">📢</tg-emoji> <b>Useful links</b>',
+        "ru": '<tg-emoji emoji-id="5271604874419647061">📢</tg-emoji> <b>Полезные ссылки</b>',
+        "en": '<tg-emoji emoji-id="5271604874419647061">📢</tg-emoji> <b>Useful links</b>',
     },
     "settings_chat_desc": {
         "ru": '<tg-emoji emoji-id="5443038326535759644">💬</tg-emoji> <b>Чат</b> — общайся с другими игроками',
