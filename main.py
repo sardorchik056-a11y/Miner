@@ -92,7 +92,7 @@ from refs import (
     refs_main_text, refs_main_keyboard,
     refs_list_text, refs_list_keyboard,
     captcha_start_text, captcha_wrong_text,
-    captcha_blocked_text, captcha_ok_text,
+    captcha_blocked_text,
     captcha_back_keyboard,
     refs_notif_text,
 )
@@ -620,8 +620,6 @@ async def handle_captcha_answer(message: Message):
         state = get_captcha_state(uid)
         if state:
             await message.answer(
-                f'<tg-emoji emoji-id="5274099962099903948">❌</tg-emoji> '
-                f'Введи <b>число</b>!\n\n'
                 f'<tg-emoji emoji-id="5373050352963117218">📐</tg-emoji> <b>{state["question"]} = ?</b>',
                 parse_mode="HTML",
             )
@@ -633,12 +631,6 @@ async def handle_captcha_answer(message: Message):
         # Капча пройдена — начисляем награду пригласителю
         is_premium       = bool(getattr(message.from_user, "is_premium", False))
         rewarded, amount = reward_inviter(uid, is_premium)
-
-        await message.answer(
-            captcha_ok_text(rewarded, amount, is_premium),
-            parse_mode="HTML",
-            reply_markup=main_reply_keyboard(),
-        )
 
         # Уведомление пригласителю
         if rewarded:
