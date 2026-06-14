@@ -60,7 +60,7 @@ def get_or_create_user(user) -> dict:
     data = _load_raw(uid)
 
     if data is None:
-        # Новый пользователь
+        # Новый пользователь — должен пройти онбординг: капча → язык → меню
         data = {
             "id":         uid,
             "username":   user.username or "Аноним",
@@ -72,6 +72,7 @@ def get_or_create_user(user) -> dict:
             "xp_max":     xp_for_level(1),
             "boosters_inventory": [],
             "active_booster":     None,
+            "onboarded":  False,
             **init_mine_data(),
         }
         save_user(uid, data)
@@ -88,6 +89,8 @@ def get_or_create_user(user) -> dict:
             "xp_max":              xp_for_level(data.get("level", 1)),
             "boosters_inventory":  [],
             "active_booster":      None,
+            # Уже существующие пользователи онбординг не проходят повторно
+            "onboarded":           True,
         }
         for key, val in defaults.items():
             if key not in data:
