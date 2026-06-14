@@ -565,7 +565,7 @@ def mine_keyboard(data: dict, lang: str = "ru") -> InlineKeyboardMarkup:
     return builder.as_markup()
 
 
-def inventory_keyboard(lang: str = "ru") -> InlineKeyboardMarkup:
+def inventory_keyboard(data: dict = None, lang: str = "ru") -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.row(_back_btn("mine", "Back" if lang == "en" else "Назад"))
     return builder.as_markup()
