@@ -290,22 +290,14 @@ def captcha_wrong_text(question: str, tries_left: int) -> str:
 
 
 def captcha_blocked_text(unblock_in_min: int) -> str:
-    return f'🔄 <b>Вы заблокированы на {unblock_in_min} мин!</b>'
+    return f'❗️ <b>Вы заблокированы на {unblock_in_min} мин!</b>'
 
 
 def refs_notif_text(new_user_name: str, reward: int, is_premium: bool) -> str:
     if is_premium:
-        header = f'<tg-emoji emoji-id="{_E_PREMIUM}">⭐</tg-emoji> <b>Premium-реферал!</b>'
-        note   = f'\n<tg-emoji emoji-id="{_E_PREMIUM}">⭐</tg-emoji> <i>У него есть Telegram Premium</i>'
+        return f'<tg-emoji emoji-id="5262643974912355126">⭐</tg-emoji> <b>Premium-реферал! | +{reward:,}</b>'
     else:
-        header = f'<tg-emoji emoji-id="{_E_FRIENDS}">✨</tg-emoji> <b>Новый реферал!</b>'
-        note   = ""
-    return (
-        f'{header}\n\n'
-        f'<blockquote>'
-        f'<b>{new_user_name}</b> присоединился по твоей ссылке{note}\n\n'
-        f'<tg-emoji emoji-id="{_E_COIN}">🪙</tg-emoji> Начислено: <b>+{reward:,}</b> {COIN}'
-        f'</blockquote>'
+        return f'<tg-emoji emoji-id="{_E_FRIENDS}">✨</tg-emoji> <b>Новый реферал! | +{reward:,}</b>'
     )
 
 
