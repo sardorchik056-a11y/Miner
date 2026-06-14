@@ -71,6 +71,11 @@ def _back_btn(cb: str, label: str = "Назад") -> InlineKeyboardButton:
     )
 
 
+def _L(lang: str, ru: str, en: str) -> str:
+    """Inline двуязычная строка без обращения к lang.py."""
+    return en if lang == "en" else ru
+
+
 # ────────────────────────────────────────────────────────────
 #  ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
 # ────────────────────────────────────────────────────────────
@@ -79,12 +84,18 @@ def _now_ts() -> int:
     return int(time.time())
 
 
-def _fmt_time_left(seconds: int) -> str:
+def _fmt_time_left(seconds: int, lang: str = "ru") -> str:
     if seconds <= 0:
-        return "истёк"
+        return "expired" if lang == "en" else "истёк"
     days    = seconds // 86400
     hours   = (seconds % 86400) // 3600
     minutes = (seconds % 3600) // 60
+    if lang == "en":
+        if days > 0:
+            return f"{days}d {hours}h"
+        if hours > 0:
+            return f"{hours}h {minutes}m"
+        return f"{minutes}m"
     if days > 0:
         return f"{days}д {hours}ч"
     if hours > 0:
@@ -138,7 +149,7 @@ def get_luck_bonus(data: dict) -> bool:
     return get_active_status(data) in ("vip", "premium")
 
 
-def activate_status(data: dict, tier: str) -> tuple[bool, str]:
+def activate_status(data: dict, tier: str, lang: str = "ru") -> tuple[bool, str]:
     """
     Активировать / продлить / улучшить подписку.
     tier: 'vip' или 'premium'
@@ -154,11 +165,11 @@ def activate_status(data: dict, tier: str) -> tuple[bool, str]:
     if current_tier == tier and current_ends_at > now:
         # Продление: добавляем 30 дней к оставшемуся сроку
         ends_at = current_ends_at + STATUS_DURATION
-        action_label = "продлён"
+        action_label = _L(lang, "продлён", "renewed")
     else:
         # Новая активация или смена тира
         ends_at = now + STATUS_DURATION
-        action_label = "активирован"
+        action_label = _L(lang, "активирован", "activated")
 
     data["status_subscription"] = {
         "tier":      tier,
@@ -179,279 +190,280 @@ def activate_status(data: dict, tier: str) -> tuple[bool, str]:
             new_item = dict(poison)
             new_item["instance_id"] = str(uuid.uuid4())[:8]
             inv.append(new_item)
-            poison_msg = f'\n{_pe("poison", "☠️")} <b>Бонусный {poison["name"]} добавлен в инвентарь!</b>'
+            poison_name = _L(lang, "Яд Гадюки", "Viper Poison") if poison_key == VIP_BONUS_POISON_KEY else _L(lang, "Яд Кобры", "Cobra Poison")
+            poison_msg = f'\n{_pe("poison", "☠️")} <b>{_L(lang, f"Бонусный {poison_name} добавлен в инвентарь!", f"Bonus {poison_name} added to your inventory!")}</b>'
         else:
-            poison_msg = f'\n{_pe("warn", "⚠️")} <b>Инвентарь усилителей полон — яд не выдан.</b>'
+            poison_msg = f'\n{_pe("warn", "⚠️")} <b>{_L(lang, "Инвентарь усилителей полон — яд не выдан.", "Booster inventory is full — poison was not given.")}</b>'
 
     label = "VIP" if tier == "vip" else "Premium"
-    return True, f'{_pe("ok", "✅")} <b>Статус {label} {action_label} на 30 дней!</b>{poison_msg}'
+    return True, f'{_pe("ok", "✅")} <b>{_L(lang, f"Статус {label} {action_label} на 30 дней!", f"{label} status {action_label} for 30 days!")}</b>{poison_msg}'
 
 
 # ────────────────────────────────────────────────────────────
 #  ТЕКСТЫ
 # ────────────────────────────────────────────────────────────
 
-def status_main_text(data: dict) -> str:
+def status_main_text(data: dict, lang: str = "ru") -> str:
     active  = get_active_status(data)
     ends_at = get_status_ends_at(data)
 
     # Шапка с текущим статусом
     if active == "premium":
         current_line = (
-            f'{_pe("cur_status", "✅")} <b>Текущий статус: Premium</b>\n'
-            f'{_pe("timer", "⏱")} <b>Осталось: {_fmt_time_left(ends_at - _now_ts())}</b>'
+            f'{_pe("cur_status", "✅")} <b>{_L(lang, "Текущий статус: Premium", "Current status: Premium")}</b>\n'
+            f'{_pe("timer", "⏱")} <b>{_L(lang, "Осталось", "Left")}: {_fmt_time_left(ends_at - _now_ts(), lang)}</b>'
         )
     elif active == "vip":
         current_line = (
-            f'{_pe("cur_status", "✅")} <b>Текущий статус: VIP</b>\n'
-            f'{_pe("timer", "⏱")} <b>Осталось: {_fmt_time_left(ends_at - _now_ts())}</b>'
+            f'{_pe("cur_status", "✅")} <b>{_L(lang, "Текущий статус: VIP", "Current status: VIP")}</b>\n'
+            f'{_pe("timer", "⏱")} <b>{_L(lang, "Осталось", "Left")}: {_fmt_time_left(ends_at - _now_ts(), lang)}</b>'
         )
     else:
         current_line = (
-            f'{_pe("cur_status", "✅")} <b>Текущий статус: Standart</b>\n'
-            f'<b>Подпишись, чтобы получить привилегии</b>'
+            f'{_pe("cur_status", "✅")} <b>{_L(lang, "Текущий статус: Standart", "Current status: Standart")}</b>\n'
+            f'<b>{_L(lang, "Подпишись, чтобы получить привилегии", "Subscribe to unlock privileges")}</b>'
         )
 
     return (
-        f'<blockquote>{_pe("vip", "👑")} <b>СТАТУСЫ TGStellar</b>\n\n'
+        f'<blockquote>{_pe("vip", "👑")} <b>{_L(lang, "СТАТУСЫ TGStellar", "TGStellar STATUSES")}</b>\n\n'
         f'{current_line}</blockquote>\n\n'
 
         f'<blockquote>'
-        f'{_pe("standart", "🎟")} <b>Standart</b> — базовый статус\n'
-        f'<b>Доступен всем игрокам бесплатно</b>\n'
-        f'<b>• Без бонусов к добыче</b>\n'
-        f'<b>• Без бонуса к критическому урону</b>\n'
-        f'<b>• Без удачи в кейсах</b>'
+        f'{_pe("standart", "🎟")} <b>Standart</b> — {_L(lang, "базовый статус", "basic status")}\n'
+        f'<b>{_L(lang, "Доступен всем игрокам бесплатно", "Available to all players for free")}</b>\n'
+        f'<b>• {_L(lang, "Без бонусов к добыче", "No mining bonuses")}</b>\n'
+        f'<b>• {_L(lang, "Без бонуса к критическому урону", "No critical damage bonus")}</b>\n'
+        f'<b>• {_L(lang, "Без удачи в кейсах", "No luck bonus in cases")}</b>'
         f'</blockquote>\n\n'
 
         f'<blockquote>'
-        f'{_pe("vip", "👑")} <b>VIP</b> — {VIP_COST_STARS} {_pe("star", "⭐")} / 30 дней\n'
-        f'{_pe("mine", "⛏")} <b>+1.3× ко всем видам добычи</b>\n'
-        f'{_pe("crit", "⚡")} <b>Шанс крита: +15%</b>\n'
-        f'{_pe("luck", "🍀")} <b>Повышенная удача в кейсах</b>\n'
-        f'{_pe("poison", "☠️")} <b>Бонус: Яд Гадюки при активации</b>'
+        f'{_pe("vip", "👑")} <b>VIP</b> — {VIP_COST_STARS} {_pe("star", "⭐")} / {_L(lang, "30 дней", "30 days")}\n'
+        f'{_pe("mine", "⛏")} <b>{_L(lang, "+1.3× ко всем видам добычи", "+1.3× to all types of mining/farming")}</b>\n'
+        f'{_pe("crit", "⚡")} <b>{_L(lang, "Шанс крита", "Crit chance")}: +15%</b>\n'
+        f'{_pe("luck", "🍀")} <b>{_L(lang, "Повышенная удача в кейсах", "Increased luck in cases")}</b>\n'
+        f'{_pe("poison", "☠️")} <b>{_L(lang, "Бонус: Яд Гадюки при активации", "Bonus: Viper Poison on activation")}</b>'
         f'</blockquote>\n\n'
 
         f'<blockquote>'
-        f'{_pe("premium", "⭐")} <b>Premium</b> — {PREMIUM_COST_STARS} {_pe("star", "⭐")} / 30 дней\n'
-        f'{_pe("mine", "⛏")} <b>+1.6× ко всем видам добычи</b>\n'
-        f'{_pe("crit", "⚡")} <b>Шанс крита: +25%</b>\n'
-        f'{_pe("luck", "🍀")} <b>Максимальная удача в кейсах</b>\n'
-        f'{_pe("poison", "☠️")} <b>Бонус: Яд Кобры при активации</b>'
+        f'{_pe("premium", "⭐")} <b>Premium</b> — {PREMIUM_COST_STARS} {_pe("star", "⭐")} / {_L(lang, "30 дней", "30 days")}\n'
+        f'{_pe("mine", "⛏")} <b>{_L(lang, "+1.6× ко всем видам добычи", "+1.6× to all types of mining/farming")}</b>\n'
+        f'{_pe("crit", "⚡")} <b>{_L(lang, "Шанс крита", "Crit chance")}: +25%</b>\n'
+        f'{_pe("luck", "🍀")} <b>{_L(lang, "Максимальная удача в кейсах", "Maximum luck in cases")}</b>\n'
+        f'{_pe("poison", "☠️")} <b>{_L(lang, "Бонус: Яд Кобры при активации", "Bonus: Cobra Poison on activation")}</b>'
         f'</blockquote>'
     )
 
 
-def status_main_keyboard(data: dict) -> InlineKeyboardMarkup:
+def status_main_keyboard(data: dict, lang: str = "ru") -> InlineKeyboardMarkup:
     active = get_active_status(data)
     builder = InlineKeyboardBuilder()
-    builder.row(_btn("vip",     "VIP — подробнее",     "status_vip_info"))
-    builder.row(_btn("premium", "Premium — подробнее", "status_premium_info"))
-    builder.row(_back_btn("back_to_menu", "Назад"))
+    builder.row(_btn("vip",     _L(lang, "VIP — подробнее", "VIP — details"),         "status_vip_info"))
+    builder.row(_btn("premium", _L(lang, "Premium — подробнее", "Premium — details"), "status_premium_info"))
+    builder.row(_back_btn("back_to_menu", _L(lang, "Назад", "Back")))
     return builder.as_markup()
 
 
-def status_vip_text(data: dict) -> str:
+def status_vip_text(data: dict, lang: str = "ru") -> str:
     active = get_active_status(data)
     active_line = ""
     if active == "vip":
         ends_at = get_status_ends_at(data)
         active_line = (
-            f'\n\n<blockquote>{_pe("ok", "✅")} <b>VIP активен!</b>\n'
-            f'{_pe("timer", "⏱")} <b>Осталось: {_fmt_time_left(ends_at - _now_ts())}</b>\n'
-            f'<b>Покупка продлит срок ещё на 30 дней</b></blockquote>'
+            f'\n\n<blockquote>{_pe("ok", "✅")} <b>{_L(lang, "VIP активен!", "VIP is active!")}</b>\n'
+            f'{_pe("timer", "⏱")} <b>{_L(lang, "Осталось", "Left")}: {_fmt_time_left(ends_at - _now_ts(), lang)}</b>\n'
+            f'<b>{_L(lang, "Покупка продлит срок ещё на 30 дней", "Purchase will extend it by another 30 days")}</b></blockquote>'
         )
     elif active == "premium":
         active_line = (
-            f'\n\n<blockquote>{_pe("warn", "⚠️")} <b>У тебя активен Premium — VIP недоступен.</b>\n'
-            f'<b>Более высокий статус нельзя заменить на низкий.</b></blockquote>'
+            f'\n\n<blockquote>{_pe("warn", "⚠️")} <b>{_L(lang, "У тебя активен Premium — VIP недоступен.", "You have an active Premium — VIP is unavailable.")}</b>\n'
+            f'<b>{_L(lang, "Более высокий статус нельзя заменить на низкий.", "A higher status cannot be downgraded to a lower one.")}</b></blockquote>'
         )
 
     return (
         f'<blockquote>'
-        f'{_pe("vip", "👑")} <b>Статус VIP</b>\n\n'
-        f'{_pe("calendar", "📅")} <b>Срок: 30 дней</b>\n'
-        f'{_pe("star", "⭐")} <b>Стоимость: {VIP_COST_STARS} Stars</b>'
+        f'{_pe("vip", "👑")} <b>{_L(lang, "Статус VIP", "VIP Status")}</b>\n\n'
+        f'{_pe("calendar", "📅")} <b>{_L(lang, "Срок: 30 дней", "Duration: 30 days")}</b>\n'
+        f'{_pe("star", "⭐")} <b>{_L(lang, "Стоимость", "Cost")}: {VIP_COST_STARS} Stars</b>'
         f'</blockquote>\n\n'
 
         f'<blockquote>'
-        f'<b>Преимущества VIP:</b>\n\n'
-        f'{_pe("mine", "⛏")} <b>×1.3 к добыче руды в шахте</b>\n'
-        f'{_pe("hunt", "⚔️")} <b>×1.3 к урону в охоте</b>\n'
-        f'{_pe("pets", "🐾")} <b>×1.3 к доходу питомцев</b>\n\n'
-        f'{_pe("crit", "⚡")} <b>Шанс критического удара +15%</b>\n'
-        f'{_pe("luck", "🍀")} <b>Повышенная удача при открытии кейсов</b>\n'
-        f'{_pe("luck", "🍀")} <b>Удача при покупке в магазине</b>'
+        f'<b>{_L(lang, "Преимущества VIP:", "VIP benefits:")}</b>\n\n'
+        f'{_pe("mine", "⛏")} <b>{_L(lang, "×1.3 к добыче руды в шахте", "×1.3 to ore mining in the mine")}</b>\n'
+        f'{_pe("hunt", "⚔️")} <b>{_L(lang, "×1.3 к урону в охоте", "×1.3 to hunting damage")}</b>\n'
+        f'{_pe("pets", "🐾")} <b>{_L(lang, "×1.3 к доходу питомцев", "×1.3 to pets income")}</b>\n\n'
+        f'{_pe("crit", "⚡")} <b>{_L(lang, "Шанс критического удара +15%", "Critical hit chance +15%")}</b>\n'
+        f'{_pe("luck", "🍀")} <b>{_L(lang, "Повышенная удача при открытии кейсов", "Increased luck when opening cases")}</b>\n'
+        f'{_pe("luck", "🍀")} <b>{_L(lang, "Удача при покупке в магазине", "Luck bonus on shop purchases")}</b>'
         f'</blockquote>\n\n'
 
         f'<blockquote>'
-        f'{_pe("poison", "☠️")} <b>Бонус при активации:</b>\n'
-        f'<b>Яд Гадюки — 100 000 урона за 30 мин</b>\n'
-        f'<b>(добавляется в инвентарь сразу)</b>'
+        f'{_pe("poison", "☠️")} <b>{_L(lang, "Бонус при активации:", "Activation bonus:")}</b>\n'
+        f'<b>{_L(lang, "Яд Гадюки — 100 000 урона за 30 мин", "Viper Poison — 100,000 damage over 30 min")}</b>\n'
+        f'<b>{_L(lang, "(добавляется в инвентарь сразу)", "(added to inventory immediately)")}</b>'
         f'</blockquote>'
         f'{active_line}'
     )
 
 
-def status_vip_keyboard(data: dict) -> InlineKeyboardMarkup:
+def status_vip_keyboard(data: dict, lang: str = "ru") -> InlineKeyboardMarkup:
     active = get_active_status(data)
     builder = InlineKeyboardBuilder()
     if active == "premium":
         # VIP заблокирован — кнопка неактивна
         builder.row(InlineKeyboardButton(
-            text="🚫 Недоступно (активен Premium)",
+            text=_L(lang, "🚫 Недоступно (активен Premium)", "🚫 Unavailable (Premium active)"),
             callback_data="noop",
         ))
     elif active == "vip":
         # Продление VIP + улучшение до Premium
         builder.row(InlineKeyboardButton(
-            text=f"Продлить VIP — {VIP_COST_STARS} Stars",
+            text=_L(lang, f"Продлить VIP — {VIP_COST_STARS} Stars", f"Renew VIP — {VIP_COST_STARS} Stars"),
             callback_data="status_buy_vip",
             icon_custom_emoji_id=_E["vip"]
         ))
         builder.row(InlineKeyboardButton(
-            text=f"Улучшить до Premium — {UPGRADE_COST_STARS} ⭐",
+            text=_L(lang, f"Улучшить до Premium — {UPGRADE_COST_STARS} ⭐", f"Upgrade to Premium — {UPGRADE_COST_STARS} ⭐"),
             callback_data="status_upgrade_premium",
             icon_custom_emoji_id=_E["premium"]
         ))
     else:
         # Standart — обычная покупка
         builder.row(InlineKeyboardButton(
-            text=f"Купить VIP — {VIP_COST_STARS} Stars",
+            text=_L(lang, f"Купить VIP — {VIP_COST_STARS} Stars", f"Buy VIP — {VIP_COST_STARS} Stars"),
             callback_data="status_buy_vip",
             icon_custom_emoji_id=_E["vip"]
         ))
     builder.row(InlineKeyboardButton(
-        text="Мои звёзды",
+        text=_L(lang, "Мои звёзды", "My Stars"),
         url="tg://stars/",
         icon_custom_emoji_id=_E["star"]
     ))
-    builder.row(_back_btn("status", "Назад"))
+    builder.row(_back_btn("status", _L(lang, "Назад", "Back")))
     return builder.as_markup()
 
 
-def status_premium_text(data: dict) -> str:
+def status_premium_text(data: dict, lang: str = "ru") -> str:
     active = get_active_status(data)
     active_line = ""
     if active == "premium":
         ends_at = get_status_ends_at(data)
         active_line = (
-            f'\n\n<blockquote>{_pe("ok", "✅")} <b>Premium активен!</b>\n'
-            f'{_pe("timer", "⏱")} <b>Осталось: {_fmt_time_left(ends_at - _now_ts())}</b>\n'
-            f'<b>Покупка продлит срок ещё на 30 дней</b></blockquote>'
+            f'\n\n<blockquote>{_pe("ok", "✅")} <b>{_L(lang, "Premium активен!", "Premium is active!")}</b>\n'
+            f'{_pe("timer", "⏱")} <b>{_L(lang, "Осталось", "Left")}: {_fmt_time_left(ends_at - _now_ts(), lang)}</b>\n'
+            f'<b>{_L(lang, "Покупка продлит срок ещё на 30 дней", "Purchase will extend it by another 30 days")}</b></blockquote>'
         )
     elif active == "vip":
         active_line = (
-            f'\n\n<blockquote>{_pe("ok", "✅")} <b>У тебя активен VIP.</b>\n'
-            f'<b>Можешь улучшить до Premium за {UPGRADE_COST_STARS} ⭐</b></blockquote>'
+            f'\n\n<blockquote>{_pe("ok", "✅")} <b>{_L(lang, "У тебя активен VIP.", "You have an active VIP.")}</b>\n'
+            f'<b>{_L(lang, f"Можешь улучшить до Premium за {UPGRADE_COST_STARS} ⭐", f"You can upgrade to Premium for {UPGRADE_COST_STARS} ⭐")}</b></blockquote>'
         )
 
     return (
         f'<blockquote>'
-        f'{_pe("premium", "⭐")} <b>Статус Premium</b>\n\n'
-        f'{_pe("calendar", "📅")} <b>Срок: 30 дней</b>\n'
-        f'{_pe("star", "⭐")} <b>Стоимость: {PREMIUM_COST_STARS} Stars</b>'
+        f'{_pe("premium", "⭐")} <b>{_L(lang, "Статус Premium", "Premium Status")}</b>\n\n'
+        f'{_pe("calendar", "📅")} <b>{_L(lang, "Срок: 30 дней", "Duration: 30 days")}</b>\n'
+        f'{_pe("star", "⭐")} <b>{_L(lang, "Стоимость", "Cost")}: {PREMIUM_COST_STARS} Stars</b>'
         f'</blockquote>\n\n'
 
         f'<blockquote>'
-        f'<b>Преимущества Premium:</b>\n\n'
-        f'{_pe("mine", "⛏")} <b>×1.6 к добыче руды в шахте</b>\n'
-        f'{_pe("hunt", "⚔️")} <b>×1.6 к урону в охоте</b>\n'
-        f'{_pe("pets", "🐾")} <b>×1.6 к доходу питомцев</b>\n\n'
-        f'{_pe("crit", "⚡")} <b>Шанс критического удара +25%</b>\n'
-        f'{_pe("luck", "🍀")} <b>Максимальная удача в кейсах</b>\n'
-        f'{_pe("luck", "🍀")} <b>Максимальная удача при покупках</b>'
+        f'<b>{_L(lang, "Преимущества Premium:", "Premium benefits:")}</b>\n\n'
+        f'{_pe("mine", "⛏")} <b>{_L(lang, "×1.6 к добыче руды в шахте", "×1.6 to ore mining in the mine")}</b>\n'
+        f'{_pe("hunt", "⚔️")} <b>{_L(lang, "×1.6 к урону в охоте", "×1.6 to hunting damage")}</b>\n'
+        f'{_pe("pets", "🐾")} <b>{_L(lang, "×1.6 к доходу питомцев", "×1.6 to pets income")}</b>\n\n'
+        f'{_pe("crit", "⚡")} <b>{_L(lang, "Шанс критического удара +25%", "Critical hit chance +25%")}</b>\n'
+        f'{_pe("luck", "🍀")} <b>{_L(lang, "Максимальная удача в кейсах", "Maximum luck in cases")}</b>\n'
+        f'{_pe("luck", "🍀")} <b>{_L(lang, "Максимальная удача при покупках", "Maximum luck on purchases")}</b>'
         f'</blockquote>\n\n'
 
         f'<blockquote>'
-        f'{_pe("poison", "☠️")} <b>Бонус при активации:</b>\n'
-        f'<b>Яд Кобры — 150 000 урона за 30 мин</b>\n'
-        f'<b>(добавляется в инвентарь сразу)</b>'
+        f'{_pe("poison", "☠️")} <b>{_L(lang, "Бонус при активации:", "Activation bonus:")}</b>\n'
+        f'<b>{_L(lang, "Яд Кобры — 150 000 урона за 30 мин", "Cobra Poison — 150,000 damage over 30 min")}</b>\n'
+        f'<b>{_L(lang, "(добавляется в инвентарь сразу)", "(added to inventory immediately)")}</b>'
         f'</blockquote>'
         f'{active_line}'
     )
 
 
-def status_premium_keyboard(data: dict) -> InlineKeyboardMarkup:
+def status_premium_keyboard(data: dict, lang: str = "ru") -> InlineKeyboardMarkup:
     active = get_active_status(data)
     builder = InlineKeyboardBuilder()
     if active == "vip":
         # Улучшение VIP → Premium за 59 звёзд
         builder.row(InlineKeyboardButton(
-            text=f"Улучшить до Premium — {UPGRADE_COST_STARS} ⭐",
+            text=_L(lang, f"Улучшить до Premium — {UPGRADE_COST_STARS} ⭐", f"Upgrade to Premium — {UPGRADE_COST_STARS} ⭐"),
             callback_data="status_upgrade_premium",
             icon_custom_emoji_id=_E["premium"]
         ))
     elif active == "premium":
         # Продление Premium
         builder.row(InlineKeyboardButton(
-            text=f"Продлить Premium — {PREMIUM_COST_STARS} Stars",
+            text=_L(lang, f"Продлить Premium — {PREMIUM_COST_STARS} Stars", f"Renew Premium — {PREMIUM_COST_STARS} Stars"),
             callback_data="status_buy_premium",
             icon_custom_emoji_id=_E["premium"]
         ))
     else:
         # Standart — обычная покупка
         builder.row(InlineKeyboardButton(
-            text=f"Купить Premium — {PREMIUM_COST_STARS} Stars",
+            text=_L(lang, f"Купить Premium — {PREMIUM_COST_STARS} Stars", f"Buy Premium — {PREMIUM_COST_STARS} Stars"),
             callback_data="status_buy_premium",
             icon_custom_emoji_id=_E["premium"]
         ))
     builder.row(InlineKeyboardButton(
-        text="Мои звёзды",
+        text=_L(lang, "Мои звёзды", "My Stars"),
         url="tg://stars/",
         icon_custom_emoji_id=_E["star"]
     ))
-    builder.row(_back_btn("status", "Назад"))
+    builder.row(_back_btn("status", _L(lang, "Назад", "Back")))
     return builder.as_markup()
 
 
-def status_vip_keyboard_invoice(invoice_url: str) -> InlineKeyboardMarkup:
+def status_vip_keyboard_invoice(invoice_url: str, lang: str = "ru") -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.row(InlineKeyboardButton(
-        text=f"Купить VIP — {VIP_COST_STARS} ⭐",
+        text=_L(lang, f"Купить VIP — {VIP_COST_STARS} ⭐", f"Buy VIP — {VIP_COST_STARS} ⭐"),
         url=invoice_url,
         icon_custom_emoji_id=_E["pay_btn"],
         style="success"
     ))
     builder.row(InlineKeyboardButton(
-        text="Мои звёзды",
+        text=_L(lang, "Мои звёзды", "My Stars"),
         url="tg://stars/",
         icon_custom_emoji_id=_E["star"]
     ))
-    builder.row(_back_btn("status_vip_info", "Назад"))
+    builder.row(_back_btn("status_vip_info", _L(lang, "Назад", "Back")))
     return builder.as_markup()
 
 
-def status_premium_keyboard_invoice(invoice_url: str) -> InlineKeyboardMarkup:
+def status_premium_keyboard_invoice(invoice_url: str, lang: str = "ru") -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.row(InlineKeyboardButton(
-        text=f"Купить Premium — {PREMIUM_COST_STARS} ⭐",
+        text=_L(lang, f"Купить Premium — {PREMIUM_COST_STARS} ⭐", f"Buy Premium — {PREMIUM_COST_STARS} ⭐"),
         url=invoice_url,
         icon_custom_emoji_id=_E["pay_btn"],
         style="success"
     ))
     builder.row(InlineKeyboardButton(
-        text="Мои звёзды",
+        text=_L(lang, "Мои звёзды", "My Stars"),
         url="tg://stars/",
         icon_custom_emoji_id=_E["star"]
     ))
-    builder.row(_back_btn("status_premium_info", "Назад"))
+    builder.row(_back_btn("status_premium_info", _L(lang, "Назад", "Back")))
     return builder.as_markup()
 
 
-def status_upgrade_keyboard_invoice(invoice_url: str) -> InlineKeyboardMarkup:
+def status_upgrade_keyboard_invoice(invoice_url: str, lang: str = "ru") -> InlineKeyboardMarkup:
     """Клавиатура для апгрейда VIP → Premium за 59 звёзд."""
     builder = InlineKeyboardBuilder()
     builder.row(InlineKeyboardButton(
-        text=f"Улучшить до Premium — {UPGRADE_COST_STARS} ⭐",
+        text=_L(lang, f"Улучшить до Premium — {UPGRADE_COST_STARS} ⭐", f"Upgrade to Premium — {UPGRADE_COST_STARS} ⭐"),
         url=invoice_url,
         icon_custom_emoji_id=_E["pay_btn"],
         style="success"
     ))
     builder.row(InlineKeyboardButton(
-        text="Мои звёзды",
+        text=_L(lang, "Мои звёзды", "My Stars"),
         url="tg://stars/",
         icon_custom_emoji_id=_E["star"]
     ))
-    builder.row(_back_btn("status_premium_info", "Назад"))
+    builder.row(_back_btn("status_premium_info", _L(lang, "Назад", "Back")))
     return builder.as_markup()
