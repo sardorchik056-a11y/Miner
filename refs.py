@@ -298,7 +298,6 @@ def refs_notif_text(new_user_name: str, reward: int, is_premium: bool) -> str:
         return f'<tg-emoji emoji-id="5262643974912355126">⭐</tg-emoji> <b>Premium-реферал! | +{reward:,}</b>'
     else:
         return f'<tg-emoji emoji-id="{_E_FRIENDS}">✨</tg-emoji> <b>Новый реферал! | +{reward:,}</b>'
-    )
 
 
 def refs_list_text(uid: int) -> str:
