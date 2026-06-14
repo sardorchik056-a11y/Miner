@@ -66,20 +66,16 @@ def _conn():
 # ─────────────────────────── капча ───────────────────────────
 
 def _gen_question() -> tuple[str, int]:
-    op = random.choice(["+", "-", "×"])
+    op = random.choice(["+", "-"])
     if op == "+":
         a, b   = random.randint(1, 20), random.randint(1, 20)
         answer = a + b
         text   = f"{a} + {b}"
-    elif op == "-":
+    else:
         a = random.randint(5, 25)
         b = random.randint(1, a)
         answer = a - b
         text   = f"{a} − {b}"
-    else:
-        a, b   = random.randint(2, 9), random.randint(2, 9)
-        answer = a * b
-        text   = f"{a} × {b}"
     return text, answer
 
 
@@ -264,62 +260,23 @@ def refs_main_text(uid: int, bot_username: str) -> str:
 
 def captcha_start_text(question: str) -> str:
     return (
-        f'<tg-emoji emoji-id="{_E_STAR}">🛡</tg-emoji> <b>Добро пожаловать в TGStellar!</b>\n\n'
-        f'<blockquote>'
-        f'Прежде чем начать — убедимся, что ты не робот 🤖\n\n'
-        f'<tg-emoji emoji-id="{_E_LEVEL}">📐</tg-emoji> <b>Реши пример:</b>\n\n'
-        f'<b>{question} = ?</b>\n\n'
-        f'Напиши ответ в чат — это единственное, что нужно сделать.'
-        f'</blockquote>\n\n'
-        f'<i>Доступно {CAPTCHA_MAX_TRIES} попыток, после — пауза 30 минут.\n'
-        f'Дальше останется выбрать язык — и можно начинать игру 🚀</i>'
+        f'<tg-emoji emoji-id="{_E_STAR}">🛡</tg-emoji> <b>Проверка</b>\n\n'
+        f'<b>{question} = ?</b>'
     )
 
 
 def captcha_wrong_text(question: str, tries_left: int) -> str:
-    filled = CAPTCHA_MAX_TRIES - tries_left
-    bars   = "🟥" * filled + "⬜" * tries_left
     return (
-        f'<tg-emoji emoji-id="{_E_LEVEL}">📐</tg-emoji> <b>Не совсем верно — попробуй ещё раз</b>\n\n'
-        f'<blockquote>'
-        f'<b>{question} = ?</b>\n\n'
-        f'{bars}\n\n'
-        f'Осталось попыток: <b>{tries_left}</b>'
-        f'</blockquote>'
+        f'<tg-emoji emoji-id="{_E_LEVEL}">❌</tg-emoji> <b>Неверно</b>\n\n'
+        f'<b>{question} = ?</b>\n'
+        f'Осталось: <b>{tries_left}</b>'
     )
 
 
 def captcha_blocked_text(unblock_in_min: int) -> str:
     return (
-        f'<tg-emoji emoji-id="{_E_TIMER}">⏱</tg-emoji> <b>Слишком много попыток</b>\n\n'
-        f'<blockquote>'
-        f'Доступ временно ограничен. Загляни чуть позже!\n\n'
-        f'<tg-emoji emoji-id="{_E_TIMER}">⏱</tg-emoji> Осталось ждать: <b>{unblock_in_min} мин</b>\n\n'
-        f'<i>После снятия блока капча обновится автоматически.</i>'
-        f'</blockquote>'
-    )
-
-
-def captcha_ok_text(is_new_ref: bool, reward: int, is_premium: bool) -> str:
-    ref_block = ""
-    if is_new_ref and reward:
-        tag = (
-            f'<tg-emoji emoji-id="{_E_PREMIUM}">⭐</tg-emoji> Premium-реферал'
-            if is_premium else "обычный реферал"
-        )
-        ref_block = (
-            f'\n\n<blockquote>'
-            f'<tg-emoji emoji-id="{_E_COIN}">🪙</tg-emoji> Твой пригласитель получил <b>+{reward:,}</b> {COIN}\n'
-            f'<i>(засчитан как {tag})</i>'
-            f'</blockquote>'
-        )
-    return (
-        f'<tg-emoji emoji-id="{_E_STAR}">✅</tg-emoji> <b>Проверка пройдена — добро пожаловать!</b>\n\n'
-        f'<blockquote>'
-        f'Ты подтвердил, что не робот, и теперь часть TGStellar 🚀\n\n'
-        f'Остался последний шаг — выбери язык интерфейса 🌐'
-        f'</blockquote>'
-        f'{ref_block}'
+        f'<tg-emoji emoji-id="{_E_TIMER}">⏱</tg-emoji> <b>Слишком много попыток</b>\n'
+        f'Подожди: <b>{unblock_in_min} мин</b>'
     )
 
 
