@@ -3,7 +3,6 @@
 #  • Награда за обычного реферала:  3 000 монет
 #  • Награда за Premium-реферала:   5 000 монет
 #  • Капча после /start: простые примеры (5 попыток → блок 30 мин)
-#  • Хранение: отдельные таблицы в tgstellar.db
 # ============================================================
 
 import sqlite3
@@ -13,29 +12,25 @@ import math
 
 DB_PATH = "tgstellar.db"
 
-# ───────────────────────── константы ─────────────────────────
-
 REF_REWARD_NORMAL  = 3_000
 REF_REWARD_PREMIUM = 5_000
-
 CAPTCHA_MAX_TRIES  = 5
 CAPTCHA_BLOCK_SEC  = 30 * 60
 
-# Рабочие emoji-id из кода проекта
-_E_STAR    = "5267500801240092311"   # ⭐ зелёная галочка / звезда
-_E_PREMIUM = "5427168083074628963"   # ⭐ premium звезда
-_E_COIN    = "5199552030615558774"   # 🪙 монета
-_E_TIMER   = "5382194935057372936"   # ⏱ таймер  (из database.py)
-_E_LVL     = "5375338737028841420"   # уровень
-_E_BAL     = "5278467510604160626"   # баланс
-_E_CASE    = "5442939099906325301"   # кейс / друзья
+# Рабочие emoji-id из проекта
+_E_PREMIUM = "5427168083074628963"
+_E_COIN    = "5199552030615558774"
+_E_TIMER   = "5382194935057372936"
+_E_LEVEL   = "5375338737028841420"
+_E_BAL     = "5278467510604160626"
+_E_STAR    = "5267500801240092311"
+_E_STATUS  = "5438496463044752972"
 
 COIN = f'<tg-emoji emoji-id="{_E_COIN}">🪙</tg-emoji>'
 
 # ─────────────────────── инициализация БД ────────────────────
 
 def init_refs_db():
-    """Создаёт таблицы для реф. системы и капчи. Вызвать при старте."""
     with _conn() as c:
         c.executescript("""
             CREATE TABLE IF NOT EXISTS refs (
@@ -44,14 +39,12 @@ def init_refs_db():
                 rewarded    INTEGER DEFAULT 0,
                 joined_ts   INTEGER NOT NULL
             );
-
             CREATE TABLE IF NOT EXISTS ref_stats (
                 uid          INTEGER PRIMARY KEY,
                 total_refs   INTEGER DEFAULT 0,
                 premium_refs INTEGER DEFAULT 0,
                 earned_coins INTEGER DEFAULT 0
             );
-
             CREATE TABLE IF NOT EXISTS captcha_state (
                 uid           INTEGER PRIMARY KEY,
                 question      TEXT    NOT NULL,
@@ -72,7 +65,6 @@ def _conn():
 # ─────────────────────────── капча ───────────────────────────
 
 def _gen_question() -> tuple[str, int]:
-    """Генерирует лёгкий пример: сложение, вычитание или умножение."""
     op = random.choice(["+", "-", "×"])
     if op == "+":
         a, b   = random.randint(1, 20), random.randint(1, 20)
@@ -97,55 +89,39 @@ def get_captcha_state(uid: int) -> dict | None:
 
 
 def create_captcha(uid: int) -> dict:
-    """Создаёт/обновляет капчу для uid. Возвращает состояние."""
     question, answer = _gen_question()
-    now = int(time.time())
-
+    now   = int(time.time())
     state = get_captcha_state(uid)
     if state and state["blocked_until"] > now:
-        return state   # всё ещё в блоке — не перегенерируем
-
+        return state
     with _conn() as c:
         c.execute("""
             INSERT INTO captcha_state (uid, question, answer, tries, blocked_until, passed)
             VALUES (?, ?, ?, 0, 0, 0)
             ON CONFLICT(uid) DO UPDATE SET
-                question=excluded.question,
-                answer=excluded.answer,
-                tries=0,
-                blocked_until=0,
-                passed=0
+                question=excluded.question, answer=excluded.answer,
+                tries=0, blocked_until=0, passed=0
         """, (uid, question, answer))
         c.commit()
-
     return get_captcha_state(uid)
 
 
 def check_captcha(uid: int, user_answer: int) -> dict:
-    """
-    Проверяет ответ.
-    Возвращает dict: status ("ok"|"wrong"|"blocked"), tries_left, blocked_until, unblock_in_min
-    """
     state = get_captcha_state(uid)
     now   = int(time.time())
-
     if not state:
         return {"status": "no_captcha"}
-
     if state["passed"]:
         return {"status": "ok", "tries_left": 0, "blocked_until": 0, "unblock_in_min": 0}
-
     if state["blocked_until"] > now:
         mins = math.ceil((state["blocked_until"] - now) / 60)
         return {"status": "blocked", "tries_left": 0,
                 "blocked_until": state["blocked_until"], "unblock_in_min": mins}
-
     if user_answer == state["answer"]:
         with _conn() as c:
             c.execute("UPDATE captcha_state SET passed=1, tries=0 WHERE uid=?", (uid,))
             c.commit()
         return {"status": "ok", "tries_left": 0, "blocked_until": 0, "unblock_in_min": 0}
-
     new_tries = state["tries"] + 1
     if new_tries >= CAPTCHA_MAX_TRIES:
         blocked_until = now + CAPTCHA_BLOCK_SEC
@@ -159,17 +135,11 @@ def check_captcha(uid: int, user_answer: int) -> dict:
             c.commit()
         return {"status": "blocked", "tries_left": 0,
                 "blocked_until": blocked_until, "unblock_in_min": 30}
-
     with _conn() as c:
         c.execute("UPDATE captcha_state SET tries=? WHERE uid=?", (new_tries, uid))
         c.commit()
-
-    return {
-        "status":        "wrong",
-        "tries_left":    CAPTCHA_MAX_TRIES - new_tries,
-        "blocked_until": 0,
-        "unblock_in_min": 0,
-    }
+    return {"status": "wrong", "tries_left": CAPTCHA_MAX_TRIES - new_tries,
+            "blocked_until": 0, "unblock_in_min": 0}
 
 
 def is_captcha_passed(uid: int) -> bool:
@@ -178,7 +148,6 @@ def is_captcha_passed(uid: int) -> bool:
 
 
 def is_captcha_blocked(uid: int) -> tuple[bool, int]:
-    """Возвращает (заблокирован, секунд_до_разблока)."""
     state = get_captcha_state(uid)
     if not state:
         return False, 0
@@ -206,26 +175,20 @@ def is_new_user(uid: int) -> bool:
 
 
 def reward_inviter(uid: int, is_premium: bool) -> tuple[bool, int]:
-    """Начисляет награду пригласившему. Вызывать один раз после капчи."""
     with _conn() as c:
         ref_row = c.execute(
             "SELECT inviter_uid, rewarded FROM refs WHERE uid=?", (uid,)
         ).fetchone()
-
     if not ref_row or ref_row["rewarded"] or not ref_row["inviter_uid"]:
         return False, 0
-
     inviter = ref_row["inviter_uid"]
     coins   = REF_REWARD_PREMIUM if is_premium else REF_REWARD_NORMAL
-
     from database import get_user, save_user
     d = get_user(inviter)
     if not d:
         return False, 0
-
     d["balance"] = d.get("balance", 0) + coins
     save_user(inviter, d)
-
     with _conn() as c:
         c.execute("UPDATE refs SET rewarded=1 WHERE uid=?", (uid,))
         if is_premium:
@@ -233,37 +196,30 @@ def reward_inviter(uid: int, is_premium: bool) -> tuple[bool, int]:
                 INSERT INTO ref_stats (uid, total_refs, premium_refs, earned_coins)
                 VALUES (?, 1, 1, ?)
                 ON CONFLICT(uid) DO UPDATE SET
-                    total_refs   = total_refs   + 1,
-                    premium_refs = premium_refs + 1,
-                    earned_coins = earned_coins + ?
+                    total_refs=total_refs+1, premium_refs=premium_refs+1, earned_coins=earned_coins+?
             """, (inviter, coins, coins))
         else:
             c.execute("""
                 INSERT INTO ref_stats (uid, total_refs, premium_refs, earned_coins)
                 VALUES (?, 1, 0, ?)
                 ON CONFLICT(uid) DO UPDATE SET
-                    total_refs   = total_refs   + 1,
-                    earned_coins = earned_coins + ?
+                    total_refs=total_refs+1, earned_coins=earned_coins+?
             """, (inviter, coins, coins))
         c.commit()
-
     return True, coins
 
 
 def get_ref_stats(uid: int) -> dict:
     with _conn() as c:
         row = c.execute("SELECT * FROM ref_stats WHERE uid=?", (uid,)).fetchone()
-    if row:
-        return dict(row)
-    return {"uid": uid, "total_refs": 0, "premium_refs": 0, "earned_coins": 0}
+    return dict(row) if row else {"uid": uid, "total_refs": 0, "premium_refs": 0, "earned_coins": 0}
 
 
 def get_referrals_list(uid: int) -> list[dict]:
     with _conn() as c:
         rows = c.execute("""
-            SELECT uid, joined_ts, rewarded
-            FROM refs WHERE inviter_uid=?
-            ORDER BY joined_ts DESC LIMIT 50
+            SELECT uid, joined_ts, rewarded FROM refs
+            WHERE inviter_uid=? ORDER BY joined_ts DESC LIMIT 50
         """, (uid,)).fetchall()
     return [dict(r) for r in rows]
 
@@ -283,21 +239,21 @@ def refs_main_text(uid: int, bot_username: str) -> str:
     earned   = stats["earned_coins"]
 
     return (
-        f'<tg-emoji emoji-id="{_E_CASE}">👥</tg-emoji> <b>Реферальная программа</b>\n'
+        f'<tg-emoji emoji-id="{_E_STATUS}">✨</tg-emoji> <b>Реферальная программа</b>\n'
         f'━━━━━━━━━━━━━━━━━━━━\n\n'
         f'<blockquote>'
-        f'Приглашай друзей — получай монеты!\n\n'
-        f'👤 За обычного реферала — <b>{REF_REWARD_NORMAL:,}</b> {COIN}\n'
-        f'<tg-emoji emoji-id="{_E_PREMIUM}">⭐</tg-emoji> За реферала с Telegram Premium — <b>{REF_REWARD_PREMIUM:,}</b> {COIN}'
+        f'Делись ссылкой с друзьями и получай монеты за каждого, кто присоединится!\n\n'
+        f'<tg-emoji emoji-id="{_E_COIN}">🪙</tg-emoji> Обычный реферал — <b>{REF_REWARD_NORMAL:,}</b> {COIN}\n'
+        f'<tg-emoji emoji-id="{_E_PREMIUM}">⭐</tg-emoji> Реферал с Telegram Premium — <b>{REF_REWARD_PREMIUM:,}</b> {COIN}'
         f'</blockquote>\n'
         f'<blockquote>'
-        f'<tg-emoji emoji-id="{_E_LVL}">📊</tg-emoji> <b>Твоя статистика</b>\n\n'
-        f'👤 Всего рефералов: <b>{total}</b>\n'
+        f'<tg-emoji emoji-id="{_E_LEVEL}">📊</tg-emoji> <b>Статистика</b>\n\n'
+        f'<tg-emoji emoji-id="{_E_STATUS}">👤</tg-emoji> Приглашено: <b>{total}</b>\n'
         f'<tg-emoji emoji-id="{_E_PREMIUM}">⭐</tg-emoji> С Premium: <b>{premium}</b>\n'
         f'<tg-emoji emoji-id="{_E_COIN}">🪙</tg-emoji> Заработано: <b>{earned:,}</b> {COIN}'
         f'</blockquote>\n'
         f'<blockquote>'
-        f'<tg-emoji emoji-id="{_E_BAL}">🔗</tg-emoji> <b>Твоя реферальная ссылка:</b>\n'
+        f'<tg-emoji emoji-id="{_E_BAL}">🔗</tg-emoji> <b>Реферальная ссылка</b>\n\n'
         f'<code>{ref_link}</code>'
         f'</blockquote>'
     )
@@ -305,14 +261,15 @@ def refs_main_text(uid: int, bot_username: str) -> str:
 
 def captcha_start_text(question: str) -> str:
     return (
-        f'<tg-emoji emoji-id="{_E_STAR}">✅</tg-emoji> <b>Проверка безопасности</b>\n'
+        f'<tg-emoji emoji-id="{_E_STAR}">🛡</tg-emoji> <b>Добро пожаловать в TGStellar!</b>\n'
         f'━━━━━━━━━━━━━━━━━━━━\n\n'
         f'<blockquote>'
-        f'Добро пожаловать! Перед началом реши простой пример 🧠\n\n'
-        f'<tg-emoji emoji-id="{_E_LVL}">📐</tg-emoji> <b>{question} = ?</b>\n\n'
-        f'Введи ответ числом:'
+        f'Прежде чем начать — убедимся, что ты не робот 🤖\n\n'
+        f'<tg-emoji emoji-id="{_E_LEVEL}">📐</tg-emoji> <b>Реши пример:</b>\n\n'
+        f'<b>{question} = ?</b>\n\n'
+        f'Напиши ответ в чат — это единственное, что нужно сделать.'
         f'</blockquote>\n\n'
-        f'<i>У тебя {CAPTCHA_MAX_TRIES} попыток. После — блок на 30 мин.</i>'
+        f'<i>Доступно {CAPTCHA_MAX_TRIES} попыток. После исчерпания — пауза 30 минут.</i>'
     )
 
 
@@ -320,12 +277,11 @@ def captcha_wrong_text(question: str, tries_left: int) -> str:
     filled = CAPTCHA_MAX_TRIES - tries_left
     bars   = "🟥" * filled + "⬜" * tries_left
     return (
-        f'❌ <b>Неверно!</b>\n'
+        f'<tg-emoji emoji-id="{_E_LEVEL}">📐</tg-emoji> <b>Не совсем верно — попробуй ещё раз</b>\n'
         f'━━━━━━━━━━━━━━━━━━━━\n\n'
         f'<blockquote>'
-        f'Попробуй ещё раз 👇\n\n'
-        f'<tg-emoji emoji-id="{_E_LVL}">📐</tg-emoji> <b>{question} = ?</b>\n\n'
-        f'{bars}\n'
+        f'<b>{question} = ?</b>\n\n'
+        f'{bars}\n\n'
         f'Осталось попыток: <b>{tries_left}</b>'
         f'</blockquote>'
     )
@@ -333,12 +289,12 @@ def captcha_wrong_text(question: str, tries_left: int) -> str:
 
 def captcha_blocked_text(unblock_in_min: int) -> str:
     return (
-        f'🔒 <b>Доступ заблокирован</b>\n'
+        f'<tg-emoji emoji-id="{_E_TIMER}">⏱</tg-emoji> <b>Слишком много попыток</b>\n'
         f'━━━━━━━━━━━━━━━━━━━━\n\n'
         f'<blockquote>'
-        f'Слишком много неверных попыток.\n\n'
-        f'<tg-emoji emoji-id="{_E_TIMER}">⏱</tg-emoji> Попробуй через: <b>{unblock_in_min} мин</b>\n\n'
-        f'<i>Капча обновится автоматически после снятия блока.</i>'
+        f'Доступ временно ограничен. Загляни чуть позже!\n\n'
+        f'<tg-emoji emoji-id="{_E_TIMER}">⏱</tg-emoji> Осталось ждать: <b>{unblock_in_min} мин</b>\n\n'
+        f'<i>После снятия блока капча обновится автоматически.</i>'
         f'</blockquote>'
     )
 
@@ -346,36 +302,41 @@ def captcha_blocked_text(unblock_in_min: int) -> str:
 def captcha_ok_text(is_new_ref: bool, reward: int, is_premium: bool) -> str:
     ref_block = ""
     if is_new_ref and reward:
-        tag = f'<tg-emoji emoji-id="{_E_PREMIUM}">⭐</tg-emoji> Premium' if is_premium else "👤 Обычный"
+        tag = (
+            f'<tg-emoji emoji-id="{_E_PREMIUM}">⭐</tg-emoji> Premium'
+            if is_premium else "обычный"
+        )
         ref_block = (
             f'\n\n<blockquote>'
-            f'👥 Твой пригласитель получил <b>+{reward:,}</b> {COIN}\n'
+            f'<tg-emoji emoji-id="{_E_COIN}">🪙</tg-emoji> Твой пригласитель получил <b>+{reward:,}</b> {COIN}\n'
             f'<i>({tag} реферал)</i>'
             f'</blockquote>'
         )
     return (
-        f'<tg-emoji emoji-id="{_E_STAR}">✅</tg-emoji> <b>Верно! Добро пожаловать!</b>\n'
+        f'<tg-emoji emoji-id="{_E_STAR}">✅</tg-emoji> <b>Всё верно — добро пожаловать!</b>\n'
         f'━━━━━━━━━━━━━━━━━━━━\n\n'
         f'<blockquote>'
-        f'Ты прошёл проверку и теперь полноправный участник TGStellar 🚀\n'
-        f'Используй кнопку ниже, чтобы открыть главное меню.'
+        f'Ты успешно прошёл проверку и теперь часть TGStellar 🚀\n\n'
+        f'Исследуй шахты, питомцев, охоту и многое другое!'
         f'</blockquote>'
         f'{ref_block}'
     )
 
 
 def refs_notif_text(new_user_name: str, reward: int, is_premium: bool) -> str:
-    badge = (
-        f'<tg-emoji emoji-id="{_E_PREMIUM}">⭐</tg-emoji> <b>Premium-реферал</b>'
-        if is_premium else
-        f'👥 <b>Новый реферал</b>'
-    )
+    if is_premium:
+        header = f'<tg-emoji emoji-id="{_E_PREMIUM}">⭐</tg-emoji> <b>Premium-реферал!</b>'
+        note   = f'<tg-emoji emoji-id="{_E_PREMIUM}">⭐</tg-emoji> <i>У него Telegram Premium</i>'
+    else:
+        header = f'<tg-emoji emoji-id="{_E_STATUS}">✨</tg-emoji> <b>Новый реферал!</b>'
+        note   = ""
     return (
-        f'{badge}\n'
+        f'{header}\n'
         f'━━━━━━━━━━━━━━━━━━━━\n\n'
         f'<blockquote>'
-        f'<b>{new_user_name}</b> присоединился по твоей ссылке!\n\n'
-        f'<tg-emoji emoji-id="{_E_COIN}">🪙</tg-emoji> Тебе начислено: <b>+{reward:,}</b> {COIN}'
+        f'<b>{new_user_name}</b> присоединился по твоей ссылке\n'
+        f'{note}\n\n'
+        f'<tg-emoji emoji-id="{_E_COIN}">🪙</tg-emoji> Начислено: <b>+{reward:,}</b> {COIN}'
         f'</blockquote>'
     )
 
@@ -385,7 +346,7 @@ def refs_list_text(uid: int) -> str:
     stats = get_ref_stats(uid)
 
     if not refs:
-        body = "<i>Ты ещё никого не пригласил. Поделись ссылкой!</i>"
+        body = "<i>Ты ещё никого не пригласил — поделись ссылкой!</i>"
     else:
         lines = []
         for i, r in enumerate(refs[:20], 1):
@@ -398,10 +359,11 @@ def refs_list_text(uid: int) -> str:
             body += f"\n<i>...и ещё {len(refs)-20} рефералов</i>"
 
     return (
-        f'👥 <b>Мои рефералы</b>\n'
+        f'<tg-emoji emoji-id="{_E_STATUS}">👥</tg-emoji> <b>Мои рефералы</b>\n'
         f'━━━━━━━━━━━━━━━━━━━━\n\n'
         f'<blockquote>'
-        f'Всего: <b>{stats["total_refs"]}</b> · Premium: <b>{stats["premium_refs"]}</b>\n'
+        f'<tg-emoji emoji-id="{_E_STATUS}">📋</tg-emoji> Всего: <b>{stats["total_refs"]}</b> · '
+        f'<tg-emoji emoji-id="{_E_PREMIUM}">⭐</tg-emoji> Premium: <b>{stats["premium_refs"]}</b>\n'
         f'<tg-emoji emoji-id="{_E_COIN}">🪙</tg-emoji> Заработано: <b>{stats["earned_coins"]:,}</b> {COIN}'
         f'</blockquote>\n\n'
         f'{body}'
@@ -411,27 +373,44 @@ def refs_list_text(uid: int) -> str:
 
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
+from miner import EMOJI_BACK
 
 
 def refs_main_keyboard(bot_username: str, uid: int) -> InlineKeyboardMarkup:
     ref_link = f"https://t.me/{bot_username}?start=ref_{uid}"
     builder  = InlineKeyboardBuilder()
     builder.row(InlineKeyboardButton(
-        text="🔗 Поделиться ссылкой",
-        url=f"https://t.me/share/url?url={ref_link}&text=Присоединяйся%20к%20TGStellar%21"
+        text="Поделиться ссылкой",
+        url=f"https://t.me/share/url?url={ref_link}&text=Присоединяйся%20к%20TGStellar%21",
+        icon_custom_emoji_id="5271604874419647061"
     ))
-    builder.row(InlineKeyboardButton(text="👥 Мои рефералы", callback_data="refs_list"))
-    builder.row(InlineKeyboardButton(text="◀️ Назад",        callback_data="profile"))
+    builder.row(InlineKeyboardButton(
+        text="Мои рефералы",
+        callback_data="refs_list",
+        icon_custom_emoji_id="5258513401784573443"
+    ))
+    builder.row(InlineKeyboardButton(
+        text="Назад",
+        callback_data="profile",
+        icon_custom_emoji_id=EMOJI_BACK
+    ))
     return builder.as_markup()
 
 
 def refs_list_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    builder.row(InlineKeyboardButton(text="◀️ Назад", callback_data="refs_main"))
+    builder.row(InlineKeyboardButton(
+        text="Назад",
+        callback_data="refs_main",
+        icon_custom_emoji_id=EMOJI_BACK
+    ))
     return builder.as_markup()
 
 
 def captcha_back_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    builder.row(InlineKeyboardButton(text="🔄 Проверить блок", callback_data="captcha_check_block"))
+    builder.row(InlineKeyboardButton(
+        text="🔄 Проверить блок",
+        callback_data="captcha_check_block"
+    ))
     return builder.as_markup()
