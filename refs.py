@@ -295,9 +295,9 @@ def captcha_blocked_text(unblock_in_min: int) -> str:
 
 def refs_notif_text(new_user_name: str, reward: int, is_premium: bool) -> str:
     if is_premium:
-        return f'<tg-emoji emoji-id="5262643974912355126">⭐</tg-emoji> <b>Premium-реферал! | +{reward:,}{_E_COIN}</b>'
+        return f'<tg-emoji emoji-id="5262643974912355126">⭐</tg-emoji> <b>Premium-реферал! | +{reward:,}<tg-emoji emoji-id="5199552030615558774">⭐</tg-emoji></b>'
     else:
-        return f'<tg-emoji emoji-id="{_E_FRIENDS}">✨</tg-emoji> <b>Новый реферал! | +{reward:,}{_E_COIN}</b>'
+        return f'<tg-emoji emoji-id="{_E_FRIENDS}">✨</tg-emoji> <b>Новый реферал! | +{reward:,}<tg-emoji emoji-id="5199552030615558774">⭐</tg-emoji></b>'
 
 
 def refs_list_text(uid: int) -> str:
