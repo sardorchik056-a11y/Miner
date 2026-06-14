@@ -571,7 +571,7 @@ def inventory_keyboard(data: dict = None, lang: str = "ru") -> InlineKeyboardMar
     return builder.as_markup()
 
 
-def sell_keyboard(lang: str = "ru") -> InlineKeyboardMarkup:
+def sell_keyboard(data: dict = None, lang: str = "ru") -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     label = "Sell all" if lang == "en" else "Продать всё"
     builder.row(_prem_btn(EMOJI_BTN_SELL_ALL, label, "mine_sell_all"))
