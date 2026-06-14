@@ -209,6 +209,7 @@ def profile_keyboard(lang: str = "ru") -> InlineKeyboardMarkup:
     builder.row(InlineKeyboardButton(
         text="👥 Друзья",
         callback_data="refs_main",
+        icon_custom_emoji_id="5332724926216428039"
     ))
     builder.row(_back_btn("back_to_menu", t(lang, "btn_back")))
     return builder.as_markup()
