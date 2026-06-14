@@ -680,11 +680,10 @@ async def handle_captcha_answer(message: Message):
         )
 
     elif result["status"] == "wrong":
-        state = get_captcha_state(uid)
         if pending:
             try:
                 await bot.edit_message_text(
-                    captcha_wrong_text(state["question"], result["tries_left"]),
+                    captcha_wrong_text(result["question"], result["tries_left"]),
                     chat_id=pending[0],
                     message_id=pending[1],
                     parse_mode="HTML",
@@ -693,7 +692,7 @@ async def handle_captcha_answer(message: Message):
             except Exception:
                 pass
         sent = await message.answer(
-            captcha_wrong_text(state["question"], result["tries_left"]),
+            captcha_wrong_text(result["question"], result["tries_left"]),
             parse_mode="HTML",
         )
         set_captcha_msg(uid, sent.chat.id, sent.message_id)
