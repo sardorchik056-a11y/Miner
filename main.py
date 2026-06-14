@@ -4,9 +4,10 @@ from aiogram import Bot, Dispatcher, F
 from aiogram.types import (
     Message, CallbackQuery,
     InlineKeyboardMarkup, InlineKeyboardButton,
+    ReplyKeyboardMarkup, KeyboardButton,
     LabeledPrice, PreCheckoutQuery,
 )
-from aiogram.utils.keyboard import InlineKeyboardBuilder
+from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
 from aiogram.filters import Command
 
 from database import (
@@ -154,6 +155,15 @@ EMOJI_SETTINGS = "5341715473882955310"
 
 def _back_btn(callback: str, label: str = "Назад") -> InlineKeyboardButton:
     return InlineKeyboardButton(text=label, callback_data=callback, icon_custom_emoji_id=EMOJI_BACK)
+
+
+def main_reply_keyboard() -> ReplyKeyboardMarkup:
+    builder = ReplyKeyboardBuilder()
+    builder.row(
+        KeyboardButton(text="🎮 Меню"),
+        KeyboardButton(text="⚔️ Клан"),
+    )
+    return builder.as_markup(resize_keyboard=True)
 
 
 def main_menu_keyboard(lang: str = "ru") -> InlineKeyboardMarkup:
@@ -473,10 +483,38 @@ async def send_welcome(message: Message):
 
     lang = get_lang(u)
     await message.answer(
+        "🎮",
+        reply_markup=main_reply_keyboard(),
+    )
+    await message.answer(
         t(lang, "welcome"),
         parse_mode="HTML",
         disable_web_page_preview=True,
         reply_markup=main_menu_keyboard(lang),
+    )
+
+
+@dp.message(F.text == "🎮 Меню")
+async def reply_btn_menu(message: Message):
+    from database import get_or_create_user as _gou
+    u    = _gou(message.from_user)
+    lang = get_lang(u)
+    track_user(message.from_user.id)
+    await message.answer(
+        t(lang, "welcome"),
+        parse_mode="HTML",
+        disable_web_page_preview=True,
+        reply_markup=main_menu_keyboard(lang),
+    )
+
+
+@dp.message(F.text == "⚔️ Клан")
+async def reply_btn_clan(message: Message):
+    await message.answer(
+        "⚔️ <b>Клан</b>
+
+<blockquote>Система кланов скоро будет доступна!</blockquote>",
+        parse_mode="HTML",
     )
 
 
