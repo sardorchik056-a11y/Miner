@@ -88,6 +88,7 @@ from refs import (
     register_referral,
     is_captcha_passed, is_captcha_blocked,
     get_captcha_state, create_captcha, check_captcha,
+    set_captcha_msg, get_captcha_msg,
     reward_inviter, get_inviter,
     refs_main_text, refs_main_keyboard,
     refs_list_text, refs_list_keyboard,
@@ -132,8 +133,7 @@ import asyncio as _asyncio
 _user_locks: dict[int, _asyncio.Lock] = {}
 _user_locks_mutex = _asyncio.Lock()
 
-# Хранит message_id экрана капчи: uid -> (chat_id, message_id)
-_captcha_msg: dict[int, tuple] = {}
+
 
 # Хранит message_id экрана кирки перед оплатой: uid -> (chat_id, message_id, pick_key)
 _pending_stars_msg: dict[int, tuple] = {}
@@ -509,7 +509,7 @@ async def _send_onboarding_step(message: Message, uid: int) -> bool:
             captcha_start_text(state["question"]),
             parse_mode="HTML",
         )
-        _captcha_msg[uid] = (sent.chat.id, sent.message_id)
+        set_captcha_msg(uid, sent.chat.id, sent.message_id)
         return True
 
     # 3) Капча пройдена, но язык ещё не выбран → выбор языка
@@ -639,11 +639,9 @@ async def handle_captcha_answer(message: Message):
     except Exception:
         pass
 
-    pending = _captcha_msg.get(uid)
+    pending = get_captcha_msg(uid)
 
     if result["status"] == "ok":
-        _captcha_msg.pop(uid, None)
-
         # Капча пройдена — начисляем награду пригласителю
         is_premium       = bool(getattr(message.from_user, "is_premium", False))
         rewarded, amount = reward_inviter(uid, is_premium)
@@ -698,10 +696,9 @@ async def handle_captcha_answer(message: Message):
             captcha_wrong_text(state["question"], result["tries_left"]),
             parse_mode="HTML",
         )
-        _captcha_msg[uid] = (sent.chat.id, sent.message_id)
+        set_captcha_msg(uid, sent.chat.id, sent.message_id)
 
     elif result["status"] == "blocked":
-        _captcha_msg.pop(uid, None)
         if pending:
             try:
                 await bot.edit_message_text(
