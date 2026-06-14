@@ -52,9 +52,18 @@ def init_refs_db():
                 answer        INTEGER NOT NULL,
                 tries         INTEGER DEFAULT 0,
                 blocked_until INTEGER DEFAULT 0,
-                passed        INTEGER DEFAULT 0
+                passed        INTEGER DEFAULT 0,
+                chat_id       INTEGER,
+                msg_id        INTEGER
             );
         """)
+        c.commit()
+        # Миграция: добавляем chat_id/msg_id если таблица создана старой версией
+        cols = {row["name"] for row in c.execute("PRAGMA table_info(captcha_state)").fetchall()}
+        if "chat_id" not in cols:
+            c.execute("ALTER TABLE captcha_state ADD COLUMN chat_id INTEGER")
+        if "msg_id" not in cols:
+            c.execute("ALTER TABLE captcha_state ADD COLUMN msg_id INTEGER")
         c.commit()
 
 
@@ -101,6 +110,19 @@ def create_captcha(uid: int) -> dict:
         """, (uid, question, answer))
         c.commit()
     return get_captcha_state(uid)
+
+
+def set_captcha_msg(uid: int, chat_id: int, msg_id: int):
+    with _conn() as c:
+        c.execute("UPDATE captcha_state SET chat_id=?, msg_id=? WHERE uid=?", (chat_id, msg_id, uid))
+        c.commit()
+
+
+def get_captcha_msg(uid: int) -> tuple[int, int] | None:
+    state = get_captcha_state(uid)
+    if state and state.get("chat_id") and state.get("msg_id"):
+        return state["chat_id"], state["msg_id"]
+    return None
 
 
 def check_captcha(uid: int, user_answer: int) -> dict:
