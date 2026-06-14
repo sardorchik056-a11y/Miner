@@ -64,8 +64,8 @@ def lang_choose_text(lang: str = "ru") -> str:
 def lang_choose_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.row(
-        InlineKeyboardButton(text="🇷🇺 Русский", callback_data="set_lang_ru",
-        InlineKeyboardButton(text="🇬🇧 English", callback_data="set_lang_en",
+        InlineKeyboardButton(text="🇷🇺 Русский", callback_data="set_lang_ru"),
+        InlineKeyboardButton(text="🇬🇧 English", callback_data="set_lang_en"),
     )
     return builder.as_markup()
 
