@@ -154,11 +154,12 @@ def check_captcha(uid: int, user_answer: int) -> dict:
             c.commit()
         return {"status": "blocked", "tries_left": 0,
                 "blocked_until": blocked_until, "unblock_in_min": 30}
+    q, a = _gen_question()
     with _conn() as c:
-        c.execute("UPDATE captcha_state SET tries=? WHERE uid=?", (new_tries, uid))
+        c.execute("UPDATE captcha_state SET tries=?, question=?, answer=? WHERE uid=?", (new_tries, q, a, uid))
         c.commit()
     return {"status": "wrong", "tries_left": CAPTCHA_MAX_TRIES - new_tries,
-            "blocked_until": 0, "unblock_in_min": 0}
+            "blocked_until": 0, "unblock_in_min": 0, "question": q}
 
 
 def is_captcha_passed(uid: int) -> bool:
