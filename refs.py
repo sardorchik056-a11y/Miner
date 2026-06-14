@@ -259,18 +259,11 @@ def refs_main_text(uid: int, bot_username: str) -> str:
 
 
 def captcha_start_text(question: str) -> str:
-    return (
-        f'<tg-emoji emoji-id="{_E_STAR}">🛡</tg-emoji> <b>Проверка</b>\n\n'
-        f'<b>{question} = ?</b>'
-    )
+    return f'<b>{question} = ?</b>'
 
 
 def captcha_wrong_text(question: str, tries_left: int) -> str:
-    return (
-        f'<tg-emoji emoji-id="{_E_LEVEL}">❌</tg-emoji> <b>Неверно</b>\n\n'
-        f'<b>{question} = ?</b>\n'
-        f'Осталось: <b>{tries_left}</b>'
-    )
+    return f'<b>{question} = ?</b>'
 
 
 def captcha_blocked_text(unblock_in_min: int) -> str:
